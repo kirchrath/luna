@@ -118,7 +118,8 @@ in diesen Sub-Packages:
 
 #### Keine statischen Methoden
 
-- Statische Methoden dürfen **nicht direkt** verwendet werden, damit alles testbar bleibt.
+- Statische Methoden dürfen im **Produktionscode** nicht direkt verwendet werden, damit alles testbar bleibt.
+  **In Tests sind statische Methodenaufrufe erlaubt** (z. B. `Path.of`, AssertJ, MockMvc-Builder).
 - IDs kommen aus einem **`UuidProvider`** (statt `UUID.randomUUID()`).
 - Zeitpunkte kommen aus einem **`TimeProvider`** (statt `OffsetDateTime.now()`, `Instant.now()` o. ä.).
   Er liefert `OffsetDateTime` mit dem Offset der **Zeitzone des Servers**.
@@ -163,6 +164,9 @@ record TaskDataDto(String title, String description) {}
     (neben `src/main` und `src/test`).
   - Er läuft **nur mit dem Maven-Profil `openapi`** (`./mvnw verify -Popenapi`); normale Testläufe verändern
     `openapi.yaml` nicht. Das Profil bindet `src/openapi/java` per `build-helper-maven-plugin` als Testquelle ein.
+  - Titel, Version und Server stehen per `@OpenAPIDefinition` an `Application.java`: Titel z. B. `Luna Core API`,
+    Version = Projekt-Version (`spring.application.version: @project.version@` in `application.yml`),
+    Server = Pfad-Präfix in Produktion (z. B. `/api/luna-core`).
   - Ohne Token erreichbar sind `/v3/api-docs/**`, `/v3/api-docs.yaml`, die Swagger-UI (`/swagger-ui.html`,
     `/swagger-ui/**`) und `/actuator/health`.
 
