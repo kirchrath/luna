@@ -6,11 +6,25 @@ Sie wird gepflegt, sobald sich am Projekt etwas Wesentliches ändert.
 
 ## Projektstatus
 
-Luna ist ein neues Projekt im Aufbau. Bisher existieren nur `README.md`, `LICENSE` (MIT) und diese Datei.
+Luna ist eine **zentrale Anwendung zur Verwaltung des Alltags** – für **einen einzelnen Benutzer**.
+
+Geplante Bereiche:
+
+- Aufgaben & To-dos
+- Termine & Kalender
+- Einkauf & Haushalt
+- Finanzen & Verträge
+- Monitoring (_Umfang noch offen_)
+
+**Phase: Konzeption.** Es gibt noch kein festgelegtes erstes Feature. Keine Fachfunktionen implementieren,
+solange sie nicht ausdrücklich beauftragt sind.
+
+Bisher existieren nur `README.md`, `LICENSE` (MIT) und diese Datei.
 
 Noch offen (bitte hier eintragen, sobald entschieden):
 
-- **Ziel / Zweck:** _TODO_
+- **Reihenfolge / erstes Feature:** _TODO_
+- **Umfang des Bereichs „Monitoring“:** _TODO_
 - **DNS-Anbieter für die Let's-Encrypt-DNS-Challenge:** _TODO_
 
 Betrieb: siehe Abschnitt [Betrieb](#betrieb) (Heimnetz, Docker Stack).
@@ -80,7 +94,8 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   - Generierter Code wird **eingecheckt** und nie von Hand geändert. Bei API-Änderungen: Backend anpassen,
     Spec erzeugen, Wrapper neu generieren und im selben Commit mit einchecken.
 - **Docker-Image:** Das Frontend wird als eigenes **nginx-Image** ausgeliefert (Dockerfile im Frontend-Projekt,
-  nur `linux/amd64`, lokal gebaut). nginx liefert die statischen Dateien aus und leitet API-Aufrufe ans Backend weiter.
+  nur `linux/amd64`, lokal gebaut). nginx liefert ausschließlich die statischen Dateien aus;
+  API-Aufrufe routet **Traefik direkt ans Backend**.
 - **Texte:** Keine fest codierten UI-Texte; alle Texte über react-i18next. Neue Schlüssel immer in
   **Deutsch und Englisch** anlegen.
 
@@ -97,7 +112,7 @@ Luna läuft im **Heimnetz** als **Docker Stack** (Docker Swarm, `docker stack de
 | Orchestrierung | Docker Stack (Swarm), **ein Knoten** |
 | Architektur | nur **`linux/amd64`** |
 | Container-Registry | **keine** – Images werden lokal auf dem Knoten gebaut |
-| Reverse Proxy | **Traefik** im Stack (Routing über Service-Labels) |
+| Reverse Proxy | **Traefik** im Stack (Routing über Service-Labels; API-Pfade direkt ans Backend, alles andere ans Frontend) |
 | HTTPS | **Let's Encrypt** per **DNS-Challenge** (keine offenen Ports nach außen nötig) |
 | Identity Provider | **Keycloak** läuft im Luna-Stack |
 | Datenbank | **eine PostgreSQL-Instanz** mit **getrennten Datenbanken und Benutzern** für Luna und Keycloak |
