@@ -116,6 +116,8 @@ in diesen Sub-Packages:
 - IDs kommen aus einem **`UuidProvider`** (statt `UUID.randomUUID()`).
 - Zeitpunkte kommen aus einem **`TimeProvider`** (statt `OffsetDateTime.now()`, `Instant.now()` o. ä.).
   Er liefert `OffsetDateTime` mit dem Offset der **Zeitzone des Servers**.
+  Im Stack übernehmen die Backend-Container die Zeitzone **vom Host**: `/etc/localtime` wird read-only
+  eingebunden (siehe [Betrieb](#betrieb)).
 - `UuidProvider` und `TimeProvider` liegen im Package **`services`**.
 - Für weitere statische Aufrufe ebenso einen injizierbaren Provider anlegen.
 
@@ -256,6 +258,9 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
 - **Secrets** sind **externe Docker Secrets** (`docker secret create` auf dem Server).
 - Die Infrastruktur-Datei dient **auch der lokalen Entwicklung**; PostgreSQL (7432) und Keycloak (7080) sind
   daher auch auf dem Server veröffentlicht. Die Keycloak-URL (Issuer) ist über `LUNA_KEYCLOAK_URL` umschaltbar.
+- **Zeitzone:** Backend-Container binden `/etc/localtime:/etc/localtime:ro` vom Host ein, damit der
+  `TimeProvider` die Zeitzone des Servers nutzt. Ob die JVM im Image `amazoncorretto:25` die Zone so korrekt
+  erkennt, ist beim ersten Backend-Stack zu prüfen. Für die Infrastruktur-Services ist das noch nicht entschieden (_TODO_).
 - Traefik leitet HTTP auf HTTPS um; **kein Traefik-Dashboard**.
 - PostgreSQL legt beim ersten Start per Init-Skript die Datenbanken `keycloak` und `luna` mit je einem Benutzer an.
 - Der **Keycloak-Realm** für Luna ist noch nicht Teil der Stack-Datei (wird separat entschieden).
