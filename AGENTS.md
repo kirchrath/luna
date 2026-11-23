@@ -104,7 +104,8 @@ in diesen Sub-Packages:
 #### Entities
 
 - ORM ist **Spring Data JDBC**; Entities sind **Records**.
-- Jede Entity hat: `id` (**UUID**), `createdDate`, `lastModifiedDate` und `version`.
+- Jede Entity hat: `id` (**`UUID`**), `createdDate` und `lastModifiedDate` (**`OffsetDateTime`**) sowie
+  `version` (**`Long`**).
   Diese Felder werden **per Annotation oder per Lifecycle-Event** gesetzt, nie manuell in der Fachlogik.
 - **Enums** werden in der Datenbank als **String** gespeichert. Die erlaubten Werte werden **nicht** als
   Constraint in der Migration gepflegt.
@@ -113,7 +114,9 @@ in diesen Sub-Packages:
 
 - Statische Methoden dürfen **nicht direkt** verwendet werden, damit alles testbar bleibt.
 - IDs kommen aus einem **`UuidProvider`** (statt `UUID.randomUUID()`).
-- Zeitpunkte kommen aus einem **`TimeProvider`** (statt `Instant.now()`, `LocalDateTime.now()` o. ä.).
+- Zeitpunkte kommen aus einem **`TimeProvider`** (statt `OffsetDateTime.now()`, `Instant.now()` o. ä.).
+  Er liefert `OffsetDateTime` mit dem Offset der **Zeitzone des Servers**.
+- `UuidProvider` und `TimeProvider` liegen im Package **`services`**.
 - Für weitere statische Aufrufe ebenso einen injizierbaren Provider anlegen.
 
 #### DTOs
@@ -128,7 +131,7 @@ in diesen Sub-Packages:
      einer Liste nötig sind**.
 2. **Entity-Dtos** – Name `<Entity>Dto`, enthält **nicht** die ID der Entität, sondern:
    - `data`: `<Entity>DataDto` mit den eigentlichen Daten
-   - `audit`: `AuditDto` mit `createdDate`, `lastModifiedDate` und `version`
+   - `audit`: `AuditDto` mit `createdDate`, `lastModifiedDate` (`OffsetDateTime`) und `version` (`Long`)
 3. **Eingebettete Dtos** – Records, die weder ein List-Dto noch direkt eine Entität repräsentieren
    (Name endet ebenfalls auf `Dto`).
 
