@@ -4,6 +4,11 @@ Leitfaden für KI-Agenten (Claude Code, Codex, Copilot u. a.), die an **Luna** a
 Diese Datei ist die zentrale Quelle für Arbeitsweise, Konventionen und Projektkontext.
 Sie wird gepflegt, sobald sich am Projekt etwas Wesentliches ändert.
 
+> [!IMPORTANT]
+> **Oberste Regel: Niemals Annahmen treffen.**
+> Bei jeder Unklarheit – egal wie klein – **nachfragen** und **konkrete Vorschläge zur Auswahl** machen.
+> Die Entscheidung trifft der Mensch; erst danach umsetzen. Details siehe [Grundprinzip 3](#grundprinzipien).
+
 ## Projektstatus
 
 Luna ist eine **zentrale Anwendung zur Verwaltung des Alltags** – für **einen einzelnen Benutzer**.
