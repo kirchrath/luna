@@ -83,6 +83,28 @@ Damit der Issuer der Tokens zur lokalen URL passt, beim Deploy die Keycloak-URL 
 LUNA_KEYCLOAK_URL=http://localhost:7080/auth docker stack deploy -c swarm/infrastructure.yml luna
 ```
 
+### Festlegungen der Infrastruktur
+
+| Thema | Festlegung |
+|---|---|
+| Keycloak-Admin | Benutzer `admin`, Passwort aus Secret `keycloak_admin_password`. Das ist der **Bootstrap-Admin** von Keycloak: Er ist zum Anlegen eines dauerhaften Admin-Kontos gedacht und sollte danach ersetzt werden. |
+| DB-Benutzer | heißen wie ihre Datenbanken: `keycloak` (Datenbank `keycloak`) und `luna` (Datenbank `luna`) |
+| Secrets | `step_ca_password`, `postgres_password`, `keycloak_db_password`, `luna_db_password`, `keycloak_admin_password` (alle extern, siehe oben) |
+| Netzwerk | Overlay-Netz `luna`, `attachable` – auch Container außerhalb des Stacks können sich verbinden |
+| Keycloak-URL | Variable `LUNA_KEYCLOAK_URL` setzt den Issuer der Tokens. Standard: `https://luna.internal/auth`; lokal `http://localhost:7080/auth` |
+| Ports | Traefik 80/443, PostgreSQL 7432, Keycloak 7080 – auch bei lokaler Nutzung belegt Traefik 80 und 443 |
+
+### Bekannte Fallstricke
+
+- **Erster Start:** Traefik startet vor step-ca und bekommt dann noch kein Zertifikat.
+  Nach dem ersten Start, sobald step-ca healthy ist: `docker service update --force luna_traefik`.
+- **Healthcheck von step-ca:** Der eingebaute Healthcheck des Images ruft `https://step-ca:9000` auf. Swarm trägt
+  einen Service aber erst nach bestandenem Healthcheck ins DNS ein, dadurch wurde step-ca ständig neu gestartet.
+  Die Stack-Datei überschreibt den Healthcheck daher mit `https://localhost:9000`.
+- **Swarm-Load-Balancing:** Swarm nutzt für Service-IPs IPVS im Kernel. Fehlt es (z. B. in manchen Sandboxes
+  oder Containern), schlagen Verbindungen mit `no route to host` fehl. Auf einem normalen Linux-Server ist IPVS
+  vorhanden.
+
 ## Root-Zertifikat von step-ca in die Backend-Images bringen
 
 Im Stack stellt **step-ca** die Zertifikate für `luna.internal` aus. Die Backends rufen Keycloak über
