@@ -12,36 +12,9 @@ Noch offen (bitte hier eintragen, sobald entschieden):
 
 - **Ziel / Zweck:** _TODO_
 - **Zielplattform / Deployment:** _TODO_
+- **Container-Registry:** vorerst keine – Images werden nur lokal gebaut.
 
 Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschläge zur Auswahl vorlegen (siehe Grundprinzip 3).
-
-## Tech-Stack
-
-### Backend
-
-- **Sprache:** Java **25**
-- **Framework:** Spring Boot **4.1.1 oder neuer**
-- Backends werden primär in Java mit Spring Boot geschrieben. Abweichungen nur mit Begründung und nach Rücksprache.
-- Jedes Backend stellt eine **OpenAPI-Spezifikation** bereit; sie ist die Grundlage für den Frontend-API-Wrapper.
-- Jedes Backend stellt **immer ein Docker-Image** bereit, gebaut mit **[Jib](https://github.com/GoogleContainerTools/jib)**
-  über das Build-Plugin.
-  - Kein eigenes `Dockerfile` für Backends; die Image-Konfiguration liegt in der Jib-Plugin-Konfiguration des Builds.
-  - Das Basis-Image muss eine Java-25-Laufzeit enthalten.
-
-### Frontend
-
-- **Framework:** React
-- **Routing:** React Router
-- **CSS:** [Bulma](https://bulma.io/) als einzige CSS-UI-Bibliothek
-- **Keine UI-Komponentenbibliothek** (kein MUI, Ant Design, Chakra, shadcn o. ä.).
-  Stattdessen werden **wiederverwendbare Komponenten im Projekt** erstellt und unter
-  **`src/ui`** im Frontend-Projekt abgelegt.
-  - Vor dem Bau einer neuen Komponente prüfen, ob in `src/ui` bereits eine passende existiert oder erweitert werden kann.
-  - Komponenten in `src/ui` sind fachneutral (keine Geschäftslogik, keine API-Aufrufe) und nutzen Bulma-Klassen.
-- **Backend-Zugriff:** Eigene Backends werden **ausschließlich** über einen **TypeScript-API-Wrapper** aufgerufen,
-  der **aus der OpenAPI-Spezifikation generiert** wird und unter **`src/api`** im Frontend-Projekt liegt.
-  - Keine direkten `fetch`/`axios`-Aufrufe an eigene Backends außerhalb von `src/api`.
-  - Generierten Code nicht von Hand ändern; bei API-Änderungen die Spezifikation anpassen und den Wrapper neu generieren.
 
 ## Grundprinzipien
 
@@ -53,21 +26,78 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 4. **Einfachheit vor Abstraktion.** Keine spekulativen Erweiterungspunkte, keine unnötigen Abhängigkeiten.
 5. **Ehrlich berichten.** Fehlgeschlagene Tests, übersprungene Schritte und offene Punkte klar benennen.
 
+## Tech-Stack
+
+### Backend (`backend/`)
+
+| Thema | Entscheidung |
+|---|---|
+| Sprache | Java **25** |
+| Framework | Spring Boot **4.1.1 oder neuer** |
+| Build-Tool | **Maven** (mit Maven Wrapper `mvnw`) |
+| Basispaket / groupId | `de.kirchrath.luna` |
+| Datenbank | **PostgreSQL** |
+| Schema-Migration | **Flyway** (versionierte SQL-Migrationen unter `src/main/resources/db/migration`) |
+| Authentifizierung | **OIDC** mit **Keycloak** als IdP; Backend ist Spring-Security-**Resource-Server** (JWT) |
+| API-Dokumentation | **springdoc-openapi** (Code-first) |
+| Container-Image | **Jib** (Maven-Plugin), Basis-Image **`amazoncorretto:25`** |
+| Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak) |
+
+- Backends werden primär in Java mit Spring Boot geschrieben. Abweichungen nur nach Rücksprache.
+- **OpenAPI (Code-first):** Die Spezifikation wird mit springdoc aus den Controllern erzeugt.
+  Controller und DTOs sauber annotieren, damit die Spec vollständig und präzise ist
+  (Operation-IDs, Schemas, Response-Codes) – sie ist der Vertrag für den Frontend-Wrapper.
+- **Docker-Image:** Jedes Backend stellt **immer** ein Docker-Image bereit, gebaut mit Jib.
+  - Kein eigenes `Dockerfile` für Backends; die Image-Konfiguration liegt in der `pom.xml`.
+  - Vorerst nur lokal bauen (`jib:dockerBuild`); keine Registry konfigurieren, bis eine festgelegt ist.
+- **Datenbank:** Schemaänderungen ausschließlich über neue Flyway-Migrationen; bestehende Migrationen nie ändern.
+
+### Frontend (`frontend/`)
+
+| Thema | Entscheidung |
+|---|---|
+| Framework | **React** |
+| Routing | **React Router** |
+| Sprache | **TypeScript**, `strict` plus Zusatzprüfungen (u. a. `noUncheckedIndexedAccess`) |
+| Build-Tool | **Vite** |
+| Paketmanager | **npm** |
+| Node.js | aktuelle **LTS (Node 24)**, festgehalten in `.nvmrc` und `engines` |
+| CSS | **Bulma 1.x** über **Sass** (Anpassung über Sass-Variablen) |
+| UI-Komponenten | **keine UI-Bibliothek** – eigene Komponenten in `src/ui` |
+| API-Zugriff | generierter Wrapper in `src/api` (**openapi-typescript** + **openapi-fetch**) |
+| i18n | **react-i18next**; Sprachen **Deutsch (Standard/Fallback)** und **Englisch** |
+| Tests | **Vitest** + **Testing Library**; E2E mit **Playwright** |
+
+- **Keine UI-Komponentenbibliothek** (kein MUI, Ant Design, Chakra, shadcn o. ä.).
+  Wiederverwendbare Komponenten werden im Projekt erstellt und unter **`src/ui`** abgelegt.
+  - Vor dem Bau einer neuen Komponente prüfen, ob in `src/ui` bereits eine passende existiert oder erweitert werden kann.
+  - Komponenten in `src/ui` sind fachneutral (keine Geschäftslogik, keine API-Aufrufe) und nutzen Bulma-Klassen.
+- **Backend-Zugriff:** Eigene Backends werden **ausschließlich** über den aus der OpenAPI-Spec generierten
+  TypeScript-Wrapper unter **`src/api`** aufgerufen.
+  - Keine direkten `fetch`/`axios`-Aufrufe an eigene Backends außerhalb von `src/api`.
+  - Generierter Code wird **eingecheckt** und nie von Hand geändert. Bei API-Änderungen: Backend anpassen,
+    Spec erzeugen, Wrapper neu generieren und im selben Commit mit einchecken.
+- **Texte:** Keine fest codierten UI-Texte; alle Texte über react-i18next. Neue Schlüssel immer in
+  **Deutsch und Englisch** anlegen.
+
+### Ende-zu-Ende
+
+- **Playwright** für E2E-Tests über Frontend und Backend hinweg.
+
 ## Repository-Struktur
+
+Monorepo mit genau einem Backend und einem Frontend:
 
 ```
 .
-├── AGENTS.md    # Diese Datei – Regeln für Agenten
-├── README.md    # Projektbeschreibung für Menschen
-└── LICENSE      # MIT-Lizenz
-```
-
-Im Frontend-Projekt gilt:
-
-```
-src/
-├── api/   # Aus OpenAPI generierter TypeScript-API-Wrapper (nicht manuell bearbeiten)
-└── ui/    # Wiederverwendbare, fachneutrale UI-Komponenten auf Basis von Bulma
+├── AGENTS.md        # Diese Datei – Regeln für Agenten
+├── README.md        # Projektbeschreibung für Menschen
+├── LICENSE          # MIT-Lizenz
+├── backend/         # Spring-Boot-Backend (Maven, Jib)
+└── frontend/        # React-Frontend (Vite, npm)
+    └── src/
+        ├── api/     # Aus OpenAPI generierter Wrapper (eingecheckt, nicht manuell bearbeiten)
+        └── ui/      # Wiederverwendbare, fachneutrale UI-Komponenten auf Basis von Bulma
 ```
 
 Bei neuen Top-Level-Verzeichnissen diese Übersicht aktualisieren.
@@ -76,16 +106,22 @@ Bei neuen Top-Level-Verzeichnissen diese Übersicht aktualisieren.
 
 ### Setup, Build, Test
 
-_Noch nicht definiert._ Sobald die Projekte angelegt sind, hier die exakten Befehle eintragen, z. B.:
+_Die Projekte sind noch nicht angelegt._ Sobald sie existieren, hier die exakten Befehle eintragen:
 
 ```bash
 # Backend bauen und testen
+# <befehl>
+
+# Backend-Docker-Image lokal bauen (Jib)
 # <befehl>
 
 # Frontend: Abhängigkeiten installieren, bauen, testen
 # <befehl>
 
 # API-Wrapper aus OpenAPI neu generieren
+# <befehl>
+
+# E2E-Tests (Playwright)
 # <befehl>
 ```
 
@@ -94,6 +130,7 @@ Vor jedem Commit müssen Build, Tests und Linter (sofern vorhanden) grün sein.
 ### Tests
 
 - Neue Funktionalität bekommt Tests; Bugfixes einen Regressionstest.
+- Integrationstests gegen echte Abhängigkeiten über Testcontainers statt Mocks, wo sinnvoll.
 - Tests niemals deaktivieren oder überspringen, nur um eine Pipeline grün zu bekommen.
 
 ## Code-Konventionen
@@ -110,15 +147,16 @@ Vor jedem Commit müssen Build, Tests und Linter (sofern vorhanden) grün sein.
 - Commit-Messages **immer** nach [Conventional Commits](https://www.conventionalcommits.org/):
   `<type>(<optional scope>): <description>`, Beschreibung im Imperativ, Englisch, kleingeschrieben.
   - Typen: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+  - Scopes: `backend`, `frontend`, `api`, `ui`, `e2e` (bei Bedarf erweitern)
   - Breaking Changes mit `!` nach dem Typ/Scope und/oder `BREAKING CHANGE:` im Footer kennzeichnen.
-  - Beispiele: `feat(frontend): add login page`, `fix(api): handle empty response`, `docs: update AGENTS.md`
+  - Beispiele: `feat(frontend): add login page`, `fix(backend): handle empty response`, `docs: update AGENTS.md`
 - Ein Commit = eine logische Änderung.
 - Keine History von fremden Branches umschreiben; kein Force-Push ohne ausdrückliche Freigabe.
 - Pull Requests nur auf ausdrücklichen Wunsch erstellen.
 
 ## Sicherheit
 
-- Keine Secrets (API-Keys, Tokens, Passwörter, `.env`-Dateien) committen.
+- Keine Secrets (API-Keys, Tokens, Passwörter, Client-Secrets, `.env`-Dateien) committen.
 - Neue Abhängigkeiten nur mit Begründung hinzufügen und auf Pflege/Lizenz prüfen.
 - Externe Eingaben immer validieren.
 
