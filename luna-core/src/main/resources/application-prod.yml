@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/luna?currentSchema=luna_core
+    username: luna
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://luna.internal/auth/realms/luna

@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: luna-core
+  profiles:
+    default: local
+  datasource:
+    url:
+    username:
+    password:
+  flyway:
+    schemas: luna_core
+    default-schema: luna_core
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri:
+
+server:
+  port: 7081
+
+app:
+  cors:
+    allowed-origins:
