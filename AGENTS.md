@@ -258,9 +258,8 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
 - **Secrets** sind **externe Docker Secrets** (`docker secret create` auf dem Server).
 - Die Infrastruktur-Datei dient **auch der lokalen Entwicklung**; PostgreSQL (7432) und Keycloak (7080) sind
   daher auch auf dem Server veröffentlicht. Die Keycloak-URL (Issuer) ist über `LUNA_KEYCLOAK_URL` umschaltbar.
-- **Zeitzone:** Backend-Container binden `/etc/localtime:/etc/localtime:ro` vom Host ein, damit der
-  `TimeProvider` die Zeitzone des Servers nutzt. Ob die JVM im Image `amazoncorretto:25` die Zone so korrekt
-  erkennt, ist beim ersten Backend-Stack zu prüfen. Für die Infrastruktur-Services ist das noch nicht entschieden (_TODO_).
+- **Zeitzone:** **Alle** Container (Infrastruktur und Backends) binden `/etc/localtime:/etc/localtime:ro`
+  vom Host ein; Logs und `TimeProvider` nutzen so die Zeitzone des Servers.
 - Traefik leitet HTTP auf HTTPS um; **kein Traefik-Dashboard**.
 - PostgreSQL legt beim ersten Start per Init-Skript die Datenbanken `keycloak` und `luna` mit je einem Benutzer an.
 - Der **Keycloak-Realm** für Luna ist noch nicht Teil der Stack-Datei (wird separat entschieden).
