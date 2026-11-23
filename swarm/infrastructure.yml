@@ -1,0 +1,144 @@
+# Infrastruktur-Services von Luna (Traefik, step-ca, PostgreSQL, Keycloak).
+#
+# Deploy (zusammen mit späteren Stack-Dateien im selben Stack "luna"):
+#   docker stack deploy -c swarm/infrastructure.yml luna
+#
+# Voraussetzungen (externe Docker Secrets, hosts-Eintrag usw.): siehe README.md.
+
+services:
+  traefik:
+    image: traefik:v3.7.19
+    command:
+      - --providers.swarm=true
+      - --providers.swarm.exposedByDefault=false
+      - --providers.swarm.network=luna
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls.certResolver=stepca
+      - --certificatesresolvers.stepca.acme.caServer=https://step-ca:9000/acme/acme/directory
+      - --certificatesresolvers.stepca.acme.storage=/data/acme.json
+      - --certificatesresolvers.stepca.acme.httpChallenge.entryPoint=web
+      # step-ca stellt Zertifikate standardmäßig für 24 Stunden aus.
+      - --certificatesresolvers.stepca.acme.certificatesDuration=24
+    environment:
+      # Traefik (lego) muss dem Root-Zertifikat von step-ca vertrauen, um dessen ACME-Endpunkt aufzurufen.
+      LEGO_CA_CERTIFICATES: /step/certs/root_ca.crt
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-data:/data
+      - step-ca-data:/step:ro
+    networks:
+      luna:
+        # Container im Stack (step-ca für die ACME-Challenge, Backends für Keycloak)
+        # erreichen luna.internal über diesen Alias direkt bei Traefik.
+        aliases:
+          - luna.internal
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+  step-ca:
+    image: smallstep/step-ca:0.30.2
+    environment:
+      DOCKER_STEPCA_INIT_NAME: Luna CA
+      DOCKER_STEPCA_INIT_DNS_NAMES: step-ca,localhost
+      DOCKER_STEPCA_INIT_ACME: "true"
+      DOCKER_STEPCA_INIT_PASSWORD_FILE: /run/secrets/step_ca_password
+    volumes:
+      - step-ca-data:/home/step
+    healthcheck:
+      # Der Healthcheck des Images ruft https://step-ca:9000 auf. Swarm trägt den Service aber erst
+      # nach bestandenem Healthcheck ins DNS ein – daher hier über localhost prüfen.
+      test: ["CMD-SHELL", "step ca health --ca-url https://localhost:9000 --root /home/step/certs/root_ca.crt 2>/dev/null | grep -q '^ok'"]
+    secrets:
+      - step_ca_password
+    networks:
+      - luna
+
+  postgres:
+    image: postgres:18.7
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    ports:
+      - "7432:5432"
+    volumes:
+      # Ab PostgreSQL 18 wird /var/lib/postgresql eingebunden (nicht mehr .../data).
+      - postgres-data:/var/lib/postgresql
+    configs:
+      - source: postgres_init
+        target: /docker-entrypoint-initdb.d/10-create-databases.sh
+        mode: 0555
+    secrets:
+      - postgres_password
+      - keycloak_db_password
+      - luna_db_password
+    networks:
+      - luna
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.2
+    # Keycloak liest keine *_FILE-Variablen; Passwörter werden daher beim Start aus den Secrets gelesen.
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        export KC_DB_PASSWORD="$$(< /run/secrets/keycloak_db_password)"
+        export KC_BOOTSTRAP_ADMIN_PASSWORD="$$(< /run/secrets/keycloak_admin_password)"
+        exec /opt/keycloak/bin/kc.sh start
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_PROXY_HEADERS: xforwarded
+      # Öffentliche URL von Keycloak (Issuer der Tokens).
+      # Im Heimnetz https://luna.internal/auth, lokal LUNA_KEYCLOAK_URL=http://localhost:7080/auth setzen.
+      KC_HOSTNAME: ${LUNA_KEYCLOAK_URL:-https://luna.internal/auth}
+    ports:
+      - "7080:8080"
+    secrets:
+      - keycloak_db_password
+      - keycloak_admin_password
+    networks:
+      - luna
+    deploy:
+      labels:
+        traefik.enable: "true"
+        traefik.http.routers.keycloak.rule: Host(`luna.internal`) && PathPrefix(`/auth`)
+        traefik.http.routers.keycloak.entrypoints: websecure
+        traefik.http.routers.keycloak.tls.certresolver: stepca
+        traefik.http.services.keycloak.loadbalancer.server.port: "8080"
+
+networks:
+  luna:
+    name: luna
+    driver: overlay
+    attachable: true
+
+volumes:
+  traefik-data:
+  step-ca-data:
+  postgres-data:
+
+configs:
+  postgres_init:
+    file: ./postgres/create-databases.sh
+
+secrets:
+  step_ca_password:
+    external: true
+  postgres_password:
+    external: true
+  keycloak_db_password:
+    external: true
+  luna_db_password:
+    external: true
+  keycloak_admin_password:
+    external: true
