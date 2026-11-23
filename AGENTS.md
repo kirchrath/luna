@@ -13,7 +13,7 @@ Noch offen (bitte hier eintragen, sobald entschieden):
 - **Ziel / Zweck:** _TODO_
 - **Zielplattform / Deployment:** _TODO_
 
-Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschläge machen und beim Menschen nachfragen.
+Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschläge zur Auswahl vorlegen (siehe Grundprinzip 3).
 
 ## Tech-Stack
 
@@ -47,8 +47,9 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 
 1. **Klein und nachvollziehbar.** Lieber mehrere kleine, fokussierte Änderungen als eine große.
 2. **Erst verstehen, dann ändern.** Vor Änderungen den bestehenden Code und diese Datei lesen.
-3. **Kein Raten bei Unklarheit.** Bei mehrdeutigen Anforderungen nachfragen statt Annahmen zu verstecken;
-   getroffene Annahmen explizit nennen.
+3. **Keine Annahmen treffen.** Bei offenen oder mehrdeutigen Punkten nicht selbst entscheiden, sondern
+   **konkrete Vorschläge zur Auswahl** vorlegen (mit kurzer Begründung bzw. Vor- und Nachteilen, ggf. einer
+   Empfehlung) und die Entscheidung dem Menschen überlassen. Erst nach der Entscheidung umsetzen.
 4. **Einfachheit vor Abstraktion.** Keine spekulativen Erweiterungspunkte, keine unnötigen Abhängigkeiten.
 5. **Ehrlich berichten.** Fehlgeschlagene Tests, übersprungene Schritte und offene Punkte klar benennen.
 
