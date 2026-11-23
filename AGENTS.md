@@ -11,8 +11,9 @@ Luna ist ein neues Projekt im Aufbau. Bisher existieren nur `README.md`, `LICENS
 Noch offen (bitte hier eintragen, sobald entschieden):
 
 - **Ziel / Zweck:** _TODO_
-- **Zielplattform / Deployment:** _TODO_
-- **Container-Registry:** vorerst keine – Images werden nur lokal gebaut.
+- **DNS-Anbieter für die Let's-Encrypt-DNS-Challenge:** _TODO_
+
+Betrieb: siehe Abschnitt [Betrieb](#betrieb) (Heimnetz, Docker Stack).
 
 Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschläge zur Auswahl vorlegen (siehe Grundprinzip 3).
 
@@ -40,7 +41,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | Schema-Migration | **Flyway** (versionierte SQL-Migrationen unter `src/main/resources/db/migration`) |
 | Authentifizierung | **OIDC** mit **Keycloak** als IdP; Backend ist Spring-Security-**Resource-Server** (JWT) |
 | API-Dokumentation | **springdoc-openapi** (Code-first) |
-| Container-Image | **Jib** (Maven-Plugin), Basis-Image **`amazoncorretto:25`** |
+| Container-Image | **Jib** (Maven-Plugin), Basis-Image **`amazoncorretto:25`**, nur **`linux/amd64`** |
 | Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak) |
 
 - Backends werden primär in Java mit Spring Boot geschrieben. Abweichungen nur nach Rücksprache.
@@ -49,7 +50,8 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   (Operation-IDs, Schemas, Response-Codes) – sie ist der Vertrag für den Frontend-Wrapper.
 - **Docker-Image:** Jedes Backend stellt **immer** ein Docker-Image bereit, gebaut mit Jib.
   - Kein eigenes `Dockerfile` für Backends; die Image-Konfiguration liegt in der `pom.xml`.
-  - Vorerst nur lokal bauen (`jib:dockerBuild`); keine Registry konfigurieren, bis eine festgelegt ist.
+  - Images werden **lokal** in den Docker-Daemon gebaut (`jib:dockerBuild`), nur für `linux/amd64`.
+    Keine Registry konfigurieren (siehe [Betrieb](#betrieb)).
 - **Datenbank:** Schemaänderungen ausschließlich über neue Flyway-Migrationen; bestehende Migrationen nie ändern.
 
 ### Frontend (`frontend/`)
@@ -77,12 +79,35 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   - Keine direkten `fetch`/`axios`-Aufrufe an eigene Backends außerhalb von `src/api`.
   - Generierter Code wird **eingecheckt** und nie von Hand geändert. Bei API-Änderungen: Backend anpassen,
     Spec erzeugen, Wrapper neu generieren und im selben Commit mit einchecken.
+- **Docker-Image:** Das Frontend wird als eigenes **nginx-Image** ausgeliefert (Dockerfile im Frontend-Projekt,
+  nur `linux/amd64`, lokal gebaut). nginx liefert die statischen Dateien aus und leitet API-Aufrufe ans Backend weiter.
 - **Texte:** Keine fest codierten UI-Texte; alle Texte über react-i18next. Neue Schlüssel immer in
   **Deutsch und Englisch** anlegen.
 
 ### Ende-zu-Ende
 
 - **Playwright** für E2E-Tests über Frontend und Backend hinweg.
+
+## Betrieb
+
+Luna läuft im **Heimnetz** als **Docker Stack** (Docker Swarm, `docker stack deploy`) auf **einem Knoten**.
+
+| Thema | Entscheidung |
+|---|---|
+| Orchestrierung | Docker Stack (Swarm), **ein Knoten** |
+| Architektur | nur **`linux/amd64`** |
+| Container-Registry | **keine** – Images werden lokal auf dem Knoten gebaut |
+| Reverse Proxy | **Traefik** im Stack (Routing über Service-Labels) |
+| HTTPS | **Let's Encrypt** per **DNS-Challenge** (keine offenen Ports nach außen nötig) |
+| Identity Provider | **Keycloak** läuft im Luna-Stack |
+| Datenbank | **eine PostgreSQL-Instanz** mit **getrennten Datenbanken und Benutzern** für Luna und Keycloak |
+
+Dienste im Stack: Traefik, Frontend (nginx), Backend (Jib-Image), Keycloak, PostgreSQL.
+
+- Secrets (DB-Passwörter, Keycloak-Admin, DNS-API-Token) als **Docker Secrets** bzw. außerhalb des Repos
+  bereitstellen – nie im Stack-File oder Repo.
+- Sollte später ein zweiter Knoten oder eine zweite Architektur dazukommen, wird eine Registry nötig –
+  dann zuerst Vorschläge vorlegen.
 
 ## Repository-Struktur
 
@@ -94,7 +119,7 @@ Monorepo mit genau einem Backend und einem Frontend:
 ├── README.md        # Projektbeschreibung für Menschen
 ├── LICENSE          # MIT-Lizenz
 ├── backend/         # Spring-Boot-Backend (Maven, Jib)
-└── frontend/        # React-Frontend (Vite, npm)
+└── frontend/        # React-Frontend (Vite, npm, nginx-Image)
     └── src/
         ├── api/     # Aus OpenAPI generierter Wrapper (eingecheckt, nicht manuell bearbeiten)
         └── ui/      # Wiederverwendbare, fachneutrale UI-Komponenten auf Basis von Bulma
