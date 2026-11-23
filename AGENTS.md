@@ -34,9 +34,11 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 
 1. **Klein und nachvollziehbar.** Lieber mehrere kleine, fokussierte Änderungen als eine große.
 2. **Erst verstehen, dann ändern.** Vor Änderungen den bestehenden Code und diese Datei lesen.
-3. **Keine Annahmen treffen.** Bei offenen oder mehrdeutigen Punkten nicht selbst entscheiden, sondern
-   **konkrete Vorschläge zur Auswahl** vorlegen (mit kurzer Begründung bzw. Vor- und Nachteilen, ggf. einer
-   Empfehlung) und die Entscheidung dem Menschen überlassen. Erst nach der Entscheidung umsetzen.
+3. **Niemals Annahmen treffen.** Diese Regel gilt ausnahmslos – auch für scheinbar kleine Details wie Namen,
+   Typen, Pfade, Versionen oder Standardwerte. Bei jeder Unklarheit **nachfragen** und **konkrete Vorschläge zur
+   Auswahl** vorlegen (mit kurzer Begründung bzw. Vor- und Nachteilen, ggf. einer Empfehlung). Die Entscheidung
+   trifft der Mensch; erst danach umsetzen. Was nicht entschieden ist, wird als offen (_TODO_) markiert,
+   nicht stillschweigend festgelegt.
 4. **Einfachheit vor Abstraktion.** Keine spekulativen Erweiterungspunkte, keine unnötigen Abhängigkeiten.
 5. **Ehrlich berichten.** Fehlgeschlagene Tests, übersprungene Schritte und offene Punkte klar benennen.
 
@@ -130,7 +132,7 @@ in diesen Sub-Packages:
 3. **Eingebettete Dtos** – Records, die weder ein List-Dto noch direkt eine Entität repräsentieren
    (Name endet ebenfalls auf `Dto`).
 
-Beispiel für eine Entität `Task`:
+Beispiel für eine Entität `Task` (Felder und Typen nur zur Veranschaulichung, keine Festlegung):
 
 ```java
 record TaskListDto(List<TaskListItemDto> items, int totalPages, long totalCount) {}
