@@ -51,11 +51,13 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | Build-Tool | **Maven** (mit Maven Wrapper `mvnw`) |
 | Basispaket / groupId | `de.kirchrath.luna` |
 | Datenbank | **PostgreSQL** |
+| Persistenz / ORM | **Spring Data JDBC**, Entities sind **Records** |
 | Schema-Migration | **Flyway** (versionierte SQL-Migrationen unter `src/main/resources/db/migration`) |
 | Authentifizierung | **OIDC** mit **Keycloak** als IdP; Backend ist Spring-Security-**Resource-Server** (JWT) |
 | API-Dokumentation | **springdoc-openapi** (Code-first) |
 | Container-Image | **Jib** (Maven-Plugin), Basis-Image **`amazoncorretto:25`**, nur **`linux/amd64`** |
 | Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak) |
+| Testabdeckung | **JaCoCo**, **100 % Line- und Branch-Coverage**, Build bricht bei Unterschreitung ab |
 
 - Backends werden primär in Java mit Spring Boot geschrieben. Abweichungen nur nach Rücksprache.
 - **Mehrere Backends:** Luna besteht aus mehreren Backends. Das erste ist **`luna-core`**.
@@ -78,6 +80,97 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   Schemaänderungen ausschließlich über neue Flyway-Migrationen; bestehende Migrationen nie ändern.
 - **CORS:** Lokal ruft das Frontend die Backends direkt auf; die Backends erlauben daher lokal CORS für
   `http://localhost:5173`. In Produktion ist kein CORS nötig (gleiche Origin über Traefik).
+
+### Regeln für Java-Services
+
+#### Package-Struktur
+
+Im Haupt-Package (z. B. `de.kirchrath.luna.core`) liegt **nur** `Application.java`. Alle weiteren Klassen liegen
+in diesen Sub-Packages:
+
+| Package | Inhalt |
+|---|---|
+| `config` | Konfigurationen |
+| `inbound` | Handler und Controller |
+| `data.entity` | Entities (Records) |
+| `data.repository` | Spring-Data-JDBC-Repositories |
+| `dto` | DTOs (Records) |
+| `exception` | Exceptions |
+| `outbound` | Clients zu externen Systemen |
+| `services` | **die komplette Logik** des Systems, in `@Component`- oder `@Service`-Klassen |
+
+#### Entities
+
+- ORM ist **Spring Data JDBC**; Entities sind **Records**.
+- Jede Entity hat: `id` (**UUID**), `createdDate`, `lastModifiedDate` und `version`.
+  Diese Felder werden **per Annotation oder per Lifecycle-Event** gesetzt, nie manuell in der Fachlogik.
+- **Enums** werden in der Datenbank als **String** gespeichert. Die erlaubten Werte werden **nicht** als
+  Constraint in der Migration gepflegt.
+
+#### Keine statischen Methoden
+
+- Statische Methoden dürfen **nicht direkt** verwendet werden, damit alles testbar bleibt.
+- IDs kommen aus einem **`UuidProvider`** (statt `UUID.randomUUID()`).
+- Zeitpunkte kommen aus einem **`TimeProvider`** (statt `Instant.now()`, `LocalDateTime.now()` o. ä.).
+- Für weitere statische Aufrufe ebenso einen injizierbaren Provider anlegen.
+
+#### DTOs
+
+- **Alles, was an Daten das System verlässt, ist ein DTO.** Klassennamen enden **immer auf `Dto`**.
+- DTOs sind **Records**. Es gibt drei Arten:
+
+1. **List-Dtos** – Antworten auf List-Anfragen, Name `<Entity>ListDto`:
+   - `items`: Liste von `<Entity>ListItemDto`
+   - `totalPages`, `totalCount`
+   - Ein `<Entity>ListItemDto` enthält die **ID** der Entität und **nur die Daten, die für die Darstellung in
+     einer Liste nötig sind**.
+2. **Entity-Dtos** – Name `<Entity>Dto`, enthält **nicht** die ID der Entität, sondern:
+   - `data`: `<Entity>DataDto` mit den eigentlichen Daten
+   - `audit`: `AuditDto` mit `createdDate`, `lastModifiedDate` und `version`
+3. **Eingebettete Dtos** – Records, die weder ein List-Dto noch direkt eine Entität repräsentieren
+   (Name endet ebenfalls auf `Dto`).
+
+Beispiel für eine Entität `Task`:
+
+```java
+record TaskListDto(List<TaskListItemDto> items, int totalPages, long totalCount) {}
+record TaskListItemDto(UUID id, String title) {}
+record TaskDto(TaskDataDto data, AuditDto audit) {}
+record TaskDataDto(String title, String description) {}
+```
+
+- **Pagination** von List-Anfragen über die Query-Parameter `page` (**ab 0**) und `size`.
+
+#### API / OpenAPI
+
+- Die API wird per **OpenAPI** veröffentlicht.
+- Ein **spezieller Test** erzeugt die Spezifikation und schreibt sie nach **`<backend>/openapi.yaml`**
+  (z. B. `luna-core/openapi.yaml`). Die Datei ist eingecheckt; aus ihr wird der Frontend-Wrapper generiert.
+
+#### Konfiguration
+
+- Es gibt immer `application.yml` sowie die Profile **`application-local.yml`** und **`application-prod.yml`**.
+- In `application.yml` sind **alle** verfügbaren Properties definiert. Werte, die durch ein Profil gesetzt werden
+  müssen, sind dort bewusst definiert, aber **leer** gelassen.
+
+#### Tests
+
+- **100 % Testabdeckung** (Line und Branch, per JaCoCo erzwungen).
+  Ausgenommen: `Application.java` sowie die Packages `config`, `inbound`, `data`, `dto` und `exception`.
+- Testnamen nach dem Muster **`thatActionShouldResultIntoX`**.
+- Jeder Test folgt den drei Sektionen **given / when / then**, jeweils als Kommentar markiert:
+
+```java
+@Test
+void thatCreatingATaskShouldResultIntoAPersistedTask() {
+    // given
+    ...
+    // when
+    ...
+    // then
+    ...
+}
+```
 
 ### Frontend (`frontend/`)
 
@@ -236,7 +329,9 @@ Vor jedem Commit müssen Build, Tests und Linter (sofern vorhanden) grün sein.
 - **Sprache im Code:** Englisch (Bezeichner, Kommentare, Commit-Messages).
 - **Sprache der Dokumentation:** Deutsch oder Englisch – innerhalb eines Dokuments konsistent bleiben.
 - Formatierung und Stil folgen dem jeweiligen Standard-Formatter/Linter des Stacks.
-- Kommentare erklären das *Warum*, nicht das *Was*.
+- **Code muss für Menschen gut lesbar sein.** Kommentare veralten schnell und werden daher **nur** gesetzt, wenn der
+  Code selbst wirklich zu kompliziert ist, um ohne Erklärung verstanden zu werden. Dann erklären sie das *Warum*.
+  Ausnahme: die `given`/`when`/`then`-Kommentare in Tests.
 - Keine toten Code-Pfade, auskommentierten Blöcke oder Debug-Ausgaben committen.
 
 ## Git & Commits
