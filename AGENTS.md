@@ -155,8 +155,9 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
 
 - Das Root-Zertifikat von step-ca muss auf jedem Gerät installiert werden, das Luna nutzt.
 - **Backends → Keycloak:** Backends erreichen Keycloak **über Traefik per HTTPS** (`https://luna.internal/auth`).
-  Dafür wird das Root-Zertifikat von step-ca per **Jib in jedes Backend-Image** übernommen und der
-  Java-Laufzeit als vertrauenswürdig bekannt gemacht. Innerhalb des Stacks löst `luna.internal` über einen
+  Dafür liegt das öffentliche Root-Zertifikat von step-ca eingecheckt unter `certs/luna-root-ca.crt`.
+  Jedes Backend erzeugt beim Maven-Build einen **eigenen Truststore** (JDK-`cacerts` + Root-Zertifikat),
+  den **Jib** ins Image legt; die JVM nutzt ihn per `javax.net.ssl.trustStore`. Anleitung: [README.md](README.md). Innerhalb des Stacks löst `luna.internal` über einen
   **Netzwerk-Alias am Traefik-Service** auf Traefik auf.
 - **Lokale Entwicklung:** Backends erreichen Keycloak direkt unter `http://localhost:7080/auth` (ohne Traefik/TLS).
   Die Keycloak-/Issuer-URL ist daher je Umgebung konfigurierbar und nie fest im Code.
@@ -176,6 +177,7 @@ Monorepo mit mehreren Backends (je ein Top-Level-Ordner) und einem Frontend:
 ├── AGENTS.md        # Diese Datei – Regeln für Agenten
 ├── README.md        # Projektbeschreibung für Menschen
 ├── LICENSE          # MIT-Lizenz
+├── certs/           # Öffentliches Root-Zertifikat von step-ca (luna-root-ca.crt), nie private Schlüssel
 ├── luna-core/       # Erstes Backend (Spring Boot, Maven, Jib), Port 7081
 ├── <backend-name>/  # Weitere Backends nach demselben Muster
 └── frontend/        # React-Frontend (Vite, npm, nginx-Image)
