@@ -60,6 +60,8 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 - Backends werden primär in Java mit Spring Boot geschrieben. Abweichungen nur nach Rücksprache.
 - **Mehrere Backends:** Luna besteht aus mehreren Backends. Das erste ist **`luna-core`**.
   - Jedes Backend liegt in einem **eigenen Ordner auf oberster Ebene**, benannt nach dem Service (z. B. `luna-core/`).
+  - **Benennung:** `artifactId` = Ordnername (z. B. `luna-core`), Java-Paket = `de.kirchrath.luna.` + Service-Name
+    ohne `luna-` (z. B. `de.kirchrath.luna.core`).
   - Jedes Backend ist ein **unabhängiges Maven-Projekt** mit eigener `pom.xml` und eigenem `mvnw`
     (keine Parent-POM, keine Multi-Modul-Struktur).
   - Jedes Backend bekommt einen **eigenen festen Port** (siehe [Services & Ports](#services--ports)),
@@ -72,8 +74,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   - Kein eigenes `Dockerfile` für Backends; die Image-Konfiguration liegt in der `pom.xml`.
   - Images werden **lokal** in den Docker-Daemon gebaut (`jib:dockerBuild`), nur für `linux/amd64`.
     Keine Registry konfigurieren (siehe [Betrieb](#betrieb)).
-- **Datenbank:** Alle Backends nutzen dieselbe Luna-Datenbank, aber jedes Backend hat ein **eigenes Schema**
-  mit eigenem Benutzer und greift nur auf sein eigenes Schema zu.
+- **Datenbank:** Alle Backends nutzen dieselbe Luna-Datenbank, aber jedes Backend hat ein **eigenes Schema**.
   Schemaänderungen ausschließlich über neue Flyway-Migrationen; bestehende Migrationen nie ändern.
 - **CORS:** Lokal ruft das Frontend die Backends direkt auf; die Backends erlauben daher lokal CORS für
   `http://localhost:5173`. In Produktion ist kein CORS nötig (gleiche Origin über Traefik).
@@ -127,7 +128,7 @@ Ports für Backends werden **ab 7080 fortlaufend** vergeben (7080 ist durch Keyc
 |---|---|---|
 | Frontend (Vite-Dev-Server) | 5173 | `/` |
 | PostgreSQL | 7432 | – |
-| Keycloak | 7080 | _TODO_ |
+| Keycloak | 7080 | `/auth` (Keycloak mit relativem Pfad `/auth` konfiguriert, **ohne** StripPrefix) |
 | `luna-core` | 7081 | `/api/luna-core` |
 | _nächstes Backend_ | 7082 | `/api/<backend-name>` |
 
