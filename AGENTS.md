@@ -142,18 +142,22 @@ Luna läuft im **Heimnetz** als **Docker Stack** (Docker Swarm, `docker stack de
 | Architektur | nur **`linux/amd64`** |
 | Container-Registry | **keine** – Images werden lokal auf dem Knoten gebaut |
 | Reverse Proxy | **Traefik** im Stack (Routing über Service-Labels; `/api/<backend-name>` an das jeweilige Backend **mit StripPrefix**, alles andere ans Frontend) |
-| HTTPS | **Let's Encrypt** per **DNS-Challenge** über **deSEC** (keine offenen Ports nach außen nötig) |
-| Domain / DNS | Registrar **domainprovider.de**, Nameserver/DNS-Verwaltung bei **deSEC** |
+| Domain | **`luna.internal`** (nur im Heimnetz) |
+| Namensauflösung | vorerst über die **hosts-Datei** der einzelnen Geräte |
+| HTTPS | eigene CA mit **step-ca** im Stack; Traefik bezieht und erneuert Zertifikate per **ACME** von step-ca |
 | Identity Provider | **Keycloak** läuft im Luna-Stack |
 | Datenbank | **eine PostgreSQL-Instanz**; getrennte Datenbanken für Luna und Keycloak; in der Luna-Datenbank **ein Schema pro Backend** |
 
-Dienste im Stack: Traefik, Frontend (nginx), alle Backends (Jib-Images), Keycloak, PostgreSQL.
+Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images), Keycloak, PostgreSQL.
 
 - Traefik entfernt das Pfad-Präfix vor der Weiterleitung; Backends kennen ihr Präfix nicht und haben
   lokal und in Produktion dieselben Pfade.
 
-- Secrets (DB-Passwörter, Keycloak-Admin, DNS-API-Token) als **Docker Secrets** bzw. außerhalb des Repos
+- Das Root-Zertifikat von step-ca muss auf jedem Gerät installiert werden, das Luna nutzt.
+- Secrets (DB-Passwörter, Keycloak-Admin, CA-Schlüssel und -Passwort) als **Docker Secrets** bzw. außerhalb des Repos
   bereitstellen – nie im Stack-File oder Repo.
+- **Spätere Ausbaustufe (nicht umsetzen, solange nicht beauftragt):** Umstieg auf eine Unterdomain der echten
+  Domain (Registrar domainprovider.de, Nameserver bei **deSEC**) mit **Let's Encrypt** per DNS-Challenge.
 - Sollte später ein zweiter Knoten oder eine zweite Architektur dazukommen, wird eine Registry nötig –
   dann zuerst Vorschläge vorlegen.
 
