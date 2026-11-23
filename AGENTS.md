@@ -25,8 +25,6 @@ Bisher existieren nur `README.md`, `LICENSE` (MIT) und diese Datei.
 Noch offen (bitte hier eintragen, sobald entschieden):
 
 - **Reihenfolge / erstes Feature:** _TODO_
-- **DNS-Challenge für Let's Encrypt:** Domain liegt bei domainprovider.de; ob dafür eine von Traefik (lego)
-  unterstützte DNS-API existiert, ist ungeklärt. Lösungsweg noch nicht entschieden – _TODO_
 
 Betrieb: siehe Abschnitt [Betrieb](#betrieb) (Heimnetz, Docker Stack).
 
@@ -114,7 +112,8 @@ Luna läuft im **Heimnetz** als **Docker Stack** (Docker Swarm, `docker stack de
 | Architektur | nur **`linux/amd64`** |
 | Container-Registry | **keine** – Images werden lokal auf dem Knoten gebaut |
 | Reverse Proxy | **Traefik** im Stack (Routing über Service-Labels; API-Pfade direkt ans Backend, alles andere ans Frontend) |
-| HTTPS | **Let's Encrypt** per **DNS-Challenge** (keine offenen Ports nach außen nötig) |
+| HTTPS | **Let's Encrypt** per **DNS-Challenge** über **deSEC** (keine offenen Ports nach außen nötig) |
+| Domain / DNS | Registrar **domainprovider.de**, Nameserver/DNS-Verwaltung bei **deSEC** |
 | Identity Provider | **Keycloak** läuft im Luna-Stack |
 | Datenbank | **eine PostgreSQL-Instanz** mit **getrennten Datenbanken und Benutzern** für Luna und Keycloak |
 
