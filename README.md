@@ -3,6 +3,86 @@
 Luna ist eine zentrale Anwendung zur Verwaltung des Alltags, betrieben im Heimnetz.
 Architektur, Tech-Stack und Konventionen stehen in [AGENTS.md](AGENTS.md).
 
+## Infrastruktur im Docker Swarm starten
+
+Die Infrastruktur-Services (Traefik, step-ca, PostgreSQL, Keycloak) stehen in
+[`swarm/infrastructure.yml`](swarm/infrastructure.yml). Weitere Stack-Dateien (Frontend, Backends)
+kommen später dazu und werden im selben Stack `luna` deployt.
+
+| Service | Image | Ports (veröffentlicht) |
+|---|---|---|
+| Traefik | `traefik:v3.7.19` | 80 (Umleitung auf HTTPS), 443 |
+| step-ca | `smallstep/step-ca:0.30.2` | – (intern 9000) |
+| PostgreSQL | `postgres:18.7` | 7432 |
+| Keycloak | `quay.io/keycloak/keycloak:26.8.2` | 7080 (unter `/auth`) |
+
+### 1. Swarm initialisieren (einmalig)
+
+```bash
+docker swarm init
+```
+
+### 2. Secrets anlegen (einmalig)
+
+Alle Secrets sind `external` und werden direkt auf dem Server angelegt – nie im Repo.
+Beispiel mit zufälligen Passwörtern:
+
+```bash
+for secret in step_ca_password postgres_password keycloak_db_password luna_db_password keycloak_admin_password; do
+  openssl rand -base64 24 | tr -d '\n' | docker secret create "$secret" -
+done
+```
+
+Das Keycloak-Admin-Passwort vorher notieren bzw. selbst wählen, z. B.:
+
+```bash
+printf '%s' 'mein-passwort' | docker secret create keycloak_admin_password -
+```
+
+| Secret | Verwendung |
+|---|---|
+| `step_ca_password` | Passwort der CA-Schlüssel von step-ca |
+| `postgres_password` | Superuser `postgres` |
+| `keycloak_db_password` | DB-Benutzer `keycloak` (Datenbank `keycloak`) |
+| `luna_db_password` | DB-Benutzer `luna` (Datenbank `luna`) |
+| `keycloak_admin_password` | Keycloak-Bootstrap-Admin `admin` |
+
+### 3. Stack deployen
+
+```bash
+docker stack deploy -c swarm/infrastructure.yml luna
+```
+
+Beim **ersten** Start:
+
+- step-ca erzeugt seine CA (Root-Zertifikat, ACME-Provisioner `acme`).
+- PostgreSQL legt per Init-Skript ([`swarm/postgres/create-databases.sh`](swarm/postgres/create-databases.sh))
+  die Datenbanken `keycloak` und `luna` an. Das Skript läuft nur bei leerem Datenverzeichnis.
+- Traefik kann das Zertifikat für `luna.internal` erst beziehen, wenn step-ca bereit (healthy) ist.
+  Danach Traefik einmal neu starten:
+
+  ```bash
+  docker service update --force luna_traefik
+  ```
+
+Anschließend das Root-Zertifikat holen und einchecken (siehe nächster Abschnitt, Schritt 1) und auf allen
+Geräten installieren, die Luna nutzen.
+
+### 4. Erreichbarkeit
+
+- Auf jedem Gerät in der hosts-Datei: `<IP des Servers>  luna.internal`
+- Keycloak: `https://luna.internal/auth` (Admin-Konsole: `https://luna.internal/auth/admin`)
+
+### Lokale Entwicklung
+
+Dieselbe Datei kann lokal genutzt werden (`docker swarm init` und Secrets wie oben). PostgreSQL ist dann
+unter `localhost:7432`, Keycloak unter `http://localhost:7080/auth` erreichbar.
+Damit der Issuer der Tokens zur lokalen URL passt, beim Deploy die Keycloak-URL setzen:
+
+```bash
+LUNA_KEYCLOAK_URL=http://localhost:7080/auth docker stack deploy -c swarm/infrastructure.yml luna
+```
+
 ## Root-Zertifikat von step-ca in die Backend-Images bringen
 
 Im Stack stellt **step-ca** die Zertifikate für `luna.internal` aus. Die Backends rufen Keycloak über

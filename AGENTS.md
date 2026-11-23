@@ -150,6 +150,17 @@ Luna läuft im **Heimnetz** als **Docker Stack** (Docker Swarm, `docker stack de
 
 Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images), Keycloak, PostgreSQL.
 
+- **Stack-Dateien** liegen unter `swarm/`. Ein Stack `luna`, mehrere Dateien:
+  `swarm/infrastructure.yml` (Traefik, step-ca, PostgreSQL, Keycloak), später weitere für Frontend und Backends.
+  Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml [-c …] luna`.
+- **Image-Versionen** sind **exakt gepinnt** (aktuell Traefik `v3.7.19`, step-ca `0.30.2`, PostgreSQL `18.7`,
+  Keycloak `26.8.2`). Updates nur bewusst per Commit.
+- **Secrets** sind **externe Docker Secrets** (`docker secret create` auf dem Server).
+- Die Infrastruktur-Datei dient **auch der lokalen Entwicklung**; PostgreSQL (7432) und Keycloak (7080) sind
+  daher auch auf dem Server veröffentlicht. Die Keycloak-URL (Issuer) ist über `LUNA_KEYCLOAK_URL` umschaltbar.
+- Traefik leitet HTTP auf HTTPS um; **kein Traefik-Dashboard**.
+- PostgreSQL legt beim ersten Start per Init-Skript die Datenbanken `keycloak` und `luna` mit je einem Benutzer an.
+- Der **Keycloak-Realm** für Luna ist noch nicht Teil der Stack-Datei (wird separat entschieden).
 - Traefik entfernt das Pfad-Präfix vor der Weiterleitung; Backends kennen ihr Präfix nicht und haben
   lokal und in Produktion dieselben Pfade.
 
@@ -177,6 +188,7 @@ Monorepo mit mehreren Backends (je ein Top-Level-Ordner) und einem Frontend:
 ├── AGENTS.md        # Diese Datei – Regeln für Agenten
 ├── README.md        # Projektbeschreibung für Menschen
 ├── LICENSE          # MIT-Lizenz
+├── swarm/           # Docker-Stack-Dateien (infrastructure.yml) und zugehörige Configs
 ├── certs/           # Öffentliches Root-Zertifikat von step-ca (luna-root-ca.crt), nie private Schlüssel
 ├── luna-core/       # Erstes Backend (Spring Boot, Maven, Jib), Port 7081
 ├── <backend-name>/  # Weitere Backends nach demselben Muster
