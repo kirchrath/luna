@@ -154,6 +154,10 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
   lokal und in Produktion dieselben Pfade.
 
 - Das Root-Zertifikat von step-ca muss auf jedem Gerät installiert werden, das Luna nutzt.
+- **Backends → Keycloak:** Backends erreichen Keycloak **über Traefik per HTTPS** (`https://luna.internal/auth`).
+  Dafür wird das Root-Zertifikat von step-ca per **Jib in jedes Backend-Image** übernommen und der
+  Java-Laufzeit als vertrauenswürdig bekannt gemacht. `luna.internal` muss auch **innerhalb des Stacks**
+  auf Traefik auflösen (Umsetzung: _TODO_).
 - Secrets (DB-Passwörter, Keycloak-Admin, CA-Schlüssel und -Passwort) als **Docker Secrets** bzw. außerhalb des Repos
   bereitstellen – nie im Stack-File oder Repo.
 - **Spätere Ausbaustufe (nicht umsetzen, solange nicht beauftragt):** Umstieg auf eine Unterdomain der echten
