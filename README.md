@@ -101,6 +101,10 @@ LUNA_KEYCLOAK_URL=http://localhost:7080/auth docker stack deploy -c swarm/infras
 - **Healthcheck von step-ca:** Der eingebaute Healthcheck des Images ruft `https://step-ca:9000` auf. Swarm trägt
   einen Service aber erst nach bestandenem Healthcheck ins DNS ein, dadurch wurde step-ca ständig neu gestartet.
   Die Stack-Datei überschreibt den Healthcheck daher mit `https://localhost:9000`.
+- **Zeitzone:** Alle Container binden `/etc/localtime` vom Host ein. Getestet mit Europe/Berlin: Traefik, step-ca,
+  PostgreSQL, Keycloak und Java in `amazoncorretto:25` liefern den richtigen Offset (z. B. `+01:00`).
+  Java meldet als Zonen-ID allerdings einen gleichwertigen Alias (z. B. `Atlantic/Jan_Mayen` statt `Europe/Berlin`),
+  weil die eingebundene Datei keinen Zonennamen enthält. Zeiten und Sommerzeit sind trotzdem korrekt.
 - **Swarm-Load-Balancing:** Swarm nutzt für Service-IPs IPVS im Kernel. Fehlt es (z. B. in manchen Sandboxes
   oder Containern), schlagen Verbindungen mit `no route to host` fehl. Auf einem normalen Linux-Server ist IPVS
   vorhanden.
