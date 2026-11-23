@@ -25,7 +25,8 @@ Geplante Bereiche:
 **Phase: Konzeption.** Es gibt noch kein festgelegtes erstes Feature. Keine Fachfunktionen implementieren,
 solange sie nicht ausdrücklich beauftragt sind.
 
-Bisher existieren nur `README.md`, `LICENSE` (MIT) und diese Datei.
+Bisher existieren die Dokumentation, die Infrastruktur (`swarm/`) und das Grundgerüst von `luna-core`
+(ohne Fachfunktionen).
 
 Noch offen (bitte hier eintragen, sobald entschieden):
 
@@ -158,6 +159,12 @@ record TaskDataDto(String title, String description) {}
 - Die API wird per **OpenAPI** veröffentlicht.
 - Ein **spezieller Test** erzeugt die Spezifikation und schreibt sie nach **`<backend>/openapi.yaml`**
   (z. B. `luna-core/openapi.yaml`). Die Datei ist eingecheckt; aus ihr wird der Frontend-Wrapper generiert.
+  - Der Test heißt **`GenerateOpenApiTest`** und liegt in einem **eigenen Quellverzeichnis `src/openapi/java`**
+    (neben `src/main` und `src/test`).
+  - Er läuft **nur mit dem Maven-Profil `openapi`** (`./mvnw verify -Popenapi`); normale Testläufe verändern
+    `openapi.yaml` nicht. Das Profil bindet `src/openapi/java` per `build-helper-maven-plugin` als Testquelle ein.
+  - Ohne Token erreichbar sind `/v3/api-docs/**`, `/v3/api-docs.yaml`, die Swagger-UI (`/swagger-ui.html`,
+    `/swagger-ui/**`) und `/actuator/health`.
 
 #### Konfiguration
 
@@ -169,7 +176,10 @@ record TaskDataDto(String title, String description) {}
 
 - **100 % Testabdeckung** (Line und Branch, per JaCoCo erzwungen).
   Ausgenommen: `Application.java` sowie die Packages `config`, `inbound`, `data`, `dto` und `exception`.
-- Testnamen nach dem Muster **`thatActionShouldResultIntoX`**.
+- Testnamen nach dem Muster **`thatActionShouldResultIntoX`**. Einzige Ausnahme: der Haupt-Test
+  `ApplicationTests.contextLoads()` wie in Spring-Initializr-Projekten.
+- Tests, die den Spring-Kontext starten, nutzen PostgreSQL über **Testcontainers** (`config/TestcontainersConfig`
+  im Test-Quellbaum, `@ServiceConnection`, Image `postgres:18.7`).
 - Jeder Test folgt den drei Sektionen **given / when / then**, jeweils als Kommentar markiert:
 
 ```java
@@ -267,7 +277,9 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
   vom Host ein; Logs und `TimeProvider` nutzen so die Zeitzone des Servers.
 - Traefik leitet HTTP auf HTTPS um; **kein Traefik-Dashboard**.
 - PostgreSQL legt beim ersten Start per Init-Skript die Datenbanken `keycloak` und `luna` mit je einem Benutzer an.
-- Der **Keycloak-Realm** für Luna ist noch nicht Teil der Stack-Datei (wird separat entschieden).
+- Der **Keycloak-Realm** für Luna heißt **`luna`** (Issuer lokal `http://localhost:7080/auth/realms/luna`,
+  im Stack `https://luna.internal/auth/realms/luna`). Er ist noch nicht Teil der Stack-Datei.
+- **Schema-Namen** in der Luna-Datenbank: Service-Name mit `_` statt `-` (z. B. `luna_core`).
 - Traefik entfernt das Pfad-Präfix vor der Weiterleitung; Backends kennen ihr Präfix nicht und haben
   lokal und in Produktion dieselben Pfade.
 
@@ -311,15 +323,27 @@ Bei neuen Top-Level-Verzeichnissen diese Übersicht aktualisieren.
 
 ### Setup, Build, Test
 
-_Die Projekte sind noch nicht angelegt._ Sobald sie existieren, hier die exakten Befehle eintragen:
+Backends (Beispiel `luna-core`, benötigt Java 25 und Docker für Testcontainers):
 
 ```bash
-# Backend (z. B. luna-core) bauen und testen
-# <befehl>
+cd luna-core
 
-# Backend-Docker-Image lokal bauen (Jib)
-# <befehl>
+# Bauen, testen, Coverage prüfen
+./mvnw verify
 
+# OpenAPI-Spezifikation neu erzeugen (schreibt luna-core/openapi.yaml)
+./mvnw verify -Popenapi
+
+# Docker-Image lokal bauen (Jib) -> luna-core:<version> und luna-core:latest
+./mvnw package jib:dockerBuild
+```
+
+Lokal starten: Profil `local` ist Standard; das DB-Passwort kommt aus der Umgebungsvariable
+`SPRING_DATASOURCE_PASSWORD` (Spring-Standardnamen, keine Platzhalter in den yml-Dateien).
+
+Noch nicht angelegt:
+
+```bash
 # Frontend: Abhängigkeiten installieren, bauen, testen
 # <befehl>
 
