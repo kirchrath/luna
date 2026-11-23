@@ -42,7 +42,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 
 ## Tech-Stack
 
-### Backend (`backend/`)
+### Backends (`luna-core/` und weitere)
 
 | Thema | Entscheidung |
 |---|---|
@@ -58,6 +58,13 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak) |
 
 - Backends werden primär in Java mit Spring Boot geschrieben. Abweichungen nur nach Rücksprache.
+- **Mehrere Backends:** Luna besteht aus mehreren Backends. Das erste ist **`luna-core`**.
+  - Jedes Backend liegt in einem **eigenen Ordner auf oberster Ebene**, benannt nach dem Service (z. B. `luna-core/`).
+  - Jedes Backend ist ein **unabhängiges Maven-Projekt** mit eigener `pom.xml` und eigenem `mvnw`
+    (keine Parent-POM, keine Multi-Modul-Struktur).
+  - Jedes Backend bekommt einen **eigenen festen Port** (siehe [Services & Ports](#services--ports)),
+    damit alle Services lokal gleichzeitig laufen können.
+  - Neue Backends in der Port-Tabelle, der Repository-Struktur und im Stack eintragen.
 - **OpenAPI (Code-first):** Die Spezifikation wird mit springdoc aus den Controllern erzeugt.
   Controller und DTOs sauber annotieren, damit die Spec vollständig und präzise ist
   (Operation-IDs, Schemas, Response-Codes) – sie ist der Vertrag für den Frontend-Wrapper.
@@ -65,7 +72,11 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   - Kein eigenes `Dockerfile` für Backends; die Image-Konfiguration liegt in der `pom.xml`.
   - Images werden **lokal** in den Docker-Daemon gebaut (`jib:dockerBuild`), nur für `linux/amd64`.
     Keine Registry konfigurieren (siehe [Betrieb](#betrieb)).
-- **Datenbank:** Schemaänderungen ausschließlich über neue Flyway-Migrationen; bestehende Migrationen nie ändern.
+- **Datenbank:** Alle Backends nutzen dieselbe Luna-Datenbank, aber jedes Backend hat ein **eigenes Schema**
+  mit eigenem Benutzer und greift nur auf sein eigenes Schema zu.
+  Schemaänderungen ausschließlich über neue Flyway-Migrationen; bestehende Migrationen nie ändern.
+- **CORS:** Lokal ruft das Frontend die Backends direkt auf; die Backends erlauben daher lokal CORS für
+  `http://localhost:5173`. In Produktion ist kein CORS nötig (gleiche Origin über Traefik).
 
 ### Frontend (`frontend/`)
 
@@ -79,7 +90,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | Node.js | aktuelle **LTS (Node 24)**, festgehalten in `.nvmrc` und `engines` |
 | CSS | **Bulma 1.x** über **Sass** (Anpassung über Sass-Variablen) |
 | UI-Komponenten | **keine UI-Bibliothek** – eigene Komponenten in `src/ui` |
-| API-Zugriff | generierter Wrapper in `src/api` (**openapi-typescript** + **openapi-fetch**) |
+| API-Zugriff | generierter Wrapper in `src/api/<backend>/` (**openapi-typescript** + **openapi-fetch**) |
 | i18n | **react-i18next**; Sprachen **Deutsch (Standard/Fallback)** und **Englisch** |
 | Tests | **Vitest** + **Testing Library**; E2E mit **Playwright** |
 
@@ -89,18 +100,36 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   - Komponenten in `src/ui` sind fachneutral (keine Geschäftslogik, keine API-Aufrufe) und nutzen Bulma-Klassen.
 - **Backend-Zugriff:** Eigene Backends werden **ausschließlich** über den aus der OpenAPI-Spec generierten
   TypeScript-Wrapper unter **`src/api`** aufgerufen.
+  - **Ein Unterordner pro Backend** (z. B. `src/api/luna-core/`) mit eigenem Client und eigenen Typen;
+    jedes Backend wird separat generiert.
+  - Die **Basis-URL jedes Backends ist konfigurierbar** (Vite-Umgebungsvariable pro Backend):
+    lokal direkt der Backend-Port (z. B. `http://localhost:7081`), in Produktion das Pfad-Präfix
+    (z. B. `/api/luna-core`). Keine URLs fest im Code.
   - Keine direkten `fetch`/`axios`-Aufrufe an eigene Backends außerhalb von `src/api`.
   - Generierter Code wird **eingecheckt** und nie von Hand geändert. Bei API-Änderungen: Backend anpassen,
     Spec erzeugen, Wrapper neu generieren und im selben Commit mit einchecken.
 - **Docker-Image:** Das Frontend wird als eigenes **nginx-Image** ausgeliefert (Dockerfile im Frontend-Projekt,
   nur `linux/amd64`, lokal gebaut). nginx liefert ausschließlich die statischen Dateien aus;
-  API-Aufrufe routet **Traefik direkt ans Backend**.
+  API-Aufrufe routet **Traefik direkt an das jeweilige Backend**.
 - **Texte:** Keine fest codierten UI-Texte; alle Texte über react-i18next. Neue Schlüssel immer in
   **Deutsch und Englisch** anlegen.
 
 ### Ende-zu-Ende
 
 - **Playwright** für E2E-Tests über Frontend und Backend hinweg.
+
+## Services & Ports
+
+Jeder Service hat einen festen lokalen Port, damit alle gleichzeitig gestartet werden können.
+Ports für Backends werden **ab 7080 fortlaufend** vergeben (7080 ist durch Keycloak belegt).
+
+| Service | Port lokal | Pfad-Präfix (Produktion) |
+|---|---|---|
+| Frontend (Vite-Dev-Server) | 5173 | `/` |
+| PostgreSQL | 7432 | – |
+| Keycloak | 7080 | _TODO_ |
+| `luna-core` | 7081 | `/api/luna-core` |
+| _nächstes Backend_ | 7082 | `/api/<backend-name>` |
 
 ## Betrieb
 
@@ -111,13 +140,16 @@ Luna läuft im **Heimnetz** als **Docker Stack** (Docker Swarm, `docker stack de
 | Orchestrierung | Docker Stack (Swarm), **ein Knoten** |
 | Architektur | nur **`linux/amd64`** |
 | Container-Registry | **keine** – Images werden lokal auf dem Knoten gebaut |
-| Reverse Proxy | **Traefik** im Stack (Routing über Service-Labels; API-Pfade direkt ans Backend, alles andere ans Frontend) |
+| Reverse Proxy | **Traefik** im Stack (Routing über Service-Labels; `/api/<backend-name>` an das jeweilige Backend **mit StripPrefix**, alles andere ans Frontend) |
 | HTTPS | **Let's Encrypt** per **DNS-Challenge** über **deSEC** (keine offenen Ports nach außen nötig) |
 | Domain / DNS | Registrar **domainprovider.de**, Nameserver/DNS-Verwaltung bei **deSEC** |
 | Identity Provider | **Keycloak** läuft im Luna-Stack |
-| Datenbank | **eine PostgreSQL-Instanz** mit **getrennten Datenbanken und Benutzern** für Luna und Keycloak |
+| Datenbank | **eine PostgreSQL-Instanz**; getrennte Datenbanken für Luna und Keycloak; in der Luna-Datenbank **ein Schema pro Backend** |
 
-Dienste im Stack: Traefik, Frontend (nginx), Backend (Jib-Image), Keycloak, PostgreSQL.
+Dienste im Stack: Traefik, Frontend (nginx), alle Backends (Jib-Images), Keycloak, PostgreSQL.
+
+- Traefik entfernt das Pfad-Präfix vor der Weiterleitung; Backends kennen ihr Präfix nicht und haben
+  lokal und in Produktion dieselben Pfade.
 
 - Secrets (DB-Passwörter, Keycloak-Admin, DNS-API-Token) als **Docker Secrets** bzw. außerhalb des Repos
   bereitstellen – nie im Stack-File oder Repo.
@@ -126,17 +158,18 @@ Dienste im Stack: Traefik, Frontend (nginx), Backend (Jib-Image), Keycloak, Post
 
 ## Repository-Struktur
 
-Monorepo mit genau einem Backend und einem Frontend:
+Monorepo mit mehreren Backends (je ein Top-Level-Ordner) und einem Frontend:
 
 ```
 .
 ├── AGENTS.md        # Diese Datei – Regeln für Agenten
 ├── README.md        # Projektbeschreibung für Menschen
 ├── LICENSE          # MIT-Lizenz
-├── backend/         # Spring-Boot-Backend (Maven, Jib)
+├── luna-core/       # Erstes Backend (Spring Boot, Maven, Jib), Port 7081
+├── <backend-name>/  # Weitere Backends nach demselben Muster
 └── frontend/        # React-Frontend (Vite, npm, nginx-Image)
     └── src/
-        ├── api/     # Aus OpenAPI generierter Wrapper (eingecheckt, nicht manuell bearbeiten)
+        ├── api/     # Generierte Wrapper, ein Unterordner pro Backend (eingecheckt, nicht manuell bearbeiten)
         └── ui/      # Wiederverwendbare, fachneutrale UI-Komponenten auf Basis von Bulma
 ```
 
@@ -149,7 +182,7 @@ Bei neuen Top-Level-Verzeichnissen diese Übersicht aktualisieren.
 _Die Projekte sind noch nicht angelegt._ Sobald sie existieren, hier die exakten Befehle eintragen:
 
 ```bash
-# Backend bauen und testen
+# Backend (z. B. luna-core) bauen und testen
 # <befehl>
 
 # Backend-Docker-Image lokal bauen (Jib)
@@ -158,7 +191,7 @@ _Die Projekte sind noch nicht angelegt._ Sobald sie existieren, hier die exakten
 # Frontend: Abhängigkeiten installieren, bauen, testen
 # <befehl>
 
-# API-Wrapper aus OpenAPI neu generieren
+# API-Wrapper eines Backends aus OpenAPI neu generieren
 # <befehl>
 
 # E2E-Tests (Playwright)
@@ -187,9 +220,9 @@ Vor jedem Commit müssen Build, Tests und Linter (sofern vorhanden) grün sein.
 - Commit-Messages **immer** nach [Conventional Commits](https://www.conventionalcommits.org/):
   `<type>(<optional scope>): <description>`, Beschreibung im Imperativ, Englisch, kleingeschrieben.
   - Typen: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
-  - Scopes: `backend`, `frontend`, `api`, `ui`, `e2e` (bei Bedarf erweitern)
+  - Scopes: Name des Backends (z. B. `luna-core`), `frontend`, `api`, `ui`, `e2e` (bei Bedarf erweitern)
   - Breaking Changes mit `!` nach dem Typ/Scope und/oder `BREAKING CHANGE:` im Footer kennzeichnen.
-  - Beispiele: `feat(frontend): add login page`, `fix(backend): handle empty response`, `docs: update AGENTS.md`
+  - Beispiele: `feat(frontend): add login page`, `fix(luna-core): handle empty response`, `docs: update AGENTS.md`
 - Ein Commit = eine logische Änderung.
 - Keine History von fremden Branches umschreiben; kein Force-Push ohne ausdrückliche Freigabe.
 - Pull Requests nur auf ausdrücklichen Wunsch erstellen.
