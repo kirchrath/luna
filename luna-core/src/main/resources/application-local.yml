@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:7432/luna?currentSchema=luna_core
+    username: luna
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:7080/auth/realms/luna
+
+app:
+  cors:
+    allowed-origins: http://localhost:5173
