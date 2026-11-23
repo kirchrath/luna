@@ -23,6 +23,10 @@ Bei offenen Punkten keine Entscheidungen eigenm채chtig treffen, sondern Vorschl�
 - **Framework:** Spring Boot **4.1.1 oder neuer**
 - Backends werden prim채r in Java mit Spring Boot geschrieben. Abweichungen nur mit Begr체ndung und nach R체cksprache.
 - Jedes Backend stellt eine **OpenAPI-Spezifikation** bereit; sie ist die Grundlage f체r den Frontend-API-Wrapper.
+- Jedes Backend stellt **immer ein Docker-Image** bereit, gebaut mit **[Jib](https://github.com/GoogleContainerTools/jib)**
+  체ber das Build-Plugin.
+  - Kein eigenes `Dockerfile` f체r Backends; die Image-Konfiguration liegt in der Jib-Plugin-Konfiguration des Builds.
+  - Das Basis-Image muss eine Java-25-Laufzeit enthalten.
 
 ### Frontend
 
