@@ -14,7 +14,8 @@ Geplante Bereiche:
 - Termine & Kalender
 - Einkauf & Haushalt
 - Finanzen & Verträge
-- Monitoring (_Umfang noch offen_)
+- Monitoring: Heimnetz & Server, Smart Home & Energie, Gesundheit & Gewohnheiten sowie Luna selbst
+  (Logs, Metriken, Health-Checks)
 
 **Phase: Konzeption.** Es gibt noch kein festgelegtes erstes Feature. Keine Fachfunktionen implementieren,
 solange sie nicht ausdrücklich beauftragt sind.
@@ -24,8 +25,8 @@ Bisher existieren nur `README.md`, `LICENSE` (MIT) und diese Datei.
 Noch offen (bitte hier eintragen, sobald entschieden):
 
 - **Reihenfolge / erstes Feature:** _TODO_
-- **Umfang des Bereichs „Monitoring“:** _TODO_
-- **DNS-Anbieter für die Let's-Encrypt-DNS-Challenge:** _TODO_
+- **DNS-Challenge für Let's Encrypt:** Domain liegt bei domainprovider.de; ob dafür eine von Traefik (lego)
+  unterstützte DNS-API existiert, ist ungeklärt. Lösungsweg noch nicht entschieden – _TODO_
 
 Betrieb: siehe Abschnitt [Betrieb](#betrieb) (Heimnetz, Docker Stack).
 
