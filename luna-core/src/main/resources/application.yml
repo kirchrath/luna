@@ -1,6 +1,7 @@
 spring:
   application:
     name: luna-core
+    version: @project.version@
   profiles:
     default: local
   datasource:
