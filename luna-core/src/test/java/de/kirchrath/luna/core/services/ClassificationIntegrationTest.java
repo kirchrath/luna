@@ -33,10 +33,10 @@ import de.kirchrath.luna.core.dto.ManualInputDataDto;
 class ClassificationIntegrationTest {
 
     @Autowired
-    private InboundEventService inboundEventService;
+    private InboundEventApplicationService inboundEventApplicationService;
 
     @Autowired
-    private ClassificationJob classificationJob;
+    private ClassificationScheduler classificationScheduler;
 
     @Autowired
     private InboundEventRepository inboundEventRepository;
@@ -56,15 +56,15 @@ class ClassificationIntegrationTest {
     }
 
     @Test
-    void thatRunningTheClassificationJobShouldResultIntoStoredOutboundEventsAndAnAnalyzedInboundEvent() {
+    void thatRunningTheClassificationSchedulerShouldResultIntoStoredOutboundEventsAndAnAnalyzedInboundEvent() {
         // given
-        var reference = inboundEventService.createManualInboundEvent(
+        var reference = inboundEventApplicationService.createManualInboundEvent(
                 new ManualInputDataDto("Dentist on Tuesday at 10, bring the bonus booklet", null));
         when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(
                 List.of(new Generation(new AssistantMessage("{\"types\": [\"APPOINTMENT\", \"TASK\"]}")))));
 
         // when
-        classificationJob.classifyReceivedEvents();
+        classificationScheduler.classifyReceivedEvents();
 
         // then
         var inboundEvent = inboundEventRepository.findById(reference.id()).orElseThrow();
@@ -82,13 +82,13 @@ class ClassificationIntegrationTest {
     }
 
     @Test
-    void thatRunningTheClassificationJobWithAFailingProviderShouldResultIntoAnotherAttemptLater() {
+    void thatRunningTheClassificationSchedulerWithAFailingProviderShouldResultIntoAnotherAttemptLater() {
         // given
-        var reference = inboundEventService.createManualInboundEvent(new ManualInputDataDto("Something", null));
+        var reference = inboundEventApplicationService.createManualInboundEvent(new ManualInputDataDto("Something", null));
         when(chatModel.call(any(Prompt.class))).thenThrow(new IllegalStateException("provider unavailable"));
 
         // when
-        classificationJob.classifyReceivedEvents();
+        classificationScheduler.classifyReceivedEvents();
 
         // then
         var inboundEvent = inboundEventRepository.findById(reference.id()).orElseThrow();

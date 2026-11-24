@@ -7,7 +7,7 @@ Element types:
 - APPOINTMENT: a meeting or event at a specific date and time
 - INVOICE: a bill or payment request
 - CONTRACT: a contract, a contract change or a deadline of a contract
-- NOTE: information worth keeping without any action required
+- NOTE: content worth summarizing for later reference, e.g. longer texts, newsletters or minutes
 
 An input can result in no element (e.g. advertising or irrelevant content), one element or several elements.
 Return each element type at most once.

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.ResourceReferenceDto;
-import de.kirchrath.luna.core.services.InboundEventService;
+import de.kirchrath.luna.core.services.InboundEventApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,10 +22,10 @@ import jakarta.validation.Valid;
 @Tag(name = "Inbound events", description = "Events that luna-core receives and analyses")
 public class InboundEventController {
 
-    private final InboundEventService inboundEventService;
+    private final InboundEventApplicationService inboundEventApplicationService;
 
-    public InboundEventController(InboundEventService inboundEventService) {
-        this.inboundEventService = inboundEventService;
+    public InboundEventController(InboundEventApplicationService inboundEventApplicationService) {
+        this.inboundEventApplicationService = inboundEventApplicationService;
     }
 
     @PostMapping(
@@ -42,6 +42,6 @@ public class InboundEventController {
                 @ApiResponse(responseCode = "401", description = "Missing or invalid access token", content = @Content)
             })
     public ResourceReferenceDto createManualInboundEvent(@Valid @RequestBody ManualInputDataDto input) {
-        return inboundEventService.createManualInboundEvent(input);
+        return inboundEventApplicationService.createManualInboundEvent(input);
     }
 }
