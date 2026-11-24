@@ -5,7 +5,7 @@
 set -euo pipefail
 
 kafka_bin=/opt/kafka/bin
-bootstrap=kafka:9092
+bootstrap=kafka:9094
 client_config="$(mktemp)"
 trap 'rm -f "$client_config"' EXIT
 
