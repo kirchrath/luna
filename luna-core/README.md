@@ -33,14 +33,24 @@ Konventionen, Tech-Stack und Betrieb stehen in [AGENTS.md](../AGENTS.md).
 | 3 | Anhand der Analyse entscheiden, welche neuen Elemente entstehen (z. B. Aufgabe, Alert) | _TODO_ |
 | 4 | Neue Events für die entstandenen Elemente erzeugen | _TODO_ |
 
+## Entscheidungen
+
+- **Eingang:** Events kommen über **Kafka** oder per **manueller Eingabe im Frontend**
+  (das Frontend ruft `luna-core` wie alle Backends über den generierten REST-Wrapper auf).
+  Weitere Message Broker erst in einer **späteren Ausbaustufe** (nicht umsetzen, solange nicht beauftragt).
+- **Erste Quelle:** **manuelle Eingabe** im Frontend.
+- **Ausgang:** Entstandene Elemente (z. B. Aufgabe, Alert) werden als Events **an die zuständigen Fach-Backends
+  gesendet**, die sie speichern. `luna-core` speichert diese Elemente nicht selbst.
+- **Spring AI:** Modell bzw. Anbieter ist **konfigurierbar** (per Property/Profil umschaltbar).
+
 ## Offene Punkte
 
 Noch nicht entschieden (bitte hier eintragen, sobald entschieden):
 
-- **Eingang:** Wie liefern Quellen ihre Events an (z. B. REST, Messaging)? Welche Quellen gibt es zuerst? _TODO_
+- **Kafka-Betrieb:** Kafka im Stack (Image, exakte Version, Konfiguration). _TODO_
+- **Ausgangskanal:** Wie erreichen die Events die Fach-Backends (z. B. Kafka-Topics, REST)? _TODO_
 - **Event-Format:** Gemeinsames Format bzw. Struktur eingehender und ausgehender Events. _TODO_
-- **Ausgang:** Wohin gehen die neuen Events bzw. wer legt Aufgaben und Alerts an und speichert sie? _TODO_
 - **Element-Typen:** Welche Ergebnistypen gibt es außer Aufgabe und Alert? _TODO_
-- **Spring AI:** Welches Modell bzw. welcher Anbieter (lokal oder Cloud)? _TODO_
+- **Spring-AI-Anbieter:** Welche Anbieter werden unterstützt, welcher ist Standard je Profil? _TODO_
 - **Persistenz:** Was speichert `luna-core` selbst (z. B. eingegangene Events, Analyseergebnisse)? _TODO_
 - **Abgrenzung:** Was gehört ausdrücklich **nicht** zu `luna-core`? _TODO_
