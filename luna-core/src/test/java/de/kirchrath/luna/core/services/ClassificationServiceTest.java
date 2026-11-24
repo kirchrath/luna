@@ -27,6 +27,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import de.kirchrath.luna.core.config.ChatModelTestConfig;
 import de.kirchrath.luna.core.config.ClassificationProperties;
+import de.kirchrath.luna.core.converter.LunaElementTypeConverter;
+import de.kirchrath.luna.core.converter.LunaElementTypeMapperImpl;
 import de.kirchrath.luna.core.data.entity.EventData;
 import de.kirchrath.luna.core.data.entity.EventSource;
 import de.kirchrath.luna.core.data.entity.InboundEvent;
@@ -55,7 +57,8 @@ class ClassificationServiceTest {
             outboundEventRepository,
             new TransactionTemplate(mock(PlatformTransactionManager.class)),
             jsonMapper,
-            new ClassificationProperties(Duration.ofSeconds(30), 10, 3));
+            new ClassificationProperties(Duration.ofSeconds(30), 10, 3),
+            new LunaElementTypeConverter(new LunaElementTypeMapperImpl()));
 
     @Test
     void thatClassifyingAnInputWithoutTypeHintShouldResultIntoOneOutboundEventPerDeterminedType() {
