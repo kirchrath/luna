@@ -261,6 +261,7 @@ Ports für Backends werden **ab 7080 fortlaufend** vergeben (7080 ist durch Keyc
 |---|---|---|
 | Frontend (Vite-Dev-Server) | 5173 | `/` |
 | PostgreSQL | 7432 | – |
+| Kafka | 7092 | – |
 | Keycloak | 7080 | `/auth` (Keycloak mit relativem Pfad `/auth` konfiguriert, **ohne** StripPrefix) |
 | `luna-core` | 7081 | `/api/luna-core` |
 | _nächstes Backend_ | 7082 | `/api/<backend-name>` |
@@ -281,16 +282,20 @@ Luna läuft im **Heimnetz** als **Docker Stack** (Docker Swarm, `docker stack de
 | Identity Provider | **Keycloak** läuft im Luna-Stack |
 | Datenbank | **eine PostgreSQL-Instanz**; getrennte Datenbanken für Luna und Keycloak; in der Luna-Datenbank **ein Schema pro Backend** |
 
-Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images), Keycloak, PostgreSQL.
+Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images), Keycloak, PostgreSQL, Kafka.
 
 - **Stack-Dateien** liegen unter `swarm/`. Ein Stack `luna`, mehrere Dateien:
-  `swarm/infrastructure.yml` (Traefik, step-ca, PostgreSQL, Keycloak), später weitere für Frontend und Backends.
+  `swarm/infrastructure.yml` (Traefik, step-ca, PostgreSQL, Keycloak; **Kafka** ist dort vorgesehen, aber noch
+  nicht eingetragen), später weitere für Frontend und Backends.
   Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml [-c …] luna`.
 - **Image-Versionen** sind **exakt gepinnt** (aktuell Traefik `v3.7.19`, step-ca `0.30.2`, PostgreSQL `18.7`,
-  Keycloak `26.8.2`). Updates nur bewusst per Commit.
+  Keycloak `26.8.2`; für Kafka vorgesehen: `apache/kafka:4.4.0`). Updates nur bewusst per Commit.
 - **Secrets** sind **externe Docker Secrets** (`docker secret create` auf dem Server).
 - Die Infrastruktur-Datei dient **auch der lokalen Entwicklung**; PostgreSQL (7432) und Keycloak (7080) sind
   daher auch auf dem Server veröffentlicht. Die Keycloak-URL (Issuer) ist über `LUNA_KEYCLOAK_URL` umschaltbar.
+- **Kafka** (`apache/kafka`, KRaft-Modus, ein Knoten) läuft in `swarm/infrastructure.yml`, ist wie PostgreSQL und
+  Keycloak auch auf dem Server unter **7092** veröffentlicht (lokale Entwicklung) und speichert seine Daten in
+  einem benannten Volume.
 - **Zeitzone:** **Alle** Container (Infrastruktur und Backends) binden `/etc/localtime:/etc/localtime:ro`
   vom Host ein; Logs und `TimeProvider` nutzen so die Zeitzone des Servers.
 - Traefik leitet HTTP auf HTTPS um; **kein Traefik-Dashboard**.

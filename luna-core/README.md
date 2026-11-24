@@ -49,11 +49,15 @@ Konventionen, Tech-Stack und Betrieb stehen in [AGENTS.md](../AGENTS.md).
   ```json
   { "id": "…", "audit": { … }, "data": { … } }
   ```
+
+  - `audit` ist exakt das **`AuditDto`** (`createdDate`, `lastModifiedDate`, `version`).
+  - **Typ und Quelle** stehen nicht im Event, sondern ergeben sich aus dem **Topic**.
+  - Die **Verknüpfung** zum auslösenden Event wird nur in der Datenbank von `luna-core` gespeichert.
 - **Spring AI:** Modell bzw. Anbieter ist **konfigurierbar** (per Property/Profil umschaltbar).
   Zunächst unterstützt: **Ollama** (lokal), **Anthropic Claude** und **OpenAI-kompatible** Endpunkte.
 - **Spring-AI-Standard:** **kein** voreingestellter Anbieter; in `application.yml` leer, je Umgebung explizit setzen.
-- **Kafka-Betrieb:** Image **`apache/kafka:4.4.0`** (offizielles Apache-Image, exakt gepinnt, KRaft-Modus,
-  ein Knoten) im Stack. Noch nicht Teil der Stack-Dateien.
+- **Kafka-Betrieb:** Image **`apache/kafka:4.4.0`** in `swarm/infrastructure.yml`, Port **7092**
+  (siehe [AGENTS.md](../AGENTS.md#betrieb)). Noch nicht Teil der Stack-Datei.
 - **Persistenz:** `luna-core` speichert die **eingegangenen Events** und die **erzeugten Events**
   (inkl. Verknüpfung, welche ausgehenden Events aus welchem Eingang entstanden sind).
   Analyseergebnisse und Prompts werden **nicht** in der Datenbank gespeichert.
@@ -76,9 +80,7 @@ Ausdrücklich **nicht** Teil von `luna-core`:
 
 Noch nicht entschieden (bitte hier eintragen, sobald entschieden):
 
-- **Kafka-Konfiguration:** Einbindung in den Stack (Stack-Datei, Port, Volumes). _TODO_
-- **Event-Details:** Inhalt von `audit` bei Events; wo Typ, Quelle und Verweis auf das auslösende Event
-  stehen; Inhalt von `data` je Element-Typ. _TODO_
+- **Event-Daten:** Inhalt von `data` je Quelle bzw. Element-Typ. _TODO_
 - **Topic-Namen:** konkretes Namensschema für Quell- und Typ-Topics. _TODO_
 - **Zuordnung zu Fach-Backends:** Welches Backend ist für welchen Element-Typ zuständig?
   (Entscheidung bei Konzeption des jeweiligen Fach-Backends) _TODO_
