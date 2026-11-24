@@ -11,6 +11,16 @@ spring:
   flyway:
     schemas: luna_core
     default-schema: luna_core
+  ai:
+    model:
+      chat:
+      decision: none
+      embedding: none
+      image: none
+      moderation: none
+      audio:
+        speech: none
+        transcription: none
   security:
     oauth2:
       resourceserver:
@@ -23,3 +33,7 @@ server:
 app:
   cors:
     allowed-origins:
+  classification:
+    interval: 30s
+    batch-size: 10
+    max-attempts: 3

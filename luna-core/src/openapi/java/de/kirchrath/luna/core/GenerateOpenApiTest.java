@@ -14,11 +14,12 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
+import de.kirchrath.luna.core.config.ChatModelTestConfig;
 import de.kirchrath.luna.core.config.TestcontainersConfig;
 
-@SpringBootTest
+@SpringBootTest(properties = "app.classification.interval=1h")
 @AutoConfigureMockMvc
-@Import(TestcontainersConfig.class)
+@Import({TestcontainersConfig.class, ChatModelTestConfig.class})
 class GenerateOpenApiTest {
 
     @Autowired

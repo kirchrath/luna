@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import de.kirchrath.luna.core.data.entity.EventData;
 import de.kirchrath.luna.core.data.entity.EventSource;
 import de.kirchrath.luna.core.data.entity.InboundEvent;
+import de.kirchrath.luna.core.data.entity.InboundEventStatus;
 import de.kirchrath.luna.core.data.repository.InboundEventRepository;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.ResourceReferenceDto;
@@ -26,6 +27,8 @@ public class InboundEventService {
                 null,
                 EventSource.MANUAL,
                 new EventData(jsonMapper.writeValueAsString(input)),
+                InboundEventStatus.RECEIVED,
+                0,
                 null,
                 null,
                 null);

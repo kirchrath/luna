@@ -20,18 +20,21 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import de.kirchrath.luna.core.config.ChatModelTestConfig;
 import de.kirchrath.luna.core.config.TestcontainersConfig;
 import de.kirchrath.luna.core.data.entity.EventSource;
+import de.kirchrath.luna.core.data.entity.InboundEventStatus;
 import de.kirchrath.luna.core.data.repository.InboundEventRepository;
-import de.kirchrath.luna.core.dto.LunaElementType;
+import de.kirchrath.luna.core.data.repository.OutboundEventRepository;
+import de.kirchrath.luna.core.dto.LunaElementTypeDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.services.TimeProvider;
 import de.kirchrath.luna.core.services.UuidProvider;
 import tools.jackson.databind.json.JsonMapper;
 
-@SpringBootTest
+@SpringBootTest(properties = "app.classification.interval=1h")
 @AutoConfigureMockMvc
-@Import(TestcontainersConfig.class)
+@Import({TestcontainersConfig.class, ChatModelTestConfig.class})
 class InboundEventControllerTest {
 
     private static final UUID ID = UUID.fromString("6d1f0a3e-3c4b-4f63-8a3e-1e2f3a4b5c6d");
@@ -44,6 +47,9 @@ class InboundEventControllerTest {
     private InboundEventRepository inboundEventRepository;
 
     @Autowired
+    private OutboundEventRepository outboundEventRepository;
+
+    @Autowired
     private JsonMapper jsonMapper;
 
     @MockitoBean
@@ -54,6 +60,7 @@ class InboundEventControllerTest {
 
     @BeforeEach
     void setUp() {
+        outboundEventRepository.deleteAll();
         inboundEventRepository.deleteAll();
         when(uuidProvider.randomUuid()).thenReturn(ID);
         when(timeProvider.now()).thenReturn(NOW);
@@ -63,7 +70,7 @@ class InboundEventControllerTest {
     @Test
     void thatSubmittingAManualInputShouldResultIntoAnAcceptedAndPersistedInboundEvent() throws Exception {
         // given
-        var input = new ManualInputDataDto("Dentist appointment next Tuesday at 10", LunaElementType.APPOINTMENT);
+        var input = new ManualInputDataDto("Dentist appointment next Tuesday at 10", LunaElementTypeDto.APPOINTMENT);
 
         // when
         var result = mockMvc.perform(post("/inbound-events/manual")
@@ -75,6 +82,8 @@ class InboundEventControllerTest {
         result.andExpect(status().isAccepted()).andExpect(jsonPath("$.id").value(ID.toString()));
         var stored = inboundEventRepository.findById(ID).orElseThrow();
         assertThat(stored.source()).isEqualTo(EventSource.MANUAL);
+        assertThat(stored.status()).isEqualTo(InboundEventStatus.RECEIVED);
+        assertThat(stored.attempts()).isZero();
         assertThat(jsonMapper.readValue(stored.data().json(), ManualInputDataDto.class)).isEqualTo(input);
         assertThat(stored.createdDate()).isEqualTo(NOW);
         assertThat(stored.lastModifiedDate()).isEqualTo(NOW);

@@ -12,5 +12,5 @@ public record ManualInputDataDto(
         String text,
 
         @Schema(description = "Optional hint which element should result from the input; overrides the analysis")
-        LunaElementType typeHint) {
+        LunaElementTypeDto typeHint) {
 }
