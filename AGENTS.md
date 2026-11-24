@@ -140,6 +140,10 @@ in diesen Sub-Packages:
 - Jede Entity hat: `id` (**`UUID`**), `createdDate` und `lastModifiedDate` (**`OffsetDateTime`**) sowie
   `version` (**`Long`**).
   Diese Felder werden **per Annotation oder per Lifecycle-Event** gesetzt, nie manuell in der Fachlogik.
+  - **ID:** Jede Entity implementiert **`EntityWithId<T>`** (`data.entity`) mit `id()` und `withId(UUID)`
+    (liefert eine Kopie mit neuer ID). Der zentrale Listener **`EntityIdCallback`** (`config`,
+    `BeforeConvertCallback`) setzt vor dem Speichern per `UuidProvider` eine neue ID, wenn `id()` `null` ist.
+  - **Audit-Felder:** `@CreatedDate`, `@LastModifiedDate` (Auditing mit dem `TimeProvider`) und `@Version`.
 - **Enums** werden in der Datenbank als **String** gespeichert. Die erlaubten Werte werden **nicht** als
   Constraint in der Migration gepflegt.
 
