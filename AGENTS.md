@@ -65,7 +65,7 @@ Bei offenen Punkten keine Entscheidungen eigenm채chtig treffen, sondern Vorschl�
 | API-Dokumentation | **springdoc-openapi** (Code-first) |
 | Container-Image | **Jib** (Maven-Plugin), Basis-Image **`amazoncorretto:25`**, nur **`linux/amd64`** |
 | Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak) |
-| Testabdeckung | **JaCoCo**, **100 % Line- und Branch-Coverage**, Build bricht bei Unterschreitung ab |
+| Testabdeckung | **JaCoCo**, **100 % in allen Z채hlern** (Instruction, Line, Branch, Complexity, Method, Class), Build bricht bei Unterschreitung ab |
 
 - Backends werden prim채r in Java mit Spring Boot geschrieben. Abweichungen nur nach R체cksprache.
 - **Mehrere Backends:** Luna besteht aus mehreren Backends. Das erste ist **`luna-core`**.
@@ -178,7 +178,8 @@ record TaskDataDto(String title, String description) {}
 
 #### Tests
 
-- **100 % Testabdeckung** (Line und Branch, per JaCoCo erzwungen).
+- **100 % Testabdeckung** in **allen** JaCoCo-Z채hlern (Instruction, Line, Branch, Complexity, Method, Class),
+  per JaCoCo-`check` erzwungen.
   Ausgenommen: `Application.java` sowie die Packages `config`, `inbound`, `data`, `dto` und `exception`.
 - Testnamen nach dem Muster **`thatActionShouldResultIntoX`**. Einzige Ausnahme: der Haupt-Test
   `ApplicationTests.contextLoads()` wie in Spring-Initializr-Projekten.
