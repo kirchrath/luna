@@ -14,19 +14,16 @@ import tools.jackson.databind.json.JsonMapper;
 public class InboundEventService {
 
     private final InboundEventRepository inboundEventRepository;
-    private final UuidProvider uuidProvider;
     private final JsonMapper jsonMapper;
 
-    public InboundEventService(
-            InboundEventRepository inboundEventRepository, UuidProvider uuidProvider, JsonMapper jsonMapper) {
+    public InboundEventService(InboundEventRepository inboundEventRepository, JsonMapper jsonMapper) {
         this.inboundEventRepository = inboundEventRepository;
-        this.uuidProvider = uuidProvider;
         this.jsonMapper = jsonMapper;
     }
 
     public ResourceReferenceDto createManualInboundEvent(ManualInputDataDto input) {
         var inboundEvent = new InboundEvent(
-                uuidProvider.randomUuid(),
+                null,
                 EventSource.MANUAL,
                 new EventData(jsonMapper.writeValueAsString(input)),
                 null,
