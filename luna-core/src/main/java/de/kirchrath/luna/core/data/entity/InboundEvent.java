@@ -8,26 +8,15 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.annotation.Version;
 
+import lombok.With;
+
 public record InboundEvent(
-        @Id UUID id,
+        @With @Id UUID id,
         EventSource source,
         EventData data,
-        InboundEventStatus status,
-        int attempts,
+        @With InboundEventStatus status,
+        @With int attempts,
         @CreatedDate OffsetDateTime createdDate,
         @LastModifiedDate OffsetDateTime lastModifiedDate,
         @Version Long version) implements EntityWithId<InboundEvent> {
-
-    @Override
-    public InboundEvent withId(UUID id) {
-        return new InboundEvent(id, source, data, status, attempts, createdDate, lastModifiedDate, version);
-    }
-
-    public InboundEvent withStatus(InboundEventStatus status) {
-        return new InboundEvent(id, source, data, status, attempts, createdDate, lastModifiedDate, version);
-    }
-
-    public InboundEvent withAttempts(int attempts) {
-        return new InboundEvent(id, source, data, status, attempts, createdDate, lastModifiedDate, version);
-    }
 }

@@ -21,8 +21,10 @@ import de.kirchrath.luna.core.data.repository.OutboundEventRepository;
 import de.kirchrath.luna.core.dto.ClassificationResultDto;
 import de.kirchrath.luna.core.dto.LunaElementTypeDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.json.JsonMapper;
 
+@Slf4j
 @Service
 public class ClassificationService {
 
@@ -59,7 +61,7 @@ public class ClassificationService {
         try {
             types = determineTypes(jsonMapper.readValue(inboundEvent.data().json(), ManualInputDataDto.class));
         } catch (RuntimeException e) {
-            recordFailedAttempt(inboundEvent);
+            recordFailedAttempt(inboundEvent, e);
             return;
         }
         transactionTemplate.executeWithoutResult(status -> {
@@ -67,6 +69,7 @@ public class ClassificationService {
                     new OutboundEvent(null, inboundEvent.id(), type, OutboundEventStatus.CLASSIFIED, null, null, null)));
             inboundEventRepository.save(inboundEvent.withStatus(InboundEventStatus.ANALYZED));
         });
+        log.debug("Classified inbound event {} as {}", inboundEvent.id(), types);
     }
 
     private Set<LunaElementType> determineTypes(ManualInputDataDto input) {
@@ -93,11 +96,17 @@ public class ClassificationService {
                 : "The user marked this input as " + typeHint + ". Always include this type and add further types only if the input clearly requires them.";
     }
 
-    private void recordFailedAttempt(InboundEvent inboundEvent) {
+    private void recordFailedAttempt(InboundEvent inboundEvent, RuntimeException cause) {
         var attempts = inboundEvent.attempts() + 1;
-        var status = attempts >= classificationProperties.maxAttempts()
-                ? InboundEventStatus.FAILED
-                : InboundEventStatus.RECEIVED;
-        inboundEventRepository.save(inboundEvent.withAttempts(attempts).withStatus(status));
+        var maxAttempts = classificationProperties.maxAttempts();
+        if (attempts >= maxAttempts) {
+            log.error("Classification of inbound event {} failed finally after {} attempts",
+                    inboundEvent.id(), attempts, cause);
+            inboundEventRepository.save(inboundEvent.withAttempts(attempts).withStatus(InboundEventStatus.FAILED));
+        } else {
+            log.warn("Classification of inbound event {} failed (attempt {}/{})",
+                    inboundEvent.id(), attempts, maxAttempts, cause);
+            inboundEventRepository.save(inboundEvent.withAttempts(attempts).withStatus(InboundEventStatus.RECEIVED));
+        }
     }
 }
