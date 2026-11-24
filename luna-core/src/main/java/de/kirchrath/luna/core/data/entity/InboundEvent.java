@@ -14,5 +14,10 @@ public record InboundEvent(
         EventData data,
         @CreatedDate OffsetDateTime createdDate,
         @LastModifiedDate OffsetDateTime lastModifiedDate,
-        @Version Long version) {
+        @Version Long version) implements EntityWithId<InboundEvent> {
+
+    @Override
+    public InboundEvent withId(UUID id) {
+        return new InboundEvent(id, source, data, createdDate, lastModifiedDate, version);
+    }
 }
