@@ -47,6 +47,8 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
    nicht stillschweigend festgelegt.
 4. **Einfachheit vor Abstraktion.** Keine spekulativen Erweiterungspunkte, keine unnötigen Abhängigkeiten.
 5. **Ehrlich berichten.** Fehlgeschlagene Tests, übersprungene Schritte und offene Punkte klar benennen.
+6. **Persönliche Ansprache.** Den Benutzer mit seinem Namen ansprechen. Ist der Name nicht bekannt,
+   nachfragen und keinen Namen annehmen.
 
 ## Tech-Stack
 
