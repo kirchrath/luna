@@ -61,7 +61,18 @@ Konventionen, Tech-Stack und Betrieb stehen in [AGENTS.md](../AGENTS.md).
 - **Persistenz:** `luna-core` speichert die **eingegangenen Events** und die **erzeugten Events**
   (inkl. Verknüpfung, welche ausgehenden Events aus welchem Eingang entstanden sind).
   Analyseergebnisse und Prompts werden **nicht** in der Datenbank gespeichert.
-- **Element-Typen:** **Aufgabe**, **Alert**, **Termin**, **Finanz-/Vertragseintrag** und **Notiz**.
+- **Element-Typen** (englischer Name für Topics und Code):
+
+  | Element | Name | Ausgangs-Topic |
+  |---|---|---|
+  | Aufgabe | `task` | `luna_core_task` |
+  | Alert | `alert` | `luna_core_alert` |
+  | Termin | `appointment` | `luna_core_appointment` |
+  | Rechnung | `invoice` | `luna_core_invoice` |
+  | Vertrag | `contract` | `luna_core_contract` |
+  | Notiz | `note` | `luna_core_note` |
+- **Manuelle Eingabe:** `data` enthält einen **Freitext** und einen **optionalen Typ-Hinweis**
+  (einer der Element-Typen), der die Entscheidung der KI bei Bedarf übersteuert.
 - **Topics:** **ein Topic je Quelle** für den Eingang und **ein Topic je Element-Typ** für den Ausgang.
   Namensschema `luna_<erzeuger>_<inhalt>` (siehe [AGENTS.md](../AGENTS.md#backends-luna-core-und-weitere)):
   Eingang z. B. `luna_mail_email`, Ausgang `luna_core_<element-typ>`, z. B. `luna_core_task`.
@@ -82,7 +93,6 @@ Ausdrücklich **nicht** Teil von `luna-core`:
 
 Noch nicht entschieden (bitte hier eintragen, sobald entschieden):
 
-- **Event-Daten:** Inhalt von `data` je Quelle bzw. Element-Typ. _TODO_
-- **Englische Namen der Element-Typen** (für Topics und Code). _TODO_
+- **Event-Daten:** Inhalt von `data` je Element-Typ und je weiterer Quelle (Feldnamen und Typen). _TODO_
 - **Zuordnung zu Fach-Backends:** Welches Backend ist für welchen Element-Typ zuständig?
   (Entscheidung bei Konzeption des jeweiligen Fach-Backends) _TODO_
