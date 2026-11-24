@@ -36,6 +36,12 @@ Betrieb: siehe Abschnitt [Betrieb](#betrieb) (Heimnetz, Docker Stack).
 
 Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschläge zur Auswahl vorlegen (siehe Grundprinzip 3).
 
+### Backends und ihr Zweck
+
+| Backend | Zweck | Details |
+|---|---|---|
+| `luna-core` | **Event-Analyse:** empfängt Events aus unterschiedlichen Quellen, analysiert sie per **Spring AI** und entscheidet, welche neuen Elemente (z. B. Aufgabe, Alert) bzw. Events daraus entstehen. | [luna-core/README.md](luna-core/README.md) |
+
 ## Grundprinzipien
 
 1. **Klein und nachvollziehbar.** Lieber mehrere kleine, fokussierte Änderungen als eine große.
@@ -67,6 +73,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | API-Dokumentation | **springdoc-openapi** (Code-first) |
 | Container-Image | **Jib** (Maven-Plugin), Basis-Image **`amazoncorretto:25`**, nur **`linux/amd64`** |
 | Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak) |
+| KI / Event-Analyse | **Spring AI** (in `luna-core`); Modell/Anbieter: _TODO_ |
 | Testabdeckung | **JaCoCo**, **100 % in allen Zählern** (Instruction, Line, Branch, Complexity, Method, Class), Build bricht bei Unterschreitung ab |
 
 - Backends werden primär in Java mit Spring Boot geschrieben. Abweichungen nur nach Rücksprache.
@@ -316,7 +323,7 @@ Monorepo mit mehreren Backends (je ein Top-Level-Ordner) und einem Frontend:
 ├── LICENSE          # MIT-Lizenz
 ├── swarm/           # Docker-Stack-Dateien (infrastructure.yml) und zugehörige Configs
 ├── certs/           # Öffentliches Root-Zertifikat von step-ca (luna-root-ca.crt), nie private Schlüssel
-├── luna-core/       # Erstes Backend (Spring Boot, Maven, Jib), Port 7081
+├── luna-core/       # Erstes Backend: Event-Analyse (Spring Boot, Maven, Jib), Port 7081
 ├── <backend-name>/  # Weitere Backends nach demselben Muster
 └── frontend/        # React-Frontend (Vite, npm, nginx-Image)
     └── src/
