@@ -12,6 +12,6 @@ public class TestcontainersConfig {
     @Bean
     @ServiceConnection
     PostgreSQLContainer postgresContainer() {
-        return new PostgreSQLContainer(DockerImageName.parse("postgres:18.7"));
+        return new PostgreSQLContainer(DockerImageName.parse("postgres:18.7")).withUrlParam("currentSchema", "luna_core");
     }
 }

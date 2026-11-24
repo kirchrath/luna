@@ -4,5 +4,64 @@ info:
   version: 0.0.1-SNAPSHOT
 servers:
 - url: /api/luna-core
-paths: {}
-components: {}
+tags:
+- name: Inbound events
+  description: Events that luna-core receives and analyses
+paths:
+  /inbound-events/manual:
+    post:
+      tags:
+      - Inbound events
+      summary: Submit a manual input as inbound event
+      operationId: createManualInboundEvent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManualInputDataDto"
+        required: true
+      responses:
+        "202":
+          description: Input accepted and stored for analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceReferenceDto"
+        "400":
+          description: Invalid input
+        "401":
+          description: Missing or invalid access token
+components:
+  schemas:
+    ManualInputDataDto:
+      type: object
+      description: Manual input of the user that luna-core analyses
+      properties:
+        text:
+          type: string
+          description: Free text of the input
+          maxLength: 10000
+          minLength: 0
+        typeHint:
+          type: string
+          description: Optional hint which element should result from the input; overrides
+            the analysis
+          enum:
+          - TASK
+          - ALERT
+          - APPOINTMENT
+          - INVOICE
+          - CONTRACT
+          - NOTE
+      required:
+      - text
+    ResourceReferenceDto:
+      type: object
+      description: Reference to a created resource
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID of the created resource
+      required:
+      - id
