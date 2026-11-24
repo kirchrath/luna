@@ -47,16 +47,20 @@ Konventionen, Tech-Stack und Betrieb stehen in [AGENTS.md](../AGENTS.md).
   (Felder, Metadaten) ist noch offen.
 - **Spring AI:** Modell bzw. Anbieter ist **konfigurierbar** (per Property/Profil umschaltbar).
   Zunächst unterstützt: **Ollama** (lokal), **Anthropic Claude** und **OpenAI-kompatible** Endpunkte.
-- **Kafka-Betrieb:** Image **`apache/kafka`** (offizielles Apache-Image, KRaft-Modus, ein Knoten) im Stack.
+- **Spring-AI-Standard:** **kein** voreingestellter Anbieter; in `application.yml` leer, je Umgebung explizit setzen.
+- **Kafka-Betrieb:** Image **`apache/kafka:4.4.0`** (offizielles Apache-Image, exakt gepinnt, KRaft-Modus,
+  ein Knoten) im Stack. Noch nicht Teil der Stack-Dateien.
+- **Persistenz:** `luna-core` speichert die **eingegangenen Events** und die **erzeugten Events**
+  (inkl. Verknüpfung, welche ausgehenden Events aus welchem Eingang entstanden sind).
+  Analyseergebnisse und Prompts werden **nicht** in der Datenbank gespeichert.
+- **Element-Typen:** **Aufgabe**, **Alert**, **Termin**, **Finanz-/Vertragseintrag** und **Notiz**.
 
 ## Offene Punkte
 
 Noch nicht entschieden (bitte hier eintragen, sobald entschieden):
 
-- **Kafka-Version und -Konfiguration:** exakte Image-Version und Einbindung in den Stack. _TODO_
+- **Kafka-Konfiguration:** Einbindung in den Stack (Stack-Datei, Port, Volumes). _TODO_
 - **Event-Struktur:** Felder und Metadaten des eigenen JSON-Formats. _TODO_
 - **Topics:** Benennung und Aufteilung der Kafka-Topics. _TODO_
-- **Element-Typen:** Welche Ergebnistypen gibt es außer Aufgabe und Alert? _TODO_
-- **Spring-AI-Standard:** Welcher Anbieter ist Standard je Profil (`local`, `prod`)? _TODO_
-- **Persistenz:** Was speichert `luna-core` selbst (z. B. eingegangene Events, Analyseergebnisse)? _TODO_
+- **Zuordnung zu Fach-Backends:** Welches Backend ist für welchen Element-Typ zuständig? _TODO_
 - **Abgrenzung:** Was gehört ausdrücklich **nicht** zu `luna-core`? _TODO_
