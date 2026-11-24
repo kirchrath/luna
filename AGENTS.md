@@ -34,7 +34,7 @@ Noch offen (bitte hier eintragen, sobald entschieden):
   in kleinen, einzeln beauftragten Schritten:
   1. Kafka im Stack (`swarm/kafka.yml`) mit TLS, SASL/SCRAM und ACLs (erledigt)
   2. Eingang: REST-Endpunkt für die manuelle Eingabe; eingehendes Event speichern (erledigt)
-  3. Analyse per Spring AI (Entscheidung über den Element-Typ)
+  3. Analyse per Spring AI (Entscheidung über den Element-Typ) (erledigt)
   4. Ausgang: erzeugte Events auf `luna_core_<typ>` publizieren und mit dem Eingang verknüpft speichern
   5. Frontend: Seite für die manuelle Eingabe
   6. Danach weitere Quellen (z. B. E-Mail)
@@ -85,7 +85,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | Container-Image | **Jib** (Maven-Plugin), Basis-Image **`amazoncorretto:25`**, nur **`linux/amd64`** |
 | Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak, Kafka) |
 | Service-Kommunikation | **Kafka** – Kommunikation zwischen Services **ausschließlich** über Kafka |
-| KI / Event-Analyse | **Spring AI** (in `luna-core`); Anbieter konfigurierbar (Ollama, Anthropic Claude, OpenAI-kompatibel), kein Standard |
+| KI / Event-Analyse | **Spring AI 2.1.0** (in `luna-core`); Anbieter konfigurierbar über `spring.ai.model.chat` (Ollama, Anthropic Claude, OpenAI-kompatibel), kein Standard; nicht genutzte Modellarten mit `none` abgeschaltet |
 | Testabdeckung | **JaCoCo**, **100 % in allen Zählern** (Instruction, Line, Branch, Complexity, Method, Class), Build bricht bei Unterschreitung ab |
 
 - Backends werden primär in Java mit Spring Boot geschrieben. Abweichungen nur nach Rücksprache.
@@ -144,6 +144,8 @@ in diesen Sub-Packages:
     (liefert eine Kopie mit neuer ID). Der zentrale Listener **`EntityIdCallback`** (`config`,
     `BeforeConvertCallback`) setzt vor dem Speichern per `UuidProvider` eine neue ID, wenn `id()` `null` ist.
   - **Audit-Felder:** `@CreatedDate`, `@LastModifiedDate` (Auditing mit dem `TimeProvider`) und `@Version`.
+- **Enums** für Entities und DTOs sind **getrennt** (z. B. `LunaElementType` in `data.entity`,
+  `LunaElementTypeDto` in `dto`) und werden in `services` aufeinander abgebildet.
 - **Enums** werden in der Datenbank als **String** gespeichert. Die erlaubten Werte werden **nicht** als
   Constraint in der Migration gepflegt.
 
