@@ -32,7 +32,7 @@ Noch offen (bitte hier eintragen, sobald entschieden):
 
 - **Reihenfolge / erstes Feature:** **Verarbeitung in `luna-core`** mit der manuellen Eingabe als erster Quelle,
   in kleinen, einzeln beauftragten Schritten:
-  1. Kafka in `swarm/infrastructure.yml` eintragen (erledigt)
+  1. Kafka im Stack (`swarm/kafka.yml`) mit TLS, SASL/SCRAM und ACLs (erledigt)
   2. Eingang: REST-Endpunkt für die manuelle Eingabe; eingehendes Event speichern
   3. Analyse per Spring AI (Entscheidung über den Element-Typ)
   4. Ausgang: erzeugte Events auf `luna_core_<typ>` publizieren und mit dem Eingang verknüpft speichern
@@ -300,17 +300,32 @@ Luna läuft im **Heimnetz** als **Docker Stack** (Docker Swarm, `docker stack de
 Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images), Keycloak, PostgreSQL, Kafka.
 
 - **Stack-Dateien** liegen unter `swarm/`. Ein Stack `luna`, mehrere Dateien:
-  `swarm/infrastructure.yml` (Traefik, step-ca, PostgreSQL, Keycloak, Kafka), später weitere für Frontend und Backends.
-  Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml [-c …] luna`.
+  `swarm/infrastructure.yml` (Traefik, step-ca, PostgreSQL, Keycloak), `swarm/kafka.yml` (Kafka und `kafka-init`),
+  später weitere für Frontend und Backends.
+  Deploy gemeinsam: `LUNA_KAFKA_CERT_VERSION=<n> docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml [-c …] luna`.
+  Kafka steht in einer eigenen Datei, weil sein Zertifikat erst erzeugt werden kann, wenn step-ca läuft.
 - **Image-Versionen** sind **exakt gepinnt** (aktuell Traefik `v3.7.19`, step-ca `0.30.2`, PostgreSQL `18.7`,
   Keycloak `26.8.2`, Kafka `apache/kafka:4.4.0`). Updates nur bewusst per Commit.
 - **Secrets** sind **externe Docker Secrets** (`docker secret create` auf dem Server).
 - Die Infrastruktur-Datei dient **auch der lokalen Entwicklung**; PostgreSQL (7432) und Keycloak (7080) sind
   daher auch auf dem Server veröffentlicht. Die Keycloak-URL (Issuer) ist über `LUNA_KEYCLOAK_URL` umschaltbar.
-- **Kafka** (`apache/kafka`, KRaft-Modus, ein Knoten) läuft in `swarm/infrastructure.yml`, ist wie PostgreSQL und
+- **Kafka** (`apache/kafka`, KRaft-Modus, ein Knoten) läuft in `swarm/kafka.yml`, ist wie PostgreSQL und
   Keycloak auch auf dem Server unter **7092** veröffentlicht (lokale Entwicklung) und speichert seine Daten im
   Volume `kafka-data`. Backends im Stack nutzen `kafka:9092`; die für externe Clients mitgeteilte Adresse ist über
   `LUNA_KAFKA_HOST` umschaltbar (Standard `localhost:7092`, auf dem Server z. B. `luna.internal:7092`).
+- **Kafka-Sicherheit:** **immer TLS** und **SASL/SCRAM-SHA-512** (auch lokal); nur der Controller-Listener lauscht
+  ohne TLS auf `localhost` im Container.
+  - Zertifikat von step-ca, **1 Jahr** gültig, über einen eigenen Provisioner `kafka`; erzeugt per
+    `swarm/kafka/create-certificate.sh <n>` als **versionierte Secrets** `kafka_keystore_v<n>` /
+    `kafka_keystore_password_v<n>`, ausgewählt über `LUNA_KAFKA_CERT_VERSION`.
+  - **Ein Kafka-Benutzer je Service** (Name = Service-Name, Passwort-Secret `kafka_<service mit _>_password`),
+    Superuser `admin` (`kafka_admin_password`).
+  - **ACLs je Service:** schreiben (inkl. automatischer Topic-Anlage beim ersten Schreiben) nur auf Topics mit dem
+    eigenen Präfix `luna_<service ohne luna->_`; lesen nur **ausdrücklich freigegebene** Topics;
+    Consumer-Gruppe = Service-Name.
+  - Benutzer und ACLs pflegt der Init-Service **`kafka-init`** idempotent bei jedem Deploy aus `LUNA_KAFKA_SERVICES`
+    in `swarm/kafka.yml`.
+  - Kafka-Tests (Testcontainers) laufen **ohne** TLS/SASL.
 - **Zeitzone:** **Alle** Container (Infrastruktur und Backends) binden `/etc/localtime:/etc/localtime:ro`
   vom Host ein; Logs und `TimeProvider` nutzen so die Zeitzone des Servers.
 - Traefik leitet HTTP auf HTTPS um; **kein Traefik-Dashboard**.
@@ -329,7 +344,7 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
   **Netzwerk-Alias am Traefik-Service** auf Traefik auf.
 - **Lokale Entwicklung:** Backends erreichen Keycloak direkt unter `http://localhost:7080/auth` (ohne Traefik/TLS).
   Die Keycloak-/Issuer-URL ist daher je Umgebung konfigurierbar und nie fest im Code.
-- Secrets (DB-Passwörter, Keycloak-Admin, CA-Schlüssel und -Passwort) als **Docker Secrets** bzw. außerhalb des Repos
+- Secrets (DB-Passwörter, Keycloak-Admin, Kafka-Passwörter und -Keystore, CA-Schlüssel und -Passwort) als **Docker Secrets** bzw. außerhalb des Repos
   bereitstellen – nie im Stack-File oder Repo.
 - **Spätere Ausbaustufe (nicht umsetzen, solange nicht beauftragt):** Umstieg auf eine Unterdomain der echten
   Domain (Registrar domainprovider.de, Nameserver bei **deSEC**) mit **Let's Encrypt** per DNS-Challenge.
@@ -345,7 +360,7 @@ Monorepo mit mehreren Backends (je ein Top-Level-Ordner) und einem Frontend:
 ├── AGENTS.md        # Diese Datei – Regeln für Agenten
 ├── README.md        # Projektbeschreibung für Menschen
 ├── LICENSE          # MIT-Lizenz
-├── swarm/           # Docker-Stack-Dateien (infrastructure.yml) und zugehörige Configs
+├── swarm/           # Docker-Stack-Dateien (infrastructure.yml, kafka.yml) und zugehörige Configs/Skripte
 ├── certs/           # Öffentliches Root-Zertifikat von step-ca (luna-root-ca.crt), nie private Schlüssel
 ├── luna-core/       # Erstes Backend: Event-Analyse (Spring Boot, Maven, Jib), Port 7081
 ├── <backend-name>/  # Weitere Backends nach demselben Muster

@@ -5,9 +5,9 @@ Architektur, Tech-Stack und Konventionen stehen in [AGENTS.md](AGENTS.md).
 
 ## Infrastruktur im Docker Swarm starten
 
-Die Infrastruktur-Services (Traefik, step-ca, PostgreSQL, Keycloak, Kafka) stehen in
-[`swarm/infrastructure.yml`](swarm/infrastructure.yml). Weitere Stack-Dateien (Frontend, Backends)
-kommen später dazu und werden im selben Stack `luna` deployt.
+Die Infrastruktur-Services (Traefik, step-ca, PostgreSQL, Keycloak) stehen in
+[`swarm/infrastructure.yml`](swarm/infrastructure.yml), Kafka in [`swarm/kafka.yml`](swarm/kafka.yml).
+Weitere Stack-Dateien (Frontend, Backends) kommen später dazu; alle werden im selben Stack `luna` deployt.
 
 | Service | Image | Ports (veröffentlicht) |
 |---|---|---|
@@ -29,7 +29,8 @@ Alle Secrets sind `external` und werden direkt auf dem Server angelegt – nie i
 Beispiel mit zufälligen Passwörtern:
 
 ```bash
-for secret in step_ca_password postgres_password keycloak_db_password luna_db_password keycloak_admin_password; do
+for secret in step_ca_password postgres_password keycloak_db_password luna_db_password keycloak_admin_password \
+              kafka_admin_password kafka_luna_core_password; do
   openssl rand -base64 24 | tr -d '\n' | docker secret create "$secret" -
 done
 ```
@@ -47,6 +48,9 @@ printf '%s' 'mein-passwort' | docker secret create keycloak_admin_password -
 | `keycloak_db_password` | DB-Benutzer `keycloak` (Datenbank `keycloak`) |
 | `luna_db_password` | DB-Benutzer `luna` (Datenbank `luna`) |
 | `keycloak_admin_password` | Keycloak-Bootstrap-Admin `admin` |
+| `kafka_admin_password` | Kafka-Superuser `admin` (wird nur beim allerersten Start von Kafka übernommen) |
+| `kafka_<service>_password` | Kafka-Benutzer je Service, z. B. `kafka_luna_core_password` für `luna-core` |
+| `kafka_keystore_v<n>`, `kafka_keystore_password_v<n>` | TLS-Zertifikat von Kafka in Version `<n>` – erzeugt das Zertifikat-Skript (Schritt 4) |
 
 ### 3. Stack deployen
 
@@ -69,7 +73,43 @@ Beim **ersten** Start:
 Anschließend das Root-Zertifikat holen und einchecken (siehe nächster Abschnitt, Schritt 1) und auf allen
 Geräten installieren, die Luna nutzen.
 
-### 4. Erreichbarkeit
+### 4. Kafka-Zertifikat erzeugen und Kafka deployen
+
+Kafka nutzt TLS mit einem Zertifikat von step-ca (1 Jahr gültig). Das Zertifikat kann erst erzeugt werden,
+wenn step-ca läuft – deshalb steht Kafka in einer eigenen Stack-Datei und wird erst danach deployt.
+
+```bash
+# Erzeugt die Secrets kafka_keystore_v1 und kafka_keystore_password_v1.
+# Legt beim ersten Aufruf den step-ca-Provisioner "kafka" (max. 1 Jahr) an und startet step-ca neu.
+swarm/kafka/create-certificate.sh 1
+
+LUNA_KAFKA_CERT_VERSION=1 docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml luna
+```
+
+Ab jetzt immer **beide** Dateien und `LUNA_KAFKA_CERT_VERSION` angeben; ohne die Variable bricht der Deploy ab.
+
+Beim **ersten** Start von Kafka legt das Startskript ([`swarm/kafka/start.sh`](swarm/kafka/start.sh)) den
+Superuser `admin` an. Der Service `kafka-init` ([`swarm/kafka/init.sh`](swarm/kafka/init.sh)) legt danach die
+Benutzer und ACLs aller Services aus `LUNA_KAFKA_SERVICES` in `swarm/kafka.yml` an.
+
+**Zertifikat jährlich erneuern:** Skript mit der nächsten Version aufrufen und mit dieser Version deployen:
+
+```bash
+swarm/kafka/create-certificate.sh 2
+LUNA_KAFKA_CERT_VERSION=2 docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml luna
+```
+
+Alte Versionen können danach mit `docker secret rm kafka_keystore_v1 kafka_keystore_password_v1` entfernt werden.
+
+**Neuen Service an Kafka anbinden:**
+
+1. Secret `kafka_<service>_password` anlegen (Bindestriche als `_`, z. B. `kafka_luna_mail_password`).
+2. In `swarm/kafka.yml` beim Service `kafka-init` eine Zeile in `LUNA_KAFKA_SERVICES` ergänzen
+   (`<service>: <Topics, die er lesen darf>`) und das Secret unter `secrets` eintragen (Service und Datei-Ende).
+3. Neu deployen – `kafka-init` läuft bei jeder Änderung seiner Konfiguration erneut.
+   Ohne Änderung erneut ausführen: `docker service update --force luna_kafka-init`.
+
+### 5. Erreichbarkeit
 
 - Auf jedem Gerät in der hosts-Datei: `<IP des Servers>  luna.internal`
 - Keycloak: `https://luna.internal/auth` (Admin-Konsole: `https://luna.internal/auth/admin`)
@@ -77,11 +117,12 @@ Geräten installieren, die Luna nutzen.
 ### Lokale Entwicklung
 
 Dieselbe Datei kann lokal genutzt werden (`docker swarm init` und Secrets wie oben). PostgreSQL ist dann
-unter `localhost:7432`, Keycloak unter `http://localhost:7080/auth` und Kafka unter `localhost:7092` erreichbar.
-Damit der Issuer der Tokens zur lokalen URL passt, beim Deploy die Keycloak-URL setzen:
+unter `localhost:7432`, Keycloak unter `http://localhost:7080/auth` und Kafka unter `localhost:7092` (TLS + SCRAM)
+erreichbar. Damit der Issuer der Tokens zur lokalen URL passt, beim Deploy die Keycloak-URL setzen:
 
 ```bash
-LUNA_KEYCLOAK_URL=http://localhost:7080/auth docker stack deploy -c swarm/infrastructure.yml luna
+LUNA_KEYCLOAK_URL=http://localhost:7080/auth LUNA_KAFKA_CERT_VERSION=1 \
+  docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml luna
 ```
 
 ### Festlegungen der Infrastruktur
@@ -90,11 +131,13 @@ LUNA_KEYCLOAK_URL=http://localhost:7080/auth docker stack deploy -c swarm/infras
 |---|---|
 | Keycloak-Admin | Benutzer `admin`, Passwort aus Secret `keycloak_admin_password`. Das ist der **Bootstrap-Admin** von Keycloak: Er ist zum Anlegen eines dauerhaften Admin-Kontos gedacht und sollte danach ersetzt werden. |
 | DB-Benutzer | heißen wie ihre Datenbanken: `keycloak` (Datenbank `keycloak`) und `luna` (Datenbank `luna`) |
-| Secrets | `step_ca_password`, `postgres_password`, `keycloak_db_password`, `luna_db_password`, `keycloak_admin_password` (alle extern, siehe oben) |
+| Secrets | alle extern, siehe oben |
 | Netzwerk | Overlay-Netz `luna`, `attachable` – auch Container außerhalb des Stacks können sich verbinden |
 | Keycloak-URL | Variable `LUNA_KEYCLOAK_URL` setzt den Issuer der Tokens. Standard: `https://luna.internal/auth`; lokal `http://localhost:7080/auth` |
 | Kafka-Adresse | Backends im Stack nutzen `kafka:9092`. Für Clients außerhalb des Stacks (Port 7092) teilt Kafka die Adresse aus `LUNA_KAFKA_HOST` mit. Standard: `localhost:7092`; auf dem Server z. B. `LUNA_KAFKA_HOST=luna.internal:7092` setzen, damit Entwicklungsrechner zugreifen können |
-| Kafka | ein Knoten im KRaft-Modus (ohne ZooKeeper), feste `CLUSTER_ID` in der Stack-Datei, Daten im Volume `kafka-data`, ohne Authentifizierung (PLAINTEXT) |
+| Kafka | ein Knoten im KRaft-Modus (ohne ZooKeeper), feste `CLUSTER_ID` in der Stack-Datei, Daten im Volume `kafka-data` |
+| Kafka-Sicherheit | TLS und SASL/SCRAM-SHA-512 auf `kafka:9092` und Port 7092; der Controller-Listener lauscht nur auf `localhost` im Container (ohne TLS). Zertifikat von step-ca (SANs `kafka`, `localhost`, `luna.internal`, 1 Jahr) über den Provisioner `kafka`, dessen Schlüssel mit `step_ca_password` geschützt ist |
+| Kafka-Rechte | Je Service ein Benutzer (= Service-Name) mit ACLs: schreiben und Topics anlegen nur unter `luna_<service ohne luna->_`, lesen nur ausdrücklich freigegebene Topics, Consumer-Gruppe = Service-Name. Topics entstehen automatisch beim ersten Schreiben |
 | Ports | Traefik 80/443, PostgreSQL 7432, Keycloak 7080, Kafka 7092 – auch bei lokaler Nutzung belegt Traefik 80 und 443 |
 
 ### Bekannte Fallstricke
@@ -109,6 +152,10 @@ LUNA_KEYCLOAK_URL=http://localhost:7080/auth docker stack deploy -c swarm/infras
   Java meldet als Zonen-ID allerdings einen gleichwertigen Alias (z. B. `Atlantic/Jan_Mayen` statt `Europe/Berlin`),
   weil die eingebundene Datei keinen Zonennamen enthält. Zeiten und Sommerzeit sind trotzdem korrekt;
   das ist bewusst so akzeptiert (kein zusätzliches `TZ`).
+- **Kafka-Admin-Passwort:** Wird nur beim allerersten Start (leeres Volume `kafka-data`) übernommen. Spätere
+  Änderungen am Secret `kafka_admin_password` wirken nicht automatisch.
+- **Kafka-ACLs:** `kafka-init` ergänzt Benutzer und Rechte nur; entfernte Services oder Lese-Freigaben müssen
+  von Hand mit `kafka-acls.sh --remove` entfernt werden.
 - **Swarm-Load-Balancing:** Swarm nutzt für Service-IPs IPVS im Kernel. Fehlt es (z. B. in manchen Sandboxes
   oder Containern), schlagen Verbindungen mit `no route to host` fehl. Auf einem normalen Linux-Server ist IPVS
   vorhanden.
