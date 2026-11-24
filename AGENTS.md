@@ -90,6 +90,9 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 - **Kommunikation zwischen Services:** Backends kommunizieren untereinander **immer und ausschließlich
   über Kafka**. Keine direkten REST- oder sonstigen synchronen Aufrufe zwischen Backends.
   Das Frontend ruft die Backends weiterhin über den generierten REST-Wrapper auf (siehe [Frontend](#frontend-frontend)).
+  - **Topic-Namen:** `luna_<erzeuger>_<inhalt>` – `<erzeuger>` ist der Service, der in das Topic schreibt
+    (Service-Name ohne `luna-`), `<inhalt>` der Inhalt; beides **Englisch**, kleingeschrieben.
+    Beispiele: `luna_mail_email` (ein Mail-Service liefert E-Mails), `luna_core_task` (`luna-core` erzeugt Aufgaben).
 - **OpenAPI (Code-first):** Die Spezifikation wird mit springdoc aus den Controllern erzeugt.
   Controller und DTOs sauber annotieren, damit die Spec vollständig und präzise ist
   (Operation-IDs, Schemas, Response-Codes) – sie ist der Vertrag für den Frontend-Wrapper.

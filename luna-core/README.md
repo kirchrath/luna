@@ -63,6 +63,8 @@ Konventionen, Tech-Stack und Betrieb stehen in [AGENTS.md](../AGENTS.md).
   Analyseergebnisse und Prompts werden **nicht** in der Datenbank gespeichert.
 - **Element-Typen:** **Aufgabe**, **Alert**, **Termin**, **Finanz-/Vertragseintrag** und **Notiz**.
 - **Topics:** **ein Topic je Quelle** für den Eingang und **ein Topic je Element-Typ** für den Ausgang.
+  Namensschema `luna_<erzeuger>_<inhalt>` (siehe [AGENTS.md](../AGENTS.md#backends-luna-core-und-weitere)):
+  Eingang z. B. `luna_mail_email`, Ausgang `luna_core_<element-typ>`, z. B. `luna_core_task`.
 - **Zuordnung zu Fach-Backends:** wird erst entschieden, wenn das jeweilige Fach-Backend konzipiert wird.
 
 ## Abgrenzung
@@ -81,6 +83,6 @@ Ausdrücklich **nicht** Teil von `luna-core`:
 Noch nicht entschieden (bitte hier eintragen, sobald entschieden):
 
 - **Event-Daten:** Inhalt von `data` je Quelle bzw. Element-Typ. _TODO_
-- **Topic-Namen:** konkretes Namensschema für Quell- und Typ-Topics. _TODO_
+- **Englische Namen der Element-Typen** (für Topics und Code). _TODO_
 - **Zuordnung zu Fach-Backends:** Welches Backend ist für welchen Element-Typ zuständig?
   (Entscheidung bei Konzeption des jeweiligen Fach-Backends) _TODO_
