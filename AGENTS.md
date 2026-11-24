@@ -22,7 +22,7 @@ Geplante Bereiche:
 - Monitoring: Heimnetz & Server, Smart Home & Energie, Gesundheit & Gewohnheiten sowie Luna selbst
   (Logs, Metriken, Health-Checks)
 
-**Phase: Konzeption.** Es gibt noch kein festgelegtes erstes Feature. Keine Fachfunktionen implementieren,
+**Phase: Konzeption.** Das erste Feature ist festgelegt (siehe unten). Keine Fachfunktionen implementieren,
 solange sie nicht ausdrücklich beauftragt sind.
 
 Bisher existieren die Dokumentation, die Infrastruktur (`swarm/`) und das Grundgerüst von `luna-core`
@@ -30,7 +30,16 @@ Bisher existieren die Dokumentation, die Infrastruktur (`swarm/`) und das Grundg
 
 Noch offen (bitte hier eintragen, sobald entschieden):
 
-- **Reihenfolge / erstes Feature:** _TODO_
+- **Reihenfolge / erstes Feature:** **Verarbeitung in `luna-core`** mit der manuellen Eingabe als erster Quelle,
+  in kleinen, einzeln beauftragten Schritten:
+  1. Kafka in `swarm/infrastructure.yml` eintragen
+  2. Eingang: REST-Endpunkt für die manuelle Eingabe; eingehendes Event speichern
+  3. Analyse per Spring AI (Entscheidung über den Element-Typ)
+  4. Ausgang: erzeugte Events auf `luna_core_<typ>` publizieren und mit dem Eingang verknüpft speichern
+  5. Frontend: Seite für die manuelle Eingabe
+  6. Danach weitere Quellen (z. B. E-Mail)
+
+  Keiner dieser Schritte ist ohne ausdrücklichen Auftrag umzusetzen.
 
 Betrieb: siehe Abschnitt [Betrieb](#betrieb) (Heimnetz, Docker Stack).
 
