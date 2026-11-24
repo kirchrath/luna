@@ -165,7 +165,24 @@ in diesen Sub-Packages:
 - **ArchUnit-Tests in allen Services:** Jeder Service hat einen **`ArchitectureTest`** im Haupt-Testpaket
   (`@AnalyzeClasses` auf das Basispaket, ohne Testklassen). Architekturregeln werden dort als `@ArchTest`-Methoden
   nach dem üblichen Test-Namensschema und mit given/when/then ergänzt.
-  Bisherige Regeln: `data` → `dto` verboten, `dto` → `data` verboten.
+  Bisherige Regeln: `data` → `dto` verboten, `dto` → `data` verboten sowie die Regeln aus
+  [Service-Schichten und Transaktionen](#service-schichten-und-transaktionen).
+
+#### Service-Schichten und Transaktionen
+
+- **`<X>DomainService`** (Package `services`, `@Transactional`) ist die **Transaktionsgrenze**. Er darf nur von
+  `<X>ApplicationService`s aufgerufen werden.
+- **`<X>ApplicationService`** (Package `services`) ruft **je Anwendungsfall (öffentliche Methode) genau eine**
+  DomainService-Methode auf; private Hilfsmethoden rufen keinen DomainService auf. Langlaufende Aufrufe ohne
+  Datenbankbezug (z. B. KI-Anbieter) gehören in den ApplicationService, also außerhalb der Transaktion.
+- ApplicationServices werden **nur** von Handlern und Controllern (`inbound`) sowie von Schedulern
+  (**`<X>Scheduler`** im Package `services`) aufgerufen.
+- **Repositories** dürfen nur von DomainServices und von Komponenten niedrigerer Hierarchie genutzt werden; diese
+  Komponenten tragen **`@Transactional(propagation = Propagation.MANDATORY)`**, damit sie nur innerhalb einer
+  offenen Transaktion laufen.
+- **Keine eigenen Queries** (`@Query`), wenn es mit normalen Repository-Methoden (abgeleitete Methoden, `Limit`,
+  `Sort`, `Pageable`) oder per Criteria/`JdbcAggregateTemplate` realisierbar ist.
+- Alle Regeln dieses Abschnitts sind im `ArchitectureTest` abgesichert.
 
 #### Lombok
 
