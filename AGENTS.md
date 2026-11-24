@@ -86,6 +86,8 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak, Kafka) |
 | Service-Kommunikation | **Kafka** – Kommunikation zwischen Services **ausschließlich** über Kafka |
 | KI / Event-Analyse | **Spring AI 2.1.0** (in `luna-core`); Anbieter konfigurierbar über `spring.ai.model.chat` (Ollama, Anthropic Claude, OpenAI-kompatibel), kein Standard; nicht genutzte Modellarten mit `none` abgeschaltet |
+| Mapping | **MapStruct 1.6.3** (Mapper in `converter`) |
+| Architekturtests | **ArchUnit 1.5.1** (`archunit-junit5`) |
 | Testabdeckung | **JaCoCo**, **100 % in allen Zählern** (Instruction, Line, Branch, Complexity, Method, Class), Build bricht bei Unterschreitung ab |
 
 - Backends werden primär in Java mit Spring Boot geschrieben. Abweichungen nur nach Rücksprache.
@@ -130,6 +132,7 @@ in diesen Sub-Packages:
 | `data.entity` | Entities (Records) |
 | `data.repository` | Spring-Data-JDBC-Repositories |
 | `dto` | DTOs (Records) |
+| `converter` | Converter (`@Component`, `<X>Converter`) und MapStruct-Mapper (`<X>Mapper`) zwischen `data` und `dto` |
 | `exception` | Exceptions |
 | `outbound` | Clients zu externen Systemen |
 | `services` | **die komplette Logik** des Systems, in `@Component`- oder `@Service`-Klassen |
@@ -145,9 +148,23 @@ in diesen Sub-Packages:
     `BeforeConvertCallback`) setzt vor dem Speichern per `UuidProvider` eine neue ID, wenn `id()` `null` ist.
   - **Audit-Felder:** `@CreatedDate`, `@LastModifiedDate` (Auditing mit dem `TimeProvider`) und `@Version`.
 - **Enums** für Entities und DTOs sind **getrennt** (z. B. `LunaElementType` in `data.entity`,
-  `LunaElementTypeDto` in `dto`) und werden in `services` aufeinander abgebildet.
+  `LunaElementTypeDto` in `dto`) und werden über Converter aufeinander abgebildet (siehe unten).
 - **Enums** werden in der Datenbank als **String** gespeichert. Die erlaubten Werte werden **nicht** als
   Constraint in der Migration gepflegt.
+
+#### Converter und Architekturregeln
+
+- **`data` und `dto` kennen sich nicht:** Nichts in `data` darf auf `dto` referenzieren und umgekehrt.
+- Abbildungen zwischen beiden erledigen **Converter-Komponenten** im Package **`converter`**:
+  - `<X>Converter` – `@Component`, wird von `services` genutzt und kann zusätzliche Logik kapseln.
+  - `<X>Mapper` – MapStruct-Interface mit `@Mapper(componentModel = MappingConstants.ComponentModel.SPRING)`,
+    wird nur vom zugehörigen Converter genutzt.
+  - Converter fallen unter die 100-%-Abdeckung; ausgenommen sind nur die von MapStruct generierten
+    `*MapperImpl`-Klassen (enthalten bei Enums einen unerreichbaren `default`-Zweig).
+- **ArchUnit-Tests in allen Services:** Jeder Service hat einen **`ArchitectureTest`** im Haupt-Testpaket
+  (`@AnalyzeClasses` auf das Basispaket, ohne Testklassen). Architekturregeln werden dort als `@ArchTest`-Methoden
+  nach dem üblichen Test-Namensschema und mit given/when/then ergänzt.
+  Bisherige Regeln: `data` → `dto` verboten, `dto` → `data` verboten.
 
 #### Keine statischen Methoden
 
@@ -216,7 +233,8 @@ record TaskDataDto(String title, String description) {}
 
 - **100 % Testabdeckung** in **allen** JaCoCo-Zählern (Instruction, Line, Branch, Complexity, Method, Class),
   per JaCoCo-`check` erzwungen.
-  Ausgenommen: `Application.java` sowie die Packages `config`, `inbound`, `data`, `dto` und `exception`.
+  Ausgenommen: `Application.java`, die Packages `config`, `inbound`, `data`, `dto` und `exception` sowie die
+  von MapStruct generierten `*MapperImpl`-Klassen.
 - Testnamen nach dem Muster **`thatActionShouldResultIntoX`**. Einzige Ausnahme: der Haupt-Test
   `ApplicationTests.contextLoads()` wie in Spring-Initializr-Projekten.
 - Tests, die den Spring-Kontext starten, nutzen PostgreSQL über **Testcontainers** (`config/TestcontainersConfig`
