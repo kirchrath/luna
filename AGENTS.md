@@ -72,7 +72,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | Authentifizierung | **OIDC** mit **Keycloak** als IdP; Backend ist Spring-Security-**Resource-Server** (JWT) |
 | API-Dokumentation | **springdoc-openapi** (Code-first) |
 | Container-Image | **Jib** (Maven-Plugin), Basis-Image **`amazoncorretto:25`**, nur **`linux/amd64`** |
-| Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak) |
+| Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak, Kafka) |
 | Service-Kommunikation | **Kafka** – Kommunikation zwischen Services **ausschließlich** über Kafka |
 | KI / Event-Analyse | **Spring AI** (in `luna-core`); Anbieter konfigurierbar (Ollama, Anthropic Claude, OpenAI-kompatibel), kein Standard |
 | Testabdeckung | **JaCoCo**, **100 % in allen Zählern** (Instruction, Line, Branch, Complexity, Method, Class), Build bricht bei Unterschreitung ab |
@@ -200,7 +200,8 @@ record TaskDataDto(String title, String description) {}
 - Testnamen nach dem Muster **`thatActionShouldResultIntoX`**. Einzige Ausnahme: der Haupt-Test
   `ApplicationTests.contextLoads()` wie in Spring-Initializr-Projekten.
 - Tests, die den Spring-Kontext starten, nutzen PostgreSQL über **Testcontainers** (`config/TestcontainersConfig`
-  im Test-Quellbaum, `@ServiceConnection`, Image `postgres:18.7`).
+  im Test-Quellbaum, `@ServiceConnection`, Image `postgres:18.7`). Kafka-Integrationstests nutzen ebenso
+  **Testcontainers** (Image `apache/kafka:4.4.0`, `@ServiceConnection`), kein Embedded Kafka.
 - Jeder Test folgt den drei Sektionen **given / when / then**, jeweils als Kommentar markiert:
 
 ```java
