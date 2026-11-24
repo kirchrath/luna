@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import de.kirchrath.luna.core.config.ClassificationProperties;
+import de.kirchrath.luna.core.converter.LunaElementTypeConverter;
 import de.kirchrath.luna.core.data.entity.InboundEvent;
 import de.kirchrath.luna.core.data.entity.InboundEventStatus;
 import de.kirchrath.luna.core.data.entity.LunaElementType;
@@ -32,6 +33,7 @@ public class ClassificationService {
     private final TransactionTemplate transactionTemplate;
     private final JsonMapper jsonMapper;
     private final ClassificationProperties classificationProperties;
+    private final LunaElementTypeConverter lunaElementTypeConverter;
 
     public ClassificationService(
             ChatClient.Builder chatClientBuilder,
@@ -40,7 +42,8 @@ public class ClassificationService {
             OutboundEventRepository outboundEventRepository,
             TransactionTemplate transactionTemplate,
             JsonMapper jsonMapper,
-            ClassificationProperties classificationProperties) {
+            ClassificationProperties classificationProperties,
+            LunaElementTypeConverter lunaElementTypeConverter) {
         this.chatClient = chatClientBuilder.build();
         this.classificationPrompt = classificationPrompt;
         this.inboundEventRepository = inboundEventRepository;
@@ -48,6 +51,7 @@ public class ClassificationService {
         this.transactionTemplate = transactionTemplate;
         this.jsonMapper = jsonMapper;
         this.classificationProperties = classificationProperties;
+        this.lunaElementTypeConverter = lunaElementTypeConverter;
     }
 
     public void classify(InboundEvent inboundEvent) {
@@ -75,10 +79,10 @@ public class ClassificationService {
 
         var types = new LinkedHashSet<LunaElementType>();
         if (input.typeHint() != null) {
-            types.add(toEntityType(input.typeHint()));
+            types.add(lunaElementTypeConverter.toEntity(input.typeHint()));
         }
         if (result != null && result.types() != null) {
-            result.types().forEach(type -> types.add(toEntityType(type)));
+            result.types().forEach(type -> types.add(lunaElementTypeConverter.toEntity(type)));
         }
         return types;
     }
@@ -95,16 +99,5 @@ public class ClassificationService {
                 ? InboundEventStatus.FAILED
                 : InboundEventStatus.RECEIVED;
         inboundEventRepository.save(inboundEvent.withAttempts(attempts).withStatus(status));
-    }
-
-    private LunaElementType toEntityType(LunaElementTypeDto type) {
-        return switch (type) {
-            case TASK -> LunaElementType.TASK;
-            case ALERT -> LunaElementType.ALERT;
-            case APPOINTMENT -> LunaElementType.APPOINTMENT;
-            case INVOICE -> LunaElementType.INVOICE;
-            case CONTRACT -> LunaElementType.CONTRACT;
-            case NOTE -> LunaElementType.NOTE;
-        };
     }
 }

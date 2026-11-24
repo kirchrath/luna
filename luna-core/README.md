@@ -124,7 +124,8 @@ Ausdrücklich **nicht** Teil von `luna-core`:
 - **Prompt:** `src/main/resources/prompts/classification.st` (Englisch); die Antwort der KI wird als
   `ClassificationResultDto` (Liste von Typen) gelesen.
 - **Enums:** `LunaElementTypeDto` (API, Package `dto`) und `LunaElementType` (Entity, Package `data.entity`)
-  sind getrennt und werden in `ClassificationService` aufeinander abgebildet.
+  sind getrennt und werden über `LunaElementTypeConverter` (mit MapStruct-Mapper `LunaElementTypeMapper`,
+  Package `converter`) aufeinander abgebildet.
 
 ### KI-Anbieter konfigurieren
 
