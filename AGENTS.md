@@ -73,6 +73,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | API-Dokumentation | **springdoc-openapi** (Code-first) |
 | Container-Image | **Jib** (Maven-Plugin), Basis-Image **`amazoncorretto:25`**, nur **`linux/amd64`** |
 | Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak) |
+| Service-Kommunikation | **Kafka** – Kommunikation zwischen Services **ausschließlich** über Kafka |
 | KI / Event-Analyse | **Spring AI** (in `luna-core`); Modell/Anbieter: _TODO_ |
 | Testabdeckung | **JaCoCo**, **100 % in allen Zählern** (Instruction, Line, Branch, Complexity, Method, Class), Build bricht bei Unterschreitung ab |
 
@@ -86,6 +87,9 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   - Jedes Backend bekommt einen **eigenen festen Port** (siehe [Services & Ports](#services--ports)),
     damit alle Services lokal gleichzeitig laufen können.
   - Neue Backends in der Port-Tabelle, der Repository-Struktur und im Stack eintragen.
+- **Kommunikation zwischen Services:** Backends kommunizieren untereinander **immer und ausschließlich
+  über Kafka**. Keine direkten REST- oder sonstigen synchronen Aufrufe zwischen Backends.
+  Das Frontend ruft die Backends weiterhin über den generierten REST-Wrapper auf (siehe [Frontend](#frontend-frontend)).
 - **OpenAPI (Code-first):** Die Spezifikation wird mit springdoc aus den Controllern erzeugt.
   Controller und DTOs sauber annotieren, damit die Spec vollständig und präzise ist
   (Operation-IDs, Schemas, Response-Codes) – sie ist der Vertrag für den Frontend-Wrapper.
