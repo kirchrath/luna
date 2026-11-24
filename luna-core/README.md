@@ -43,8 +43,12 @@ Konventionen, Tech-Stack und Betrieb stehen in [AGENTS.md](../AGENTS.md).
   gesendet**, die sie speichern. `luna-core` speichert diese Elemente nicht selbst.
 - **Ausgangskanal:** `luna-core` publiziert die erzeugten Events auf **Kafka-Topics**; die Fach-Backends
   konsumieren sie.
-- **Event-Format:** **eigenes JSON-Format** (ein- und ausgehend), definiert als Records. Die genaue Struktur
-  (Felder, Metadaten) ist noch offen.
+- **Event-Format:** **eigenes JSON-Format** (ein- und ausgehend), definiert als Records. Aufbau wie die
+  Entity-Dtos, zusätzlich mit ID. Auf Root-Ebene stehen also genau `id`, `audit` und `data`:
+
+  ```json
+  { "id": "…", "audit": { … }, "data": { … } }
+  ```
 - **Spring AI:** Modell bzw. Anbieter ist **konfigurierbar** (per Property/Profil umschaltbar).
   Zunächst unterstützt: **Ollama** (lokal), **Anthropic Claude** und **OpenAI-kompatible** Endpunkte.
 - **Spring-AI-Standard:** **kein** voreingestellter Anbieter; in `application.yml` leer, je Umgebung explizit setzen.
@@ -54,13 +58,27 @@ Konventionen, Tech-Stack und Betrieb stehen in [AGENTS.md](../AGENTS.md).
   (inkl. Verknüpfung, welche ausgehenden Events aus welchem Eingang entstanden sind).
   Analyseergebnisse und Prompts werden **nicht** in der Datenbank gespeichert.
 - **Element-Typen:** **Aufgabe**, **Alert**, **Termin**, **Finanz-/Vertragseintrag** und **Notiz**.
+- **Topics:** **ein Topic je Quelle** für den Eingang und **ein Topic je Element-Typ** für den Ausgang.
+- **Zuordnung zu Fach-Backends:** wird erst entschieden, wenn das jeweilige Fach-Backend konzipiert wird.
+
+## Abgrenzung
+
+Ausdrücklich **nicht** Teil von `luna-core`:
+
+- **Fachdaten speichern:** Aufgaben, Termine, Alerts usw. werden weder in `luna-core` gespeichert noch über
+  `luna-core` abgefragt.
+- **Quellen abfragen:** `luna-core` holt keine Daten selbst (kein IMAP, kein Polling); Quell-Services liefern Events.
+- **Benachrichtigungen:** `luna-core` verschickt keine Push- oder Mail-Benachrichtigungen an den Benutzer.
+- **Fachliche Folgeaktionen:** `luna-core` führt keine Aktionen aus (z. B. Mail beantworten), sondern erzeugt
+  nur Events.
 
 ## Offene Punkte
 
 Noch nicht entschieden (bitte hier eintragen, sobald entschieden):
 
 - **Kafka-Konfiguration:** Einbindung in den Stack (Stack-Datei, Port, Volumes). _TODO_
-- **Event-Struktur:** Felder und Metadaten des eigenen JSON-Formats. _TODO_
-- **Topics:** Benennung und Aufteilung der Kafka-Topics. _TODO_
-- **Zuordnung zu Fach-Backends:** Welches Backend ist für welchen Element-Typ zuständig? _TODO_
-- **Abgrenzung:** Was gehört ausdrücklich **nicht** zu `luna-core`? _TODO_
+- **Event-Details:** Inhalt von `audit` bei Events; wo Typ, Quelle und Verweis auf das auslösende Event
+  stehen; Inhalt von `data` je Element-Typ. _TODO_
+- **Topic-Namen:** konkretes Namensschema für Quell- und Typ-Topics. _TODO_
+- **Zuordnung zu Fach-Backends:** Welches Backend ist für welchen Element-Typ zuständig?
+  (Entscheidung bei Konzeption des jeweiligen Fach-Backends) _TODO_
