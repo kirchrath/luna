@@ -430,6 +430,10 @@ Vor jedem Commit müssen Build, Tests und Linter (sofern vorhanden) grün sein.
 ## Git & Commits
 
 - Nicht direkt auf `main` arbeiten; Feature-Branches verwenden.
+- **Nach dem Merge eines PRs nicht auf dessen Branch weiterarbeiten.** Neue Arbeit beginnt auf einem neuen Branch
+  vom aktuellen `main` (oder der Branch wird vom aktuellen `main` neu aufgesetzt). Grund: Beim Merge können neue
+  Commit-IDs entstehen (z. B. „Rebase and merge“); weitere Commits auf dem alten Branch führen dann zu
+  Merge-Konflikten mit inhaltlich bereits übernommenen Änderungen.
 - Commit-Messages **immer** nach [Conventional Commits](https://www.conventionalcommits.org/):
   `<type>(<optional scope>): <description>`, Beschreibung im Imperativ, Englisch, kleingeschrieben.
   - Typen: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
