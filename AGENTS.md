@@ -391,7 +391,9 @@ Vor jedem Commit müssen Build, Tests und Linter (sofern vorhanden) grün sein.
 
 ## Code-Konventionen
 
-- **Sprache im Code:** Englisch (Bezeichner, Kommentare, Commit-Messages).
+- **Sprache im Code:** **Englisch**. Kommentare sind Teil des Codes und daher **immer Englisch** – das gilt für
+  alle Kommentare (auch Javadoc, TODO-Kommentare und die `given`/`when`/`then`-Kommentare in Tests) sowie für
+  Bezeichner und Commit-Messages.
 - **Sprache der Dokumentation:** Deutsch oder Englisch – innerhalb eines Dokuments konsistent bleiben.
 - Formatierung und Stil folgen dem jeweiligen Standard-Formatter/Linter des Stacks.
 - **Code muss für Menschen gut lesbar sein.** Kommentare veralten schnell und werden daher **nur** gesetzt, wenn der
