@@ -33,7 +33,7 @@ Noch offen (bitte hier eintragen, sobald entschieden):
 - **Reihenfolge / erstes Feature:** **Verarbeitung in `luna-core`** mit der manuellen Eingabe als erster Quelle,
   in kleinen, einzeln beauftragten Schritten:
   1. Kafka im Stack (`swarm/kafka.yml`) mit TLS, SASL/SCRAM und ACLs (erledigt)
-  2. Eingang: REST-Endpunkt für die manuelle Eingabe; eingehendes Event speichern
+  2. Eingang: REST-Endpunkt für die manuelle Eingabe; eingehendes Event speichern (erledigt)
   3. Analyse per Spring AI (Entscheidung über den Element-Typ)
   4. Ausgang: erzeugte Events auf `luna_core_<typ>` publizieren und mit dem Eingang verknüpft speichern
   5. Frontend: Seite für die manuelle Eingabe
@@ -171,6 +171,9 @@ in diesen Sub-Packages:
 3. **Eingebettete Dtos** – Records, die weder ein List-Dto noch direkt eine Entität repräsentieren
    (Name endet ebenfalls auf `Dto`).
 
+- **Anlegen von Entitäten:** Endpunkte, die eine Entität anlegen, antworten in **allen Services** mit einem
+  **`ResourceReferenceDto`**, dessen einzige Property `id` (`UUID`) ist.
+
 Beispiel für eine Entität `Task` (Felder und Typen nur zur Veranschaulichung, keine Festlegung):
 
 ```java
@@ -211,7 +214,8 @@ record TaskDataDto(String title, String description) {}
 - Testnamen nach dem Muster **`thatActionShouldResultIntoX`**. Einzige Ausnahme: der Haupt-Test
   `ApplicationTests.contextLoads()` wie in Spring-Initializr-Projekten.
 - Tests, die den Spring-Kontext starten, nutzen PostgreSQL über **Testcontainers** (`config/TestcontainersConfig`
-  im Test-Quellbaum, `@ServiceConnection`, Image `postgres:18.7`). Kafka-Integrationstests nutzen ebenso
+  im Test-Quellbaum, `@ServiceConnection`, Image `postgres:18.7`). Der Container setzt wie die echte Konfiguration
+  `currentSchema=<schema>` in der JDBC-URL (`withUrlParam`), sonst findet Spring Data JDBC die Tabellen nicht. Kafka-Integrationstests nutzen ebenso
   **Testcontainers** (Image `apache/kafka:4.4.0`, `@ServiceConnection`), kein Embedded Kafka.
 - Jeder Test folgt den drei Sektionen **given / when / then**, jeweils als Kommentar markiert:
 
