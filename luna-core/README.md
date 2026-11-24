@@ -56,7 +56,7 @@ Konventionen, Tech-Stack und Betrieb stehen in [AGENTS.md](../AGENTS.md).
 - **Spring AI:** Modell bzw. Anbieter ist **konfigurierbar** (per Property/Profil umschaltbar).
   Zunächst unterstützt: **Ollama** (lokal), **Anthropic Claude** und **OpenAI-kompatible** Endpunkte.
 - **Spring-AI-Standard:** **kein** voreingestellter Anbieter; in `application.yml` leer, je Umgebung explizit setzen.
-- **Kafka-Betrieb:** Image **`apache/kafka:4.4.0`** in `swarm/kafka.yml`, Port **7092**, TLS und SASL/SCRAM
+- **Kafka-Betrieb:** Image **`apache/kafka:4.4.0`** in `swarm/kafka.yml`, Port **7094**, TLS und SASL/SCRAM
   (siehe [AGENTS.md](../AGENTS.md#betrieb)). `luna-core` meldet sich als Benutzer `luna-core` an, darf auf
   `luna_core_*` schreiben und liest nur ausdrücklich freigegebene Topics.
 - **Persistenz:** `luna-core` speichert die **eingegangenen Events** und die **erzeugten Events**

@@ -16,12 +16,12 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      # INTERNAL: services inside the stack (kafka:9092). EXTERNAL: published port 7092.
+      # INTERNAL: services inside the stack (kafka:9094). EXTERNAL: published port 7094.
       # CONTROLLER only listens on localhost inside the container.
-      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://localhost:9093,EXTERNAL://:9094
+      KAFKA_LISTENERS: INTERNAL://:9094,CONTROLLER://localhost:9093,EXTERNAL://:9095
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:SASL_SSL,CONTROLLER:PLAINTEXT,EXTERNAL:SASL_SSL
-      # Address announced to external clients. On the server e.g. LUNA_KAFKA_HOST=luna.internal:7092.
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://${LUNA_KAFKA_HOST:-localhost:7092}
+      # Address announced to external clients. On the server e.g. LUNA_KAFKA_HOST=luna.internal:7094.
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9094,EXTERNAL://${LUNA_KAFKA_HOST:-localhost:7094}
       KAFKA_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: SCRAM-SHA-512
       KAFKA_AUTHORIZER_CLASS_NAME: org.apache.kafka.metadata.authorizer.StandardAuthorizer
@@ -39,7 +39,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_LOG_DIRS: /var/lib/kafka/data
     ports:
-      - "7092:9094"
+      - "7094:9095"
     volumes:
       - kafka-data:/var/lib/kafka/data
       - step-ca-data:/step:ro

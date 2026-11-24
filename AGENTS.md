@@ -276,7 +276,7 @@ Ports für Backends werden **ab 7080 fortlaufend** vergeben (7080 ist durch Keyc
 |---|---|---|
 | Frontend (Vite-Dev-Server) | 5173 | `/` |
 | PostgreSQL | 7432 | – |
-| Kafka | 7092 | – |
+| Kafka | 7094 | – |
 | Keycloak | 7080 | `/auth` (Keycloak mit relativem Pfad `/auth` konfiguriert, **ohne** StripPrefix) |
 | `luna-core` | 7081 | `/api/luna-core` |
 | _nächstes Backend_ | 7082 | `/api/<backend-name>` |
@@ -310,9 +310,9 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
 - Die Infrastruktur-Datei dient **auch der lokalen Entwicklung**; PostgreSQL (7432) und Keycloak (7080) sind
   daher auch auf dem Server veröffentlicht. Die Keycloak-URL (Issuer) ist über `LUNA_KEYCLOAK_URL` umschaltbar.
 - **Kafka** (`apache/kafka`, KRaft-Modus, ein Knoten) läuft in `swarm/kafka.yml`, ist wie PostgreSQL und
-  Keycloak auch auf dem Server unter **7092** veröffentlicht (lokale Entwicklung) und speichert seine Daten im
-  Volume `kafka-data`. Backends im Stack nutzen `kafka:9092`; die für externe Clients mitgeteilte Adresse ist über
-  `LUNA_KAFKA_HOST` umschaltbar (Standard `localhost:7092`, auf dem Server z. B. `luna.internal:7092`).
+  Keycloak auch auf dem Server unter **7094** veröffentlicht (lokale Entwicklung) und speichert seine Daten im
+  Volume `kafka-data`. Backends im Stack nutzen `kafka:9094`; die für externe Clients mitgeteilte Adresse ist über
+  `LUNA_KAFKA_HOST` umschaltbar (Standard `localhost:7094`, auf dem Server z. B. `luna.internal:7094`).
 - **Kafka-Sicherheit:** **immer TLS** und **SASL/SCRAM-SHA-512** (auch lokal); nur der Controller-Listener lauscht
   ohne TLS auf `localhost` im Container.
   - Zertifikat von step-ca, **1 Jahr** gültig, über einen eigenen Provisioner `kafka`; erzeugt per
