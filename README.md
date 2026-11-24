@@ -5,7 +5,7 @@ Architektur, Tech-Stack und Konventionen stehen in [AGENTS.md](AGENTS.md).
 
 ## Infrastruktur im Docker Swarm starten
 
-Die Infrastruktur-Services (Traefik, step-ca, PostgreSQL, Keycloak) stehen in
+Die Infrastruktur-Services (Traefik, step-ca, PostgreSQL, Keycloak, Kafka) stehen in
 [`swarm/infrastructure.yml`](swarm/infrastructure.yml). Weitere Stack-Dateien (Frontend, Backends)
 kommen später dazu und werden im selben Stack `luna` deployt.
 
@@ -15,6 +15,7 @@ kommen später dazu und werden im selben Stack `luna` deployt.
 | step-ca | `smallstep/step-ca:0.30.2` | – (intern 9000) |
 | PostgreSQL | `postgres:18.7` | 7432 |
 | Keycloak | `quay.io/keycloak/keycloak:26.8.2` | 7080 (unter `/auth`) |
+| Kafka | `apache/kafka:4.4.0` | 7092 |
 
 ### 1. Swarm initialisieren (einmalig)
 
@@ -76,7 +77,7 @@ Geräten installieren, die Luna nutzen.
 ### Lokale Entwicklung
 
 Dieselbe Datei kann lokal genutzt werden (`docker swarm init` und Secrets wie oben). PostgreSQL ist dann
-unter `localhost:7432`, Keycloak unter `http://localhost:7080/auth` erreichbar.
+unter `localhost:7432`, Keycloak unter `http://localhost:7080/auth` und Kafka unter `localhost:7092` erreichbar.
 Damit der Issuer der Tokens zur lokalen URL passt, beim Deploy die Keycloak-URL setzen:
 
 ```bash
@@ -92,7 +93,9 @@ LUNA_KEYCLOAK_URL=http://localhost:7080/auth docker stack deploy -c swarm/infras
 | Secrets | `step_ca_password`, `postgres_password`, `keycloak_db_password`, `luna_db_password`, `keycloak_admin_password` (alle extern, siehe oben) |
 | Netzwerk | Overlay-Netz `luna`, `attachable` – auch Container außerhalb des Stacks können sich verbinden |
 | Keycloak-URL | Variable `LUNA_KEYCLOAK_URL` setzt den Issuer der Tokens. Standard: `https://luna.internal/auth`; lokal `http://localhost:7080/auth` |
-| Ports | Traefik 80/443, PostgreSQL 7432, Keycloak 7080 – auch bei lokaler Nutzung belegt Traefik 80 und 443 |
+| Kafka-Adresse | Backends im Stack nutzen `kafka:9092`. Für Clients außerhalb des Stacks (Port 7092) teilt Kafka die Adresse aus `LUNA_KAFKA_HOST` mit. Standard: `localhost:7092`; auf dem Server z. B. `LUNA_KAFKA_HOST=luna.internal:7092` setzen, damit Entwicklungsrechner zugreifen können |
+| Kafka | ein Knoten im KRaft-Modus (ohne ZooKeeper), feste `CLUSTER_ID` in der Stack-Datei, Daten im Volume `kafka-data`, ohne Authentifizierung (PLAINTEXT) |
+| Ports | Traefik 80/443, PostgreSQL 7432, Keycloak 7080, Kafka 7092 – auch bei lokaler Nutzung belegt Traefik 80 und 443 |
 
 ### Bekannte Fallstricke
 
