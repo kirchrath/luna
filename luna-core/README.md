@@ -60,8 +60,10 @@ Konventionen, Tech-Stack und Betrieb stehen in [AGENTS.md](../AGENTS.md).
   (siehe [AGENTS.md](../AGENTS.md#betrieb)). `luna-core` meldet sich als Benutzer `luna-core` an, darf auf
   `luna_core_*` schreiben und liest nur ausdrücklich freigegebene Topics.
 - **Persistenz:** `luna-core` speichert die **eingegangenen Events** und die **erzeugten Events**
-  (inkl. Verknüpfung, welche ausgehenden Events aus welchem Eingang entstanden sind).
-  Analyseergebnisse und Prompts werden **nicht** in der Datenbank gespeichert.
+  (inkl. Verknüpfung, welche ausgehenden Events aus welchem Eingang entstanden sind). Jedes erzeugte Event wird
+  **vor** der Veröffentlichung mit Typ, Verweis auf das Original-Event und einem **Status** gespeichert, damit es
+  in späteren Schritten weiter qualifiziert werden kann. Prompts und Begründungen der KI werden **nicht** in der
+  Datenbank gespeichert.
 - **Element-Typen** (englischer Name für Topics und Code):
 
   | Element | Name | Ausgangs-Topic |
@@ -96,13 +98,48 @@ Ausdrücklich **nicht** Teil von `luna-core`:
 
 - **Endpunkt:** `POST /inbound-events/manual` (OperationId `createManualInboundEvent`), nur mit JWT.
 - **Request:** `ManualInputDataDto` mit `text` (Pflicht, nicht leer, max. 10.000 Zeichen) und optionalem
-  `typeHint` (`LunaElementType`: `TASK`, `ALERT`, `APPOINTMENT`, `INVOICE`, `CONTRACT`, `NOTE`).
+  `typeHint` (`LunaElementTypeDto`: `TASK`, `ALERT`, `APPOINTMENT`, `INVOICE`, `CONTRACT`, `NOTE`).
 - **Antwort:** `202 Accepted` mit `ResourceReferenceDto` (`{"id": "…"}`); `400` bei ungültiger Eingabe,
   `401` ohne gültiges Token.
 - **Speicherung:** Tabelle `inbound_event` mit `id`, `source` (`EventSource`, z. B. `MANUAL`), `data` (JSONB,
   hier der `ManualInputDataDto` als JSON) und den Audit-Feldern.
 - **Security:** CSRF ist deaktiviert und die API zustandslos (keine Sessions), da sie nur per Bearer-Token
   aufgerufen wird.
+
+### Klassifizierung per Spring AI (Schritt 3)
+
+- **Ablauf:** Der Job `ClassificationJob` läuft periodisch (`app.classification.interval`, Standard `30s`) und
+  holt die ältesten eingehenden Events mit Status `RECEIVED` (höchstens `app.classification.batch-size`,
+  Standard `10`). Je Event fragt `ClassificationService` die KI, welche Element-Typen entstehen (**null bis
+  mehrere**), legt je Typ ein `OutboundEvent` mit Status `CLASSIFIED` an und setzt das eingehende Event auf
+  `ANALYZED` – beides in einer Transaktion.
+- **Typ-Hinweis:** Ist bei der manuellen Eingabe ein `typeHint` gesetzt, wird er der KI mitgegeben und ist immer
+  im Ergebnis enthalten; die KI kann weitere Typen ergänzen.
+- **Fehler:** Schlägt der KI-Aufruf fehl, wird `attempts` erhöht; ab `app.classification.max-attempts`
+  (Standard `3`) wird das eingehende Event `FAILED`, sonst beim nächsten Lauf erneut versucht.
+- **Status:** eingehende Events `RECEIVED` → `ANALYZED` bzw. `FAILED` (`InboundEventStatus`); erzeugte Events
+  zunächst `CLASSIFIED` (`OutboundEventStatus`), weitere Status folgen mit den nächsten Schritten.
+- **Speicherung:** Tabelle `outbound_event` mit `id`, `inbound_event_id` (Fremdschlüssel), `type`
+  (`LunaElementType`), `status` und den Audit-Feldern; `inbound_event` hat zusätzlich `status` und `attempts`.
+- **Prompt:** `src/main/resources/prompts/classification.st` (Englisch); die Antwort der KI wird als
+  `ClassificationResultDto` (Liste von Typen) gelesen.
+- **Enums:** `LunaElementTypeDto` (API, Package `dto`) und `LunaElementType` (Entity, Package `data.entity`)
+  sind getrennt und werden in `ClassificationService` aufeinander abgebildet.
+
+### KI-Anbieter konfigurieren
+
+Spring AI **2.1.0** mit den Startern für Ollama, Anthropic und OpenAI. Der Anbieter wird über
+`spring.ai.model.chat` gewählt; der Wert ist in `application.yml` bewusst leer und muss je Umgebung gesetzt
+werden – **ohne Anbieter startet `luna-core` nicht**. Alle übrigen Modellarten (Embedding, Bild, Audio,
+Moderation, Decision) sind mit `none` abgeschaltet.
+
+| Anbieter | `SPRING_AI_MODEL_CHAT` | Weitere Umgebungsvariablen (Beispiele) |
+|---|---|---|
+| Ollama | `ollama` | `SPRING_AI_OLLAMA_BASE_URL`, `SPRING_AI_OLLAMA_CHAT_MODEL` |
+| Anthropic Claude | `anthropic` | `SPRING_AI_ANTHROPIC_API_KEY`, `SPRING_AI_ANTHROPIC_CHAT_MODEL` |
+| OpenAI-kompatibel | `openai` | `SPRING_AI_OPENAI_API_KEY`, `SPRING_AI_OPENAI_BASE_URL`, `SPRING_AI_OPENAI_CHAT_MODEL` |
+
+API-Keys nie ins Repo; im Stack als Docker Secrets bereitstellen.
 
 ## Offene Punkte
 

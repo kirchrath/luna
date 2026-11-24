@@ -13,8 +13,9 @@ import org.mockito.ArgumentCaptor;
 
 import de.kirchrath.luna.core.data.entity.EventSource;
 import de.kirchrath.luna.core.data.entity.InboundEvent;
+import de.kirchrath.luna.core.data.entity.InboundEventStatus;
 import de.kirchrath.luna.core.data.repository.InboundEventRepository;
-import de.kirchrath.luna.core.dto.LunaElementType;
+import de.kirchrath.luna.core.dto.LunaElementTypeDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -31,7 +32,7 @@ class InboundEventServiceTest {
         var id = UUID.fromString("0b8f3a52-5a0e-4d7f-9f43-2f1c7f0f4a11");
         when(inboundEventRepository.save(any()))
                 .thenAnswer(invocation -> invocation.<InboundEvent>getArgument(0).withId(id));
-        var input = new ManualInputDataDto("Pay the electricity bill", LunaElementType.TASK);
+        var input = new ManualInputDataDto("Pay the electricity bill", LunaElementTypeDto.TASK);
 
         // when
         var reference = inboundEventService.createManualInboundEvent(input);
@@ -43,6 +44,8 @@ class InboundEventServiceTest {
         var stored = captor.getValue();
         assertThat(stored.id()).isNull();
         assertThat(stored.source()).isEqualTo(EventSource.MANUAL);
+        assertThat(stored.status()).isEqualTo(InboundEventStatus.RECEIVED);
+        assertThat(stored.attempts()).isZero();
         assertThat(jsonMapper.readValue(stored.data().json(), ManualInputDataDto.class)).isEqualTo(input);
         assertThat(stored.createdDate()).isNull();
         assertThat(stored.lastModifiedDate()).isNull();

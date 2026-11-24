@@ -1,6 +1,6 @@
 package de.kirchrath.luna.core.dto;
 
-public enum LunaElementType {
+public enum LunaElementTypeDto {
     TASK,
     ALERT,
     APPOINTMENT,
