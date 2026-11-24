@@ -1,0 +1,110 @@
+# Kafka for Luna: broker (TLS + SASL/SCRAM, ACLs) and an init service that maintains users and ACLs.
+#
+# Deploy together with the infrastructure, after the Kafka certificate has been created:
+#   LUNA_KAFKA_CERT_VERSION=1 docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml luna
+#
+# Prerequisites (external Docker secrets, certificate script): see README.md.
+
+services:
+  kafka:
+    image: apache/kafka:4.4.0
+    entrypoint: ["/bin/bash", "/usr/local/bin/luna-kafka-start.sh"]
+    environment:
+      CLUSTER_ID: qqalXaoNQMeha0I88S166g
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      # INTERNAL: services inside the stack (kafka:9092). EXTERNAL: published port 7092.
+      # CONTROLLER only listens on localhost inside the container.
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://localhost:9093,EXTERNAL://:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:SASL_SSL,CONTROLLER:PLAINTEXT,EXTERNAL:SASL_SSL
+      # Address announced to external clients. On the server e.g. LUNA_KAFKA_HOST=luna.internal:7092.
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://${LUNA_KAFKA_HOST:-localhost:7092}
+      KAFKA_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: SCRAM-SHA-512
+      KAFKA_AUTHORIZER_CLASS_NAME: org.apache.kafka.metadata.authorizer.StandardAuthorizer
+      # ANONYMOUS only exists on the PLAINTEXT controller listener (localhost) and is needed by the broker itself.
+      KAFKA_SUPER_USERS: User:admin;User:ANONYMOUS
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_SSL_KEYSTORE_LOCATION: /run/secrets/kafka_keystore
+      # Kafka validates its own certificate on startup and therefore needs the root certificate of step-ca.
+      KAFKA_SSL_TRUSTSTORE_TYPE: PEM
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /step/certs/root_ca.crt
+      # Single node: internal topics can only have one replica.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    ports:
+      - "7092:9094"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+      - step-ca-data:/step:ro
+      - /etc/localtime:/etc/localtime:ro
+    configs:
+      - source: kafka_start
+        target: /usr/local/bin/luna-kafka-start.sh
+        mode: 0555
+    secrets:
+      - kafka_admin_password
+      - kafka_keystore
+      - kafka_keystore_password
+    networks:
+      - luna
+
+  kafka-init:
+    image: apache/kafka:4.4.0
+    entrypoint: ["/bin/bash", "/usr/local/bin/luna-kafka-init.sh"]
+    environment:
+      # One line per service: "<service>: <topics the service may read, comma separated>".
+      # Every service may write to (and auto-create) topics starting with luna_<service without luna->_.
+      # Each service needs the secret kafka_<service with _ instead of ->_password (declared below).
+      LUNA_KAFKA_SERVICES: |
+        luna-core:
+    volumes:
+      # Root certificate of step-ca to verify the Kafka certificate.
+      - step-ca-data:/step:ro
+      - /etc/localtime:/etc/localtime:ro
+    configs:
+      - source: kafka_init
+        target: /usr/local/bin/luna-kafka-init.sh
+        mode: 0555
+    secrets:
+      - kafka_admin_password
+      - kafka_luna_core_password
+    networks:
+      - luna
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+networks:
+  luna:
+    name: luna
+    driver: overlay
+    attachable: true
+
+volumes:
+  kafka-data:
+  step-ca-data:
+
+configs:
+  kafka_start:
+    file: ./kafka/start.sh
+  kafka_init:
+    file: ./kafka/init.sh
+
+secrets:
+  kafka_admin_password:
+    external: true
+  kafka_luna_core_password:
+    external: true
+  kafka_keystore:
+    external: true
+    name: kafka_keystore_v${LUNA_KAFKA_CERT_VERSION:?set LUNA_KAFKA_CERT_VERSION to the current Kafka certificate version}
+  kafka_keystore_password:
+    external: true
+    name: kafka_keystore_password_v${LUNA_KAFKA_CERT_VERSION:?set LUNA_KAFKA_CERT_VERSION to the current Kafka certificate version}
