@@ -110,11 +110,11 @@ Ausdrücklich **nicht** Teil von `luna-core`:
 
 - **Ablauf:** `ClassificationScheduler` läuft periodisch (`app.classification.interval`, Standard `30s`) und
   holt über `ClassificationApplicationService` die ältesten eingehenden Events mit Status `RECEIVED` (höchstens
-  `app.classification.batch-size`, Standard `10`). Je Event fragt der `ClassificationApplicationService` die KI
-  (außerhalb einer Transaktion), welche Element-Typen entstehen (**null bis mehrere**), und übergibt das Ergebnis
-  (`ClassificationOutcome`) an den `ClassificationDomainService`. Dieser legt in **einer** Transaktion je Typ ein
-  `OutboundEvent` mit Status `CLASSIFIED` an und setzt das eingehende Event auf `ANALYZED` – bzw. speichert den
-  Fehlversuch.
+  `app.classification.batch-size`, Standard `10`). Je Event klassifiziert der `ClassificationDomainService` in
+  **einer** Transaktion: Er fragt über den Client `ElementClassificationClient` (`outbound`, Spring AI), welche
+  Element-Typen entstehen (**null bis mehrere**), legt je Typ ein `OutboundEvent` mit Status `CLASSIFIED` an und
+  setzt das eingehende Event auf `ANALYZED` – bzw. speichert den Fehlversuch. Der ApplicationService leitet nur
+  weiter.
 - **Typ-Hinweis:** Ist bei der manuellen Eingabe ein `typeHint` gesetzt, wird er der KI mitgegeben und ist immer
   im Ergebnis enthalten; die KI kann weitere Typen ergänzen.
 - **Fehler:** Schlägt der KI-Aufruf fehl, wird `attempts` erhöht; ab `app.classification.max-attempts`
