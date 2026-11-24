@@ -1,7 +1,7 @@
 #!/bin/bash
-# Legt beim ersten Start von PostgreSQL (leeres Datenverzeichnis) die Datenbanken
-# für Keycloak und Luna mit je einem eigenen Benutzer an.
-# Die Schemas der einzelnen Luna-Backends legen deren Flyway-Migrationen an.
+# Creates the databases for Keycloak and Luna, each with its own user, on the first start
+# of PostgreSQL (empty data directory).
+# The schemas of the Luna backends are created by their Flyway migrations.
 set -euo pipefail
 
 create_database() {

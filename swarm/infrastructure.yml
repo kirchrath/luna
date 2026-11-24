@@ -1,10 +1,10 @@
-# Infrastruktur-Services von Luna (Traefik, step-ca, PostgreSQL, Keycloak).
+# Infrastructure services of Luna (Traefik, step-ca, PostgreSQL, Keycloak).
 #
-# Deploy (zusammen mit späteren Stack-Dateien im selben Stack "luna"):
-#   docker stack deploy -c swarm/infrastructure.yml luna
+# Deploy (together with the other stack files in the same stack "luna"):
+#   LUNA_KAFKA_CERT_VERSION=<n> docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml luna
 #
-# Voraussetzungen (externe Docker Secrets, hosts-Eintrag usw.): siehe README.md.
-# Alle Services übernehmen die Zeitzone vom Host (/etc/localtime).
+# Prerequisites (external Docker secrets, hosts entry etc.): see README.md.
+# All services use the time zone of the host (/etc/localtime).
 
 services:
   traefik:
@@ -21,10 +21,10 @@ services:
       - --certificatesresolvers.stepca.acme.caServer=https://step-ca:9000/acme/acme/directory
       - --certificatesresolvers.stepca.acme.storage=/data/acme.json
       - --certificatesresolvers.stepca.acme.httpChallenge.entryPoint=web
-      # step-ca stellt Zertifikate standardmäßig für 24 Stunden aus.
+      # step-ca issues certificates for 24 hours by default.
       - --certificatesresolvers.stepca.acme.certificatesDuration=24
     environment:
-      # Traefik (lego) muss dem Root-Zertifikat von step-ca vertrauen, um dessen ACME-Endpunkt aufzurufen.
+      # Traefik (lego) has to trust the root certificate of step-ca to call its ACME endpoint.
       LEGO_CA_CERTIFICATES: /step/certs/root_ca.crt
     ports:
       - "80:80"
@@ -36,8 +36,8 @@ services:
       - step-ca-data:/step:ro
     networks:
       luna:
-        # Container im Stack (step-ca für die ACME-Challenge, Backends für Keycloak)
-        # erreichen luna.internal über diesen Alias direkt bei Traefik.
+        # Containers in the stack (step-ca for the ACME challenge, backends for Keycloak)
+        # reach luna.internal directly at Traefik through this alias.
         aliases:
           - luna.internal
     deploy:
@@ -56,8 +56,8 @@ services:
       - step-ca-data:/home/step
       - /etc/localtime:/etc/localtime:ro
     healthcheck:
-      # Der Healthcheck des Images ruft https://step-ca:9000 auf. Swarm trägt den Service aber erst
-      # nach bestandenem Healthcheck ins DNS ein – daher hier über localhost prüfen.
+      # The image's healthcheck calls https://step-ca:9000, but Swarm only adds the service to DNS
+      # after a passed healthcheck - so check via localhost instead.
       test: ["CMD-SHELL", "step ca health --ca-url https://localhost:9000 --root /home/step/certs/root_ca.crt 2>/dev/null | grep -q '^ok'"]
     secrets:
       - step_ca_password
@@ -71,7 +71,7 @@ services:
     ports:
       - "7432:5432"
     volumes:
-      # Ab PostgreSQL 18 wird /var/lib/postgresql eingebunden (nicht mehr .../data).
+      # Since PostgreSQL 18 /var/lib/postgresql is mounted (no longer .../data).
       - postgres-data:/var/lib/postgresql
       - /etc/localtime:/etc/localtime:ro
     configs:
@@ -87,7 +87,7 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.8.2
-    # Keycloak liest keine *_FILE-Variablen; Passwörter werden daher beim Start aus den Secrets gelesen.
+    # Keycloak does not support *_FILE variables, so passwords are read from the secrets on startup.
     entrypoint: ["/bin/bash", "-c"]
     command:
       - |
@@ -102,8 +102,8 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_HTTP_RELATIVE_PATH: /auth
       KC_PROXY_HEADERS: xforwarded
-      # Öffentliche URL von Keycloak (Issuer der Tokens).
-      # Im Heimnetz https://luna.internal/auth, lokal LUNA_KEYCLOAK_URL=http://localhost:7080/auth setzen.
+      # Public URL of Keycloak (issuer of the tokens).
+      # In the home network https://luna.internal/auth; locally set LUNA_KEYCLOAK_URL=http://localhost:7080/auth.
       KC_HOSTNAME: ${LUNA_KEYCLOAK_URL:-https://luna.internal/auth}
     ports:
       - "7080:8080"
