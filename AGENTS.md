@@ -57,7 +57,9 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 2. **Erst verstehen, dann ändern.** Vor Änderungen den bestehenden Code und diese Datei lesen.
 3. **Niemals Annahmen treffen.** Diese Regel gilt ausnahmslos – auch für scheinbar kleine Details wie Namen,
    Typen, Pfade, Versionen oder Standardwerte. Bei jeder Unklarheit **nachfragen** und **konkrete Vorschläge zur
-   Auswahl** vorlegen (mit kurzer Begründung bzw. Vor- und Nachteilen, ggf. einer Empfehlung). Die Entscheidung
+   Auswahl** vorlegen (mit kurzer Begründung bzw. Vor- und Nachteilen, ggf. einer Empfehlung). Optionen werden
+   **immer anklickbar zur Auswahl** angeboten (z. B. über einen Auswahl-Dialog), nicht als Text, den der Benutzer
+   abtippen muss; freie Eingabe bleibt als zusätzliche Möglichkeit offen. Die Entscheidung
    trifft der Mensch; erst danach umsetzen. Was nicht entschieden ist, wird als offen (_TODO_) markiert,
    nicht stillschweigend festgelegt.
 4. **Einfachheit vor Abstraktion.** Keine spekulativen Erweiterungspunkte, keine unnötigen Abhängigkeiten.
