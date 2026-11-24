@@ -28,7 +28,7 @@ Konventionen, Tech-Stack und Betrieb stehen in [AGENTS.md](../AGENTS.md).
 
 | # | Funktion | Status |
 |---|---|---|
-| 1 | Events aus unterschiedlichen Quellen empfangen | _TODO_ |
+| 1 | Events aus unterschiedlichen Quellen empfangen | manuelle Eingabe umgesetzt; Kafka-Quellen _TODO_ |
 | 2 | Eingehende Events per Spring AI analysieren | _TODO_ |
 | 3 | Anhand der Analyse entscheiden, welche neuen Elemente entstehen (z. B. Aufgabe, Alert) | _TODO_ |
 | 4 | Neue Events für die entstandenen Elemente erzeugen | _TODO_ |
@@ -90,9 +90,26 @@ Ausdrücklich **nicht** Teil von `luna-core`:
 - **Fachliche Folgeaktionen:** `luna-core` führt keine Aktionen aus (z. B. Mail beantworten), sondern erzeugt
   nur Events.
 
+## Umsetzung
+
+### Manuelle Eingabe (Schritt 2)
+
+- **Endpunkt:** `POST /inbound-events/manual` (OperationId `createManualInboundEvent`), nur mit JWT.
+- **Request:** `ManualInputDataDto` mit `text` (Pflicht, nicht leer, max. 10.000 Zeichen) und optionalem
+  `typeHint` (`LunaElementType`: `TASK`, `ALERT`, `APPOINTMENT`, `INVOICE`, `CONTRACT`, `NOTE`).
+- **Antwort:** `202 Accepted` mit `ResourceReferenceDto` (`{"id": "…"}`); `400` bei ungültiger Eingabe,
+  `401` ohne gültiges Token.
+- **Speicherung:** Tabelle `inbound_event` mit `id`, `source` (`EventSource`, z. B. `MANUAL`), `data` (JSONB,
+  hier der `ManualInputDataDto` als JSON) und den Audit-Feldern.
+- **Security:** CSRF ist deaktiviert und die API zustandslos (keine Sessions), da sie nur per Bearer-Token
+  aufgerufen wird.
+
 ## Offene Punkte
 
 Noch nicht entschieden (bitte hier eintragen, sobald entschieden):
+
+- **Fehlerformat:** Body von Fehlerantworten (z. B. `400`) ist noch nicht festgelegt und daher nicht in der
+  OpenAPI-Spezifikation beschrieben. _TODO_
 
 - **Event-Daten:** Inhalt von `data` je Element-Typ und je weiterer Quelle (Feldnamen und Typen). _TODO_
 - **Zuordnung zu Fach-Backends:** Welches Backend ist für welchen Element-Typ zuständig?
