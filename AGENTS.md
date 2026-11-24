@@ -87,6 +87,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | Service-Kommunikation | **Kafka** – Kommunikation zwischen Services **ausschließlich** über Kafka |
 | KI / Event-Analyse | **Spring AI 2.1.0** (in `luna-core`); Anbieter konfigurierbar über `spring.ai.model.chat` (Ollama, Anthropic Claude, OpenAI-kompatibel), kein Standard; nicht genutzte Modellarten mit `none` abgeschaltet |
 | Mapping | **MapStruct 1.6.3** (Mapper in `converter`) |
+| Lombok | Version von Spring Boot verwaltet; **nur** `@Slf4j`, `@Builder(toBuilder = true)` und `@With` |
 | Architekturtests | **ArchUnit 1.5.1** (`archunit-junit5`) |
 | Testabdeckung | **JaCoCo**, **100 % in allen Zählern** (Instruction, Line, Branch, Complexity, Method, Class), Build bricht bei Unterschreitung ab |
 
@@ -166,10 +167,21 @@ in diesen Sub-Packages:
   nach dem üblichen Test-Namensschema und mit given/when/then ergänzt.
   Bisherige Regeln: `data` → `dto` verboten, `dto` → `data` verboten.
 
+#### Lombok
+
+- Lombok wird **nur** für diese Annotationen verwendet: **`@Slf4j`** (Logging), **`@Builder(toBuilder = true)`**
+  und **`@With`** (z. B. an Record-Komponenten von Entities statt handgeschriebener `with…`-Methoden).
+- Alle anderen Lombok-Features (z. B. `@Data`, `@Getter`, `@RequiredArgsConstructor`, `@Value`) werden nicht
+  genutzt; Konstruktoren für Dependency Injection werden explizit geschrieben.
+
 #### Keine statischen Methoden
 
 - Statische Methoden dürfen im **Produktionscode** nicht direkt verwendet werden, damit alles testbar bleibt.
   **In Tests sind statische Methodenaufrufe erlaubt** (z. B. `Path.of`, AssertJ, MockMvc-Builder).
+- **Erlaubt sind reine Factory-Methoden** ohne Seiteneffekte und ohne Nichtdeterminismus, z. B. `List.of`,
+  `Set.of`, `Map.of`, `Optional.of`/`ofNullable`/`empty`. Verboten bleiben Aufrufe, die von Zeit, Zufall oder
+  Umgebung abhängen – dafür gibt es Provider (siehe unten).
+- **Logging** ausschließlich über Lombok **`@Slf4j`** (kein direkter Aufruf von `LoggerFactory`).
 - IDs kommen aus einem **`UuidProvider`** (statt `UUID.randomUUID()`).
 - Zeitpunkte kommen aus einem **`TimeProvider`** (statt `OffsetDateTime.now()`, `Instant.now()` o. ä.).
   Er liefert `OffsetDateTime` mit dem Offset der **Zeitzone des Servers**.
