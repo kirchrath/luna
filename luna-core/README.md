@@ -108,11 +108,13 @@ Ausdrücklich **nicht** Teil von `luna-core`:
 
 ### Klassifizierung per Spring AI (Schritt 3)
 
-- **Ablauf:** Der Job `ClassificationJob` läuft periodisch (`app.classification.interval`, Standard `30s`) und
-  holt die ältesten eingehenden Events mit Status `RECEIVED` (höchstens `app.classification.batch-size`,
-  Standard `10`). Je Event fragt `ClassificationService` die KI, welche Element-Typen entstehen (**null bis
-  mehrere**), legt je Typ ein `OutboundEvent` mit Status `CLASSIFIED` an und setzt das eingehende Event auf
-  `ANALYZED` – beides in einer Transaktion.
+- **Ablauf:** `ClassificationScheduler` läuft periodisch (`app.classification.interval`, Standard `30s`) und
+  holt über `ClassificationApplicationService` die ältesten eingehenden Events mit Status `RECEIVED` (höchstens
+  `app.classification.batch-size`, Standard `10`). Je Event fragt der `ClassificationApplicationService` die KI
+  (außerhalb einer Transaktion), welche Element-Typen entstehen (**null bis mehrere**), und übergibt das Ergebnis
+  (`ClassificationOutcome`) an den `ClassificationDomainService`. Dieser legt in **einer** Transaktion je Typ ein
+  `OutboundEvent` mit Status `CLASSIFIED` an und setzt das eingehende Event auf `ANALYZED` – bzw. speichert den
+  Fehlversuch.
 - **Typ-Hinweis:** Ist bei der manuellen Eingabe ein `typeHint` gesetzt, wird er der KI mitgegeben und ist immer
   im Ergebnis enthalten; die KI kann weitere Typen ergänzen.
 - **Fehler:** Schlägt der KI-Aufruf fehl, wird `attempts` erhöht; ab `app.classification.max-attempts`
@@ -121,7 +123,8 @@ Ausdrücklich **nicht** Teil von `luna-core`:
   zunächst `CLASSIFIED` (`OutboundEventStatus`), weitere Status folgen mit den nächsten Schritten.
 - **Speicherung:** Tabelle `outbound_event` mit `id`, `inbound_event_id` (Fremdschlüssel), `type`
   (`LunaElementType`), `status` und den Audit-Feldern; `inbound_event` hat zusätzlich `status` und `attempts`.
-- **Prompt:** `src/main/resources/prompts/classification.st` (Englisch); die Antwort der KI wird als
+- **Prompt:** `src/main/resources/prompts/classification.st` (Englisch); `NOTE` steht für Inhalte, die
+  zusammengefasst werden sollen (die Zusammenfassung selbst folgt später); die Antwort der KI wird als
   `ClassificationResultDto` (Liste von Typen) gelesen.
 - **Enums:** `LunaElementTypeDto` (API, Package `dto`) und `LunaElementType` (Entity, Package `data.entity`)
   sind getrennt und werden über `LunaElementTypeConverter` (mit MapStruct-Mapper `LunaElementTypeMapper`,
