@@ -172,9 +172,11 @@ in diesen Sub-Packages:
 
 - **`<X>DomainService`** (Package `services`, `@Transactional`) ist die **Transaktionsgrenze**. Er darf nur von
   `<X>ApplicationService`s aufgerufen werden.
-- **`<X>ApplicationService`** (Package `services`) ruft **je Anwendungsfall (öffentliche Methode) genau eine**
-  DomainService-Methode auf; private Hilfsmethoden rufen keinen DomainService auf. Langlaufende Aufrufe ohne
-  Datenbankbezug (z. B. KI-Anbieter) gehören in den ApplicationService, also außerhalb der Transaktion.
+- **`<X>ApplicationService`** (Package `services`) **leitet nur weiter** und enthält **keine Logik**; er existiert
+  als Schicht für spätere Kompositionen. Je Anwendungsfall (öffentliche Methode) ruft er **genau eine**
+  DomainService-Methode auf. Er darf außer DomainServices nur von `dto`, `data.entity` und `java.*` abhängen.
+- Die **Logik** liegt im DomainService. Aufrufe externer Systeme (z. B. KI-Anbieter) kapseln Clients im Package
+  `outbound`, die der DomainService nutzt (der Aufruf läuft damit innerhalb der Transaktion).
 - ApplicationServices werden **nur** von Handlern und Controllern (`inbound`) sowie von Schedulern
   (**`<X>Scheduler`** im Package `services`) aufgerufen.
 - **Repositories** dürfen nur von DomainServices und von Komponenten niedrigerer Hierarchie genutzt werden; diese
