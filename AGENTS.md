@@ -44,7 +44,7 @@ Noch offen (bitte hier eintragen, sobald entschieden):
        `oidc-client-ts` + `react-oidc-context` (erledigt)
      - 6c Schnelleingabe mit Liste der letzten Eingaben, aufgeteilt in:
        - 6c-1 Push-Signal in `luna-core` per STOMP/WebSocket bei Statuswechsel einer Eingabe (erledigt)
-       - 6c-2 Frontend: generierter API-Wrapper, MobX-Store, Seite und STOMP-Abonnement
+       - 6c-2 Frontend: generierter API-Wrapper, MobX-Store, Seite und STOMP-Abonnement (erledigt)
      - 6d nginx-Image und `swarm/frontend.yml`
      - 6e E2E-Tests mit Playwright
   7. Danach weitere Quellen (z. B. E-Mail)
@@ -379,6 +379,14 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
     Komponenten rufen den API-Wrapper nie direkt auf, sondern lesen Daten und Ladezustand aus Stores
     (`observer`) und lösen Aktionen über Store-Methoden aus. Alle Stores erzeugt der `RootStore`.
   - Reiner UI-Zustand (z. B. Sprache, eingeklappte Navigation) bleibt in React-State bzw. i18next.
+  - MobX läuft mit **`enforceActions: 'always'`**: Zustand nur in Actions ändern, nach `await` per `runInAction`.
+  - Stores bekommen ihre Abhängigkeiten (API-Client, Push-Verbindung) im Konstruktor; `createRootStore` baut sie
+    aus den Vite-Variablen. In Tests liefert `fakeRootStore()` (`src/test`) gemockte Clients.
+  - `src/api/<backend>/` enthält neben dem generierten `schema.d.ts` handgeschriebenen Code für Client
+    (`openapi-fetch` mit Token-Middleware, Token aus dem gemeinsamen `UserManager`), Push-Verbindung
+    (`@stomp/stompjs`) und Typ-Aliase. Push-DTOs nimmt `GenerateOpenApiTest` als Schemas in die `openapi.yaml` auf,
+    damit auch ihre Typen generiert werden.
+  - Basis-URL je Backend in `.env.development`/`.env.production` (`VITE_LUNA_CORE_URL`).
   - Generierter Code wird **eingecheckt** und nie von Hand geändert. Bei API-Änderungen: Backend anpassen,
     Spec erzeugen, Wrapper neu generieren und im selben Commit mit einchecken.
 - **Docker-Image:** Das Frontend wird als eigenes **nginx-Image** ausgeliefert (Dockerfile im Frontend-Projekt,
@@ -557,11 +565,16 @@ npm ci && npm run lint && npm run coverage && npm run build
 npm run dev   # http://localhost:5173
 ```
 
+API-Wrapper von `luna-core` aus `luna-core/openapi.yaml` neu generieren (schreibt
+`frontend/src/api/luna-core/schema.d.ts`):
+
+```bash
+cd frontend && npm run generate:api
+```
+
 Noch nicht angelegt:
 
 ```bash
-# API-Wrapper eines Backends aus OpenAPI neu generieren
-# <befehl>
 
 # E2E-Tests (Playwright)
 # <befehl>

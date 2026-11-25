@@ -3,6 +3,7 @@
 interface ImportMetaEnv {
   readonly VITE_OIDC_AUTHORITY: string;
   readonly VITE_OIDC_CLIENT_ID: string;
+  readonly VITE_LUNA_CORE_URL: string;
 }
 
 interface ImportMeta {

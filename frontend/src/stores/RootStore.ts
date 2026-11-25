@@ -1,6 +1,19 @@
+import type { LunaCoreClient, PushConnector } from '../api';
+import { InboundEventStore } from './InboundEventStore';
+
+export interface RootStoreDependencies {
+  lunaCoreClient: LunaCoreClient;
+  connectLunaCorePush: PushConnector;
+}
+
 /**
  * Creates and holds all MobX stores. Every communication with a backend (except OIDC) runs through a store
- * created here; stores for backend data are added with the features that need them.
+ * created here.
  */
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- stays empty until the first backend store (step 6c)
-export class RootStore {}
+export class RootStore {
+  readonly inboundEventStore: InboundEventStore;
+
+  constructor({ lunaCoreClient, connectLunaCorePush }: RootStoreDependencies) {
+    this.inboundEventStore = new InboundEventStore(lunaCoreClient, connectLunaCorePush);
+  }
+}

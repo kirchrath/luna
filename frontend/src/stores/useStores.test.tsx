@@ -2,14 +2,14 @@ import { renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import { RootStore } from './RootStore';
+import { fakeRootStore } from '../test';
 import { StoresProvider } from './StoresProvider';
 import { useStores } from './useStores';
 
 describe('useStores', () => {
   it('that using the stores within a provider should result into the provided root store', () => {
     // given
-    const rootStore = new RootStore();
+    const { rootStore } = fakeRootStore();
     const wrapper = ({ children }: { children: ReactNode }) => (
       <StoresProvider rootStore={rootStore}>{children}</StoresProvider>
     );

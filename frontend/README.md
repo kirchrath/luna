@@ -22,6 +22,7 @@ npm run test        # Tests (Vitest)
 npm run coverage    # Tests mit Abdeckung, bricht unter 100 % ab
 npm run lint        # ESLint und Prettier-Prüfung
 npm run format      # Formatierung mit Prettier anwenden
+npm run generate:api  # API-Wrapper aus ../luna-core/openapi.yaml neu erzeugen
 ```
 
 ## Anmeldung
@@ -33,19 +34,20 @@ das Konto). Die Adressen stehen in `.env.development` (lokal) und `.env.producti
 
 ## Aufbau
 
-| Pfad                          | Inhalt                                                                                                                                    |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/auth/`                   | Anmeldung: `AuthGate` (leitet ohne Anmeldung zu Keycloak), `createOidcConfig`                                                             |
-| `src/ui/`                     | Fachneutrale Komponenten auf Basis von Bulma (`AppShell`, `Sidebar`, `LanguageSwitch`, `Placeholder`, `Logo`, `UserMenu`, `StatusScreen`) |
-| `src/layout/`                 | Anwendungsrahmen mit Kopfzeile und Navigation (`AppLayout`)                                                                               |
-| `src/pages/`                  | Seiten (`QuickInputPage`, `ComingSoonPage`)                                                                                               |
-| `src/navigation.ts`           | Pfade und Bereiche der Navigation                                                                                                         |
-| `src/App.tsx`                 | Router und Stores, erst nach der Anmeldung erzeugt                                                                                        |
-| `src/routes.tsx`              | Routen (React Router)                                                                                                                     |
-| `src/i18n.ts`, `src/locales/` | Übersetzungen (Deutsch Standard, Englisch); die gewählte Sprache wird im Browser gemerkt                                                  |
-| `src/stores/`                 | MobX-Stores: `RootStore` (erzeugt alle Stores), `StoresProvider` und `useStores()`; jede Backend-Kommunikation läuft über Stores          |
-| `src/services/storage.ts`     | Einstellungen im `localStorage` (Sprache, eingeklappte Navigation)                                                                        |
-| `src/styles/main.scss`        | Bulma: Hintergrund `#f3f4f6`, Primärfarbe `#4a5260`, Highlight Petrol `#1f7a8c` (`$link`), Schriften Inter und Space Grotesk, Layout      |
+| Pfad                          | Inhalt                                                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/auth/`                   | Anmeldung: `AuthGate` (leitet ohne Anmeldung zu Keycloak), `createOidcConfig`                                                                     |
+| `src/ui/`                     | Fachneutrale Komponenten auf Basis von Bulma (`AppShell`, `Sidebar`, `LanguageSwitch`, `Placeholder`, `Logo`, `UserMenu`, `StatusScreen`)         |
+| `src/layout/`                 | Anwendungsrahmen mit Kopfzeile und Navigation (`AppLayout`)                                                                                       |
+| `src/pages/`                  | Seiten (`QuickInputPage`, `ComingSoonPage`)                                                                                                       |
+| `src/navigation.ts`           | Pfade und Bereiche der Navigation                                                                                                                 |
+| `src/App.tsx`                 | Router und Stores, erst nach der Anmeldung erzeugt                                                                                                |
+| `src/routes.tsx`              | Routen (React Router)                                                                                                                             |
+| `src/i18n.ts`, `src/locales/` | Übersetzungen (Deutsch Standard, Englisch); die gewählte Sprache wird im Browser gemerkt                                                          |
+| `src/api/luna-core/`          | Wrapper für `luna-core`: generiertes `schema.d.ts`, Client mit Token-Middleware, STOMP-Push-Verbindung, Typ-Aliase                                |
+| `src/stores/`                 | MobX-Stores: `RootStore` und `createRootStore`, `InboundEventStore` (Schnelleingabe, Liste, Live-Aktualisierung), `StoresProvider`, `useStores()` |
+| `src/services/storage.ts`     | Einstellungen im `localStorage` (Sprache, eingeklappte Navigation)                                                                                |
+| `src/styles/main.scss`        | Bulma: Hintergrund `#f3f4f6`, Primärfarbe `#4a5260`, Highlight Petrol `#1f7a8c` (`$link`), Schriften Inter und Space Grotesk, Layout              |
 
 - **Importe:** Jeder Ordner unter `src/` exportiert seine Dateien über ein `index.ts`; von außen nur darüber
   importieren, innerhalb eines Ordners direkt. ESLint prüft das.

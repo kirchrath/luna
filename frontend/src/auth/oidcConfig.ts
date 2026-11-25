@@ -1,5 +1,4 @@
-import { WebStorageStateStore, type User } from 'oidc-client-ts';
-import type { AuthProviderNoUserManagerProps } from 'react-oidc-context';
+import { UserManager, WebStorageStateStore, type User } from 'oidc-client-ts';
 
 const PATH_SEPARATOR = '/';
 
@@ -20,18 +19,20 @@ function returnPath(user: User | undefined): string {
     : window.location.pathname;
 }
 
-export function createOidcConfig(env: ImportMetaEnv = import.meta.env): AuthProviderNoUserManagerProps {
+/** Replaces code and state of the authorization response with the page requested before signing in. */
+export function onSigninCallback(user: User | undefined): void {
+  window.history.replaceState({}, document.title, returnPath(user));
+}
+
+/** The single UserManager of the app, shared by the AuthProvider and the API clients. */
+export function createUserManager(env: ImportMetaEnv = import.meta.env): UserManager {
   const appUrl = `${window.location.origin}${PATH_SEPARATOR}`;
-  return {
+  return new UserManager({
     authority: env.VITE_OIDC_AUTHORITY,
     client_id: env.VITE_OIDC_CLIENT_ID,
     redirect_uri: appUrl,
     post_logout_redirect_uri: appUrl,
     userStore: new WebStorageStateStore({ store: window.sessionStorage }),
     automaticSilentRenew: true,
-    onSigninCallback: (user) => {
-      // Replaces code and state of the authorization response with the page requested before signing in.
-      window.history.replaceState({}, document.title, returnPath(user));
-    },
-  };
+  });
 }
