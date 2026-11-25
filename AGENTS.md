@@ -42,7 +42,9 @@ Noch offen (bitte hier eintragen, sobald entschieden):
      - 6a Grundgerüst mit Layout, Navigation und Platzhaltern (erledigt)
      - 6b Anmeldung: Realm `luna` per Realm-Import im Stack, Client fürs Frontend, OIDC mit
        `oidc-client-ts` + `react-oidc-context` (erledigt)
-     - 6c Schnelleingabe mit Liste der letzten Eingaben über den generierten API-Wrapper
+     - 6c Schnelleingabe mit Liste der letzten Eingaben, aufgeteilt in:
+       - 6c-1 Push-Signal in `luna-core` per STOMP/WebSocket bei Statuswechsel einer Eingabe (erledigt)
+       - 6c-2 Frontend: generierter API-Wrapper, MobX-Store, Seite und STOMP-Abonnement
      - 6d nginx-Image und `swarm/frontend.yml`
      - 6e E2E-Tests mit Playwright
   7. Danach weitere Quellen (z. B. E-Mail)
@@ -127,6 +129,11 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   - **Kafka-API:** Jeder Service, der per Kafka veröffentlicht, erzeugt im `GenerateOpenApiTest` zusätzlich
     **`<backend>/kafka-api.yaml`** (OpenAPI) mit allen veröffentlichten DTOs und dem Topic je Event (eingecheckt).
     Jedes Feld dieser DTOs trägt `@Schema(requiredMode = …)` (`REQUIRED` bzw. `NOT_REQUIRED`).
+- **Push an das Frontend:** Backends melden Änderungen per **STOMP über WebSocket** (Spring
+  `@EnableWebSocketMessageBroker`, einfacher Broker, Endpunkt `/ws`, Topics unter `/topic/…`; Pfade aus der
+  `application.yml`). Nachrichten sind **Signale** (DTO mit ID), die Daten lädt der Client per REST.
+  Gesendet wird erst **nach dem Commit** (Spring-Ereignis + `@TransactionalEventListener(AFTER_COMMIT)`).
+  Das JWT wird nur am WebSocket-Endpunkt auch als Query-Parameter `access_token` akzeptiert.
 - **OpenAPI (Code-first):** Die Spezifikation wird mit springdoc aus den Controllern erzeugt.
   Controller und DTOs sauber annotieren, damit die Spec vollständig und präzise ist
   (Operation-IDs, Schemas, Response-Codes) – sie ist der Vertrag für den Frontend-Wrapper.

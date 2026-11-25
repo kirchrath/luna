@@ -1,14 +1,13 @@
 package de.kirchrath.luna.core.config;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -38,10 +37,24 @@ public class SecurityConfig {
                 .build();
     }
 
+    /**
+     * Browsers cannot send an Authorization header with the WebSocket handshake, so only there the token is also
+     * accepted as query parameter {@code access_token}. All other requests require the header.
+     */
     @Bean
-    CorsConfigurationSource corsConfigurationSource(@Value("${app.cors.allowed-origins:}") List<String> allowedOrigins) {
+    BearerTokenResolver bearerTokenResolver(WebSocketProperties webSocketProperties) {
+        var headerResolver = new DefaultBearerTokenResolver();
+        var queryParameterResolver = new DefaultBearerTokenResolver();
+        queryParameterResolver.setAllowUriQueryParameter(true);
+        return request -> webSocketProperties.endpoint().equals(request.getServletPath())
+                ? queryParameterResolver.resolve(request)
+                : headerResolver.resolve(request);
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource(CorsProperties corsProperties) {
         var configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedOrigins(corsProperties.allowedOrigins());
         configuration.addAllowedMethod(CorsConfiguration.ALL);
         configuration.addAllowedHeader(CorsConfiguration.ALL);
 

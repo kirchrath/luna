@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Limit;
 
 import de.kirchrath.luna.core.config.ClassificationProperties;
@@ -49,6 +50,7 @@ class ClassificationDomainServiceTest {
     private final InboundEventRepository inboundEventRepository = mock(InboundEventRepository.class);
     private final OutboundEventRepository outboundEventRepository = mock(OutboundEventRepository.class);
     private final ElementClassificationClient elementClassificationClient = mock(ElementClassificationClient.class);
+    private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
     private final List<ElementProcessor<Object, ?, ?>> processors = processors();
     private final ClassificationDomainService classificationDomainService = new ClassificationDomainService(
@@ -58,7 +60,8 @@ class ClassificationDomainServiceTest {
             List.copyOf(processors),
             new LunaElementTypeConverter(new LunaElementTypeMapperImpl()),
             jsonMapper,
-            new ClassificationProperties(Duration.ofSeconds(30), 10, 3));
+            new ClassificationProperties(Duration.ofSeconds(30), 10, 3),
+            eventPublisher);
 
     @BeforeEach
     void setUp() {
@@ -103,6 +106,7 @@ class ClassificationDomainServiceTest {
         verify(processor(LunaElementType.APPOINTMENT)).storeAndPublish(any(), eq(appointmentData));
         verify(processor(LunaElementType.TASK)).storeAndPublish(any(), eq(taskData));
         verify(inboundEventRepository).save(inboundEvent.withStatus(InboundEventStatus.ANALYZED));
+        verify(eventPublisher).publishEvent(new InboundEventStatusChangedEvent(INBOUND_EVENT_ID));
     }
 
     @Test
@@ -185,6 +189,7 @@ class ClassificationDomainServiceTest {
         verify(outboundEventRepository, never()).save(any());
         verify(processor(LunaElementType.NOTE), never()).storeAndPublish(any(), any());
         verify(inboundEventRepository).save(inboundEvent.withAttempts(1).withStatus(InboundEventStatus.RECEIVED));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -200,6 +205,7 @@ class ClassificationDomainServiceTest {
         // then
         verify(outboundEventRepository, never()).save(any());
         verify(inboundEventRepository).save(inboundEvent.withAttempts(3).withStatus(InboundEventStatus.FAILED));
+        verify(eventPublisher).publishEvent(new InboundEventStatusChangedEvent(INBOUND_EVENT_ID));
     }
 
     @SuppressWarnings("unchecked")

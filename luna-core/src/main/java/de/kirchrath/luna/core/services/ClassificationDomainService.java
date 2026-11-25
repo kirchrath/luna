@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,7 @@ public class ClassificationDomainService {
     private final LunaElementTypeConverter lunaElementTypeConverter;
     private final JsonMapper jsonMapper;
     private final ClassificationProperties classificationProperties;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ClassificationDomainService(
             InboundEventRepository inboundEventRepository,
@@ -46,7 +48,8 @@ public class ClassificationDomainService {
             List<ElementProcessor<?, ?, ?>> elementProcessors,
             LunaElementTypeConverter lunaElementTypeConverter,
             JsonMapper jsonMapper,
-            ClassificationProperties classificationProperties) {
+            ClassificationProperties classificationProperties,
+            ApplicationEventPublisher eventPublisher) {
         this.inboundEventRepository = inboundEventRepository;
         this.outboundEventRepository = outboundEventRepository;
         this.elementClassificationClient = elementClassificationClient;
@@ -55,6 +58,7 @@ public class ClassificationDomainService {
         this.lunaElementTypeConverter = lunaElementTypeConverter;
         this.jsonMapper = jsonMapper;
         this.classificationProperties = classificationProperties;
+        this.eventPublisher = eventPublisher;
     }
 
     public List<UUID> findInboundEventIdsToClassify() {
@@ -80,6 +84,7 @@ public class ClassificationDomainService {
         elements.forEach(element -> element.storeAndPublish(outboundEventRepository.save(new OutboundEvent(
                 null, inboundEvent.id(), element.type(), OutboundEventStatus.PUBLISHED, null, null, null))));
         inboundEventRepository.save(inboundEvent.withStatus(InboundEventStatus.ANALYZED));
+        eventPublisher.publishEvent(new InboundEventStatusChangedEvent(inboundEvent.id()));
         log.debug("Published {} element(s) for inbound event {}", elements.size(), inboundEvent.id());
     }
 
@@ -109,6 +114,7 @@ public class ClassificationDomainService {
             log.error("Classification of inbound event {} failed finally after {} attempts",
                     inboundEvent.id(), attempts, cause);
             inboundEventRepository.save(inboundEvent.withAttempts(attempts).withStatus(InboundEventStatus.FAILED));
+            eventPublisher.publishEvent(new InboundEventStatusChangedEvent(inboundEvent.id()));
         } else {
             log.warn("Classification of inbound event {} failed (attempt {}/{})",
                     inboundEvent.id(), attempts, maxAttempts, cause);
