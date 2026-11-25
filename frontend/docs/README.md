@@ -1,7 +1,7 @@
 # Frontend – Aufbau der Anwendung
 
 Visuelle Planung für Schritt 6 (Frontend: Seite für die manuelle Eingabe). Die Wireframes zeigen Aufbau und
-Verhalten, nicht das endgültige Aussehen: Farben, Schriften und Icons sind nur Platzhalter.
+Verhalten, nicht das endgültige Aussehen: Farben, Schriften und Icons sind dort nur Platzhalter.
 
 ## Wireframes
 
@@ -55,10 +55,16 @@ Verhalten, nicht das endgültige Aussehen: Farben, Schriften und Icons sind nur 
 
 - Alle Texte über react-i18next in Deutsch und Englisch; der Umschalter in der Kopfzeile wechselt sofort.
 
+## Entschieden in Schritt 6a
+
+- Primärfarbe **`#1f7a8c`** (Petrol), Schriften **Inter** und **Space Grotesk** (Überschriften).
+- Icons aus **lucide-react**; das Logo bleibt das eigene Mond-SVG.
+- Dunkler Modus automatisch nach Geräteeinstellung.
+- Routen: `/`, `/tasks`, `/calendar`, `/shopping`, `/finance`, `/monitoring`.
+- Navigation ausgeklappt 256 px; Einträge in 14 px, damit lange Namen neben „bald“ passen.
+
 ## Offen (_TODO_)
 
-- Primärfarbe und Schriften (Bulma-Sass-Variablen).
-- Quelle der Icons (eigene SVGs oder eine Icon-Bibliothek).
 - Monitoring als ein Eintrag oder später mit Unterpunkten (Heimnetz & Server, Smart Home & Energie,
   Gesundheit & Gewohnheiten, Luna selbst).
-- Aktualisierung der Liste „Letzte Eingaben“ (z. B. Polling), festzulegen mit dem List-Endpunkt.
+- Aktualisierung der Liste „Letzte Eingaben“ (z. B. Polling), festzulegen in Schritt 6c.
