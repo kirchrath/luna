@@ -112,6 +112,7 @@ class ClassificationIntegrationTest {
                 taskEvents.get(0).id().toString(), taskEvents.get(1).id().toString(), appointmentEvent.id().toString());
         var appointmentMessage = jsonMapper.readTree(records.get(appointmentEvent.id().toString()));
         assertThat(appointmentMessage.get("id").asString()).isEqualTo(appointmentEvent.id().toString());
+        assertThat(appointmentMessage.get("type").asString()).isEqualTo("APPOINTMENT");
         assertThat(appointmentMessage.get("data").get("title").asString()).isEqualTo("Dentist");
         assertThat(OffsetDateTime.parse(appointmentMessage.get("data").get("start").asString()))
                 .isAtSameInstantAs(OffsetDateTime.parse("2026-12-01T10:00:00+01:00"));

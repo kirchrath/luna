@@ -111,8 +111,11 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
     `luna_<konsument>_dlt` (z. B. `luna_core_dlt`).
   - **Topic-Namen kommen immer aus der `application.yml`** (z. B. `app.kafka.topics.<inhalt>`), nie aus dem Code.
   - **Typisiert senden:** `KafkaTemplate<UUID, <Basis-Event>>` mit UUID-Key-Serializer und JSON-Value-Serializer
-    (ohne Typ-Header; der Typ ergibt sich aus dem Topic). Alle veröffentlichten Events implementieren ein
+    (ohne Typ-Header; der Typ ergibt sich aus dem Topic und der Property `type`). Alle veröffentlichten Events implementieren ein
     **sealed Interface** (z. B. `ElementEventDto`) mit `UUID id()`; der Kafka-Key ist immer `id()` des Events.
+    Das Interface trägt den Discriminator **`type`** (Werte = Namen des zugehörigen DTO-Enums, als Konstanten in
+    `<Enum>.Constants`) per `@JsonTypeInfo`/`@JsonSubTypes` sowie `@Schema(oneOf, discriminatorProperty,
+    discriminatorMapping)`, damit Typ und Untertypen in `kafka-api.yaml` veröffentlicht werden.
   - **Kafka-API:** Jeder Service, der per Kafka veröffentlicht, erzeugt im `GenerateOpenApiTest` zusätzlich
     **`<backend>/kafka-api.yaml`** (OpenAPI) mit allen veröffentlichten DTOs und dem Topic je Event (eingecheckt).
     Jedes Feld dieser DTOs trägt `@Schema(requiredMode = …)` (`REQUIRED` bzw. `NOT_REQUIRED`).
