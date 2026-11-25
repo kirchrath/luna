@@ -36,7 +36,7 @@ Noch offen (bitte hier eintragen, sobald entschieden):
   2. Eingang: REST-Endpunkt für die manuelle Eingabe; eingehendes Event speichern (erledigt)
   3. Analyse per Spring AI (Entscheidung über den Element-Typ) (erledigt)
   4. Ausgang: erzeugte Elemente qualifizieren, speichern und auf `luna_core_<typ>` publizieren; `luna-core` im Stack (erledigt)
-  5. Backend: List-Endpunkt in `luna-core` für die letzten Eingaben (Status und daraus entstandene Elemente)
+  5. Backend: List-Endpunkt in `luna-core` für die letzten Eingaben (Status und daraus entstandene Elemente) (erledigt)
   6. Frontend: Seite für die manuelle Eingabe (visuelle Planung in [frontend/docs](frontend/docs/README.md))
   7. Danach weitere Quellen (z. B. E-Mail)
 
@@ -272,6 +272,9 @@ record TaskDataDto(String title, String description) {}
 ```
 
 - **Pagination** von List-Anfragen über die Query-Parameter `page` (**ab 0**) und `size`.
+  Der Controller nimmt ein Spring-`Pageable` entgegen (Standard/Obergrenze über `spring.data.web.pageable.*`,
+  zu große Werte werden gekappt; `sort` ist in der OpenAPI ausgeblendet) und reicht nur `page` und `size` an den
+  ApplicationService weiter; die Sortierung legt der DomainService fest.
 
 #### API / OpenAPI
 

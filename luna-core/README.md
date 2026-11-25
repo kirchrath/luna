@@ -215,6 +215,19 @@ Schreiben; ACL für `luna-core` auf `luna_core_*` besteht bereits).
 **Tests:** Unit-Tests je Klasse (100 % Abdeckung), Integrationstest von der Eingabe bis zur Nachricht auf dem Topic
 mit PostgreSQL und Kafka per Testcontainers (ohne TLS/SASL), gemocktes `ChatModel`; ArchUnit-Regeln gelten weiter.
 
+### Liste der manuellen Eingaben (Schritt 5)
+
+- **Endpunkt:** `GET /inbound-events/manual` (OperationId `listManualInboundEvents`), nur mit JWT.
+- **Parameter:** `page` (ab 0) und `size`; Standard und Obergrenze per `spring.data.web.pageable.default-page-size`
+  (`20`) und `max-page-size` (`100`). Größere Werte werden gekappt. Sortiert nach Eingangszeit, neueste zuerst.
+- **Antwort:** `200` mit `ManualInboundEventListDto` (`items`, `totalPages`, `totalCount`); `401` ohne Token.
+  Ein `ManualInboundEventListItemDto` enthält `id`, `text`, `typeHint`, `status` (`InboundEventStatusDto`:
+  `RECEIVED`, `ANALYZED`, `FAILED`), `createdDate` und `elements` (`ElementReferenceDto` mit `id` und `type`;
+  `id` ist die ID des auf Kafka veröffentlichten Events).
+- **Abfrage:** Eine Seite `inbound_event` (`findBySource`) plus deren `outbound_event` in einer Abfrage
+  (`findByInboundEventIdIn`). Der Controller reicht nur `page` und `size` weiter, da ApplicationServices nicht
+  von Spring Data abhängen dürfen.
+
 ### Konfiguration von Topics und Prompts
 
 | Property | Inhalt |

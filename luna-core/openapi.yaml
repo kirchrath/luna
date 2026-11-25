@@ -9,6 +9,35 @@ tags:
   description: Events that luna-core receives and analyses
 paths:
   /inbound-events/manual:
+    get:
+      tags:
+      - Inbound events
+      summary: "List manual inputs with their processing status, newest first"
+      operationId: listManualInboundEvents
+      parameters:
+      - name: page
+        in: query
+        description: "Page number, starting at 0"
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: "Page size; default and maximum are configured in luna-core,\
+          \ larger values are limited to the maximum"
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        "200":
+          description: Page of manual inputs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualInboundEventListDto"
+        "401":
+          description: Missing or invalid access token
     post:
       tags:
       - Inbound events
@@ -65,3 +94,87 @@ components:
           description: ID of the created resource
       required:
       - id
+    ElementReferenceDto:
+      type: object
+      description: Reference to an element that luna-core created from an inbound
+        event
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID of the element; equals the id of the event published on
+            Kafka
+        type:
+          type: string
+          description: Type of the element
+          enum:
+          - TASK
+          - ALERT
+          - APPOINTMENT
+          - INVOICE
+          - CONTRACT
+          - NOTE
+      required:
+      - id
+      - type
+    ManualInboundEventListDto:
+      type: object
+      description: "Page of manual inputs, newest first"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ManualInboundEventListItemDto"
+        totalPages:
+          type: integer
+          format: int32
+        totalCount:
+          type: integer
+          format: int64
+      required:
+      - items
+      - totalCount
+      - totalPages
+    ManualInboundEventListItemDto:
+      type: object
+      description: Manual input in a list together with its processing status
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID of the inbound event
+        text:
+          type: string
+          description: Free text of the input
+        typeHint:
+          type: string
+          description: "Hint which element should result from the input, if given"
+          enum:
+          - TASK
+          - ALERT
+          - APPOINTMENT
+          - INVOICE
+          - CONTRACT
+          - NOTE
+        status:
+          type: string
+          description: Processing status of the input
+          enum:
+          - RECEIVED
+          - ANALYZED
+          - FAILED
+        createdDate:
+          type: string
+          format: date-time
+          description: Point in time the input was received
+        elements:
+          type: array
+          description: Elements created from the input
+          items:
+            $ref: "#/components/schemas/ElementReferenceDto"
+      required:
+      - createdDate
+      - elements
+      - id
+      - status
+      - text
