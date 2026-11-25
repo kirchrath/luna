@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
@@ -56,12 +57,16 @@ public class ClassificationDomainService {
         this.classificationProperties = classificationProperties;
     }
 
-    public List<InboundEvent> findInboundEventsToClassify() {
+    public List<UUID> findInboundEventIdsToClassify() {
         return inboundEventRepository.findByStatusOrderByCreatedDateAsc(
-                InboundEventStatus.RECEIVED, Limit.of(classificationProperties.batchSize()));
+                        InboundEventStatus.RECEIVED, Limit.of(classificationProperties.batchSize()))
+                .stream()
+                .map(InboundEvent::id)
+                .toList();
     }
 
-    public void classify(InboundEvent inboundEvent) {
+    public void classify(UUID inboundEventId) {
+        var inboundEvent = inboundEventRepository.findById(inboundEventId).orElseThrow();
         List<QualifiedElement<?>> elements;
         try {
             var input = jsonMapper.readValue(inboundEvent.data().json(), ManualInputDataDto.class);

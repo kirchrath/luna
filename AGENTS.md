@@ -187,7 +187,9 @@ in diesen Sub-Packages:
   `<X>ApplicationService`s aufgerufen werden.
 - **`<X>ApplicationService`** (Package `services`) **leitet nur weiter** und enthält **keine Logik**; er existiert
   als Schicht für spätere Kompositionen. Je Anwendungsfall (öffentliche Methode) ruft er **genau eine**
-  DomainService-Methode auf. Er darf außer DomainServices nur von `dto`, `data.entity` und `java.*` abhängen.
+  DomainService-Methode auf. Als Felder (per Konstruktor injiziert) hat er **nur DomainServices**. Parameter und
+  Rückgabetypen (inkl. generischer Typargumente) sind nur DTO-artige Typen: `dto`, `java.*`, primitive Typen sowie
+  Spring Datas `Pageable` und `Page` – **keine Entities**. Scheduler arbeiten daher z. B. mit IDs.
 - Die **Logik** liegt im DomainService. Aufrufe externer Systeme (z. B. KI-Anbieter) kapseln Clients im Package
   `outbound`, die der DomainService nutzt (der Aufruf läuft damit innerhalb der Transaktion).
 - ApplicationServices werden **nur** von Handlern und Controllern (`inbound`) sowie von Schedulern

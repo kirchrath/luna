@@ -1,10 +1,9 @@
 package de.kirchrath.luna.core.services;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-
-import de.kirchrath.luna.core.data.entity.InboundEvent;
 
 @Service
 public class ClassificationApplicationService {
@@ -15,11 +14,11 @@ public class ClassificationApplicationService {
         this.classificationDomainService = classificationDomainService;
     }
 
-    public List<InboundEvent> findInboundEventsToClassify() {
-        return classificationDomainService.findInboundEventsToClassify();
+    public List<UUID> findInboundEventIdsToClassify() {
+        return classificationDomainService.findInboundEventIdsToClassify();
     }
 
-    public void classify(InboundEvent inboundEvent) {
-        classificationDomainService.classify(inboundEvent);
+    public void classify(UUID inboundEventId) {
+        classificationDomainService.classify(inboundEventId);
     }
 }
