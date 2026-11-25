@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -240,7 +241,7 @@ class InboundEventControllerTest {
         result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isEmpty())
                 .andExpect(jsonPath("$.totalCount").value(0));
-        verify(inboundEventApplicationService).listManualInboundEvents(0, 20);
+        verify(inboundEventApplicationService).listManualInboundEvents(PageRequest.of(0, 20));
     }
 
     @Test
@@ -253,7 +254,7 @@ class InboundEventControllerTest {
 
         // then
         result.andExpect(status().isOk());
-        verify(inboundEventApplicationService).listManualInboundEvents(0, 100);
+        verify(inboundEventApplicationService).listManualInboundEvents(PageRequest.of(0, 100));
     }
 
     @Test

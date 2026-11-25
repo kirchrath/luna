@@ -90,7 +90,7 @@ class InboundEventDomainServiceTest {
                 new OutboundEvent(taskId, analyzedId, LunaElementType.TASK, OutboundEventStatus.PUBLISHED, now, now, 0L)));
 
         // when
-        var list = inboundEventDomainService.listManualInboundEvents(1, 2);
+        var list = inboundEventDomainService.listManualInboundEvents(PageRequest.of(1, 2, Sort.by("text")));
 
         // then
         assertThat(list.totalCount()).isEqualTo(5);

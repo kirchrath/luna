@@ -1,5 +1,6 @@
 package de.kirchrath.luna.core.services;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import de.kirchrath.luna.core.dto.ManualInboundEventListDto;
@@ -19,7 +20,7 @@ public class InboundEventApplicationService {
         return inboundEventDomainService.createManualInboundEvent(input);
     }
 
-    public ManualInboundEventListDto listManualInboundEvents(int page, int size) {
-        return inboundEventDomainService.listManualInboundEvents(page, size);
+    public ManualInboundEventListDto listManualInboundEvents(Pageable pageable) {
+        return inboundEventDomainService.listManualInboundEvents(pageable);
     }
 }
