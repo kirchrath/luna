@@ -1,0 +1,60 @@
+# luna-core backend.
+#
+# Build the image first (in luna-core/): ./mvnw package jib:dockerBuild
+# Deploy together with the other stack files:
+#   docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml luna
+#
+# Required variables: LUNA_CORE_VERSION, SPRING_AI_MODEL_CHAT, LUNA_AI_API_KEY_PROPERTY (see README.md).
+
+services:
+  luna-core:
+    image: luna-core:${LUNA_CORE_VERSION:?set LUNA_CORE_VERSION to the luna-core image version}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_AI_MODEL_CHAT=${SPRING_AI_MODEL_CHAT:?set SPRING_AI_MODEL_CHAT to ollama, anthropic or openai}
+      # Optional AI settings; variables that are not set are not passed to the container.
+      - SPRING_AI_OLLAMA_BASE_URL
+      - SPRING_AI_OLLAMA_CHAT_MODEL
+      - SPRING_AI_ANTHROPIC_CHAT_MODEL
+      - SPRING_AI_OPENAI_BASE_URL
+      - SPRING_AI_OPENAI_CHAT_MODEL
+    volumes:
+      # Root certificate of step-ca to verify the Kafka certificate.
+      - step-ca-data:/step:ro
+      - /etc/localtime:/etc/localtime:ro
+    secrets:
+      # Read by Spring via configtree: the file name is the property name.
+      - source: luna_db_password
+        target: spring.datasource.password
+      - source: kafka_luna_core_password
+        target: app.kafka.password
+      - source: luna_core_ai_api_key
+        target: ${LUNA_AI_API_KEY_PROPERTY:?set LUNA_AI_API_KEY_PROPERTY, e.g. spring.ai.anthropic.api-key}
+    networks:
+      - luna
+    deploy:
+      labels:
+        traefik.enable: "true"
+        traefik.http.routers.luna-core.rule: Host(`luna.internal`) && PathPrefix(`/api/luna-core`)
+        traefik.http.routers.luna-core.entrypoints: websecure
+        traefik.http.routers.luna-core.tls.certresolver: stepca
+        traefik.http.routers.luna-core.middlewares: luna-core-strip-prefix
+        traefik.http.middlewares.luna-core-strip-prefix.stripprefix.prefixes: /api/luna-core
+        traefik.http.services.luna-core.loadbalancer.server.port: "7081"
+
+networks:
+  luna:
+    name: luna
+    driver: overlay
+    attachable: true
+
+volumes:
+  step-ca-data:
+
+secrets:
+  luna_db_password:
+    external: true
+  kafka_luna_core_password:
+    external: true
+  luna_core_ai_api_key:
+    external: true
