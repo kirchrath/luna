@@ -107,6 +107,15 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   - **Topic-Namen:** `luna_<erzeuger>_<inhalt>` – `<erzeuger>` ist der Service, der in das Topic schreibt
     (Service-Name ohne `luna-`), `<inhalt>` der Inhalt; beides **Englisch**, kleingeschrieben.
     Beispiele: `luna_mail_email` (ein Mail-Service liefert E-Mails), `luna_core_task` (`luna-core` erzeugt Aufgaben).
+    Retry-Topics: `luna_<konsument>_<inhalt>_retry` (z. B. `luna_core_email_retry`), Dead-Letter-Topic je Service:
+    `luna_<konsument>_dlt` (z. B. `luna_core_dlt`).
+  - **Topic-Namen kommen immer aus der `application.yml`** (z. B. `app.kafka.topics.<inhalt>`), nie aus dem Code.
+  - **Typisiert senden:** `KafkaTemplate<UUID, <Basis-Event>>` mit UUID-Key-Serializer und JSON-Value-Serializer
+    (ohne Typ-Header; der Typ ergibt sich aus dem Topic). Alle veröffentlichten Events implementieren ein
+    **sealed Interface** (z. B. `ElementEventDto`) mit `UUID id()`; der Kafka-Key ist immer `id()` des Events.
+  - **Kafka-API:** Jeder Service, der per Kafka veröffentlicht, erzeugt im `GenerateOpenApiTest` zusätzlich
+    **`<backend>/kafka-api.yaml`** (OpenAPI) mit allen veröffentlichten DTOs und dem Topic je Event (eingecheckt).
+    Jedes Feld dieser DTOs trägt `@Schema(requiredMode = …)` (`REQUIRED` bzw. `NOT_REQUIRED`).
 - **OpenAPI (Code-first):** Die Spezifikation wird mit springdoc aus den Controllern erzeugt.
   Controller und DTOs sauber annotieren, damit die Spec vollständig und präzise ist
   (Operation-IDs, Schemas, Response-Codes) – sie ist der Vertrag für den Frontend-Wrapper.
@@ -185,6 +194,27 @@ in diesen Sub-Packages:
 - **Keine eigenen Queries** (`@Query`), wenn es mit normalen Repository-Methoden (abgeleitete Methoden, `Limit`,
   `Sort`, `Pageable`) oder per Criteria/`JdbcAggregateTemplate` realisierbar ist.
 - Alle Regeln dieses Abschnitts sind im `ArchitectureTest` abgesichert.
+
+#### Fehlerbehandlung
+
+- **Kafka-Handler (Consumer):** Exceptions, die bis zum Handler gelangen, werden über ein **Retry-Topic**
+  wiederholt. Anzahl der Wiederholungen je Topic konfigurierbar, **Standard 10**. Danach landet das Event auf einem
+  **Dead-Letter-Topic** – je Ursprungstopic konfigurierbar, Standard ist ein gemeinsames DLT je Service
+  (Namen siehe Topic-Namen). Umsetzung mit dem ersten Kafka-Consumer eines Services.
+- **Scheduler:** Fehler spiegeln sich im **Status der verarbeiteten Entität** wider (z. B. `attempts`, `FAILED`).
+- **REST:** Ist der Client für den Fehler verantwortlich, antwortet der Service mit einem passenden
+  **Client-Error (4xx)**; Server-Errors helfen dem Anwender nicht weiter und sind zu vermeiden.
+
+#### Keine „Magic Strings“
+
+- **Interne** Zeichenketten nur als **gut benannte Konstanten**.
+- **Externe** Werte (Topics, Prompts/Ressourcen, URLs, Benutzer-/Anwendungsnamen) kommen **ausschließlich aus der
+  `application.yml`** (gebunden per `@ConfigurationProperties`, keine `@Value`-Literale im Code). Werte, die bereits
+  als Property existieren, werden referenziert (z. B. `${spring.application.name}`) statt wiederholt.
+- **Review-Checkliste:**
+  - Steht irgendwo ein String-Literal, das kein Log-/Fehlertext und keine benannte Konstante ist?
+  - Wird ein Topic, Prompt, Pfad oder Name im Code statt in der `application.yml` festgelegt?
+  - Ist ein Wert doppelt gepflegt, obwohl er per Platzhalter referenziert werden könnte?
 
 #### Lombok
 
