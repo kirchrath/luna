@@ -14,7 +14,7 @@ public class ClassificationScheduler {
 
     @Scheduled(fixedDelayString = "${app.classification.interval}")
     public void classifyReceivedEvents() {
-        classificationApplicationService.findInboundEventsToClassify()
+        classificationApplicationService.findInboundEventIdsToClassify()
                 .forEach(classificationApplicationService::classify);
     }
 }

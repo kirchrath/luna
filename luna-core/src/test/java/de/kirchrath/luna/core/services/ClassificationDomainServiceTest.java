@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -66,30 +67,30 @@ class ClassificationDomainServiceTest {
     }
 
     @Test
-    void thatFindingEventsToClassifyShouldResultIntoTheOldestReceivedEventsOfOneBatch() {
+    void thatFindingEventsToClassifyShouldResultIntoTheIdsOfTheOldestReceivedEventsOfOneBatch() {
         // given
         var inboundEvent = inboundEvent(new ManualInputDataDto("Something", null), 0);
         when(inboundEventRepository.findByStatusOrderByCreatedDateAsc(InboundEventStatus.RECEIVED, Limit.of(10)))
                 .thenReturn(List.of(inboundEvent));
 
         // when
-        var found = classificationDomainService.findInboundEventsToClassify();
+        var found = classificationDomainService.findInboundEventIdsToClassify();
 
         // then
-        assertThat(found).containsExactly(inboundEvent);
+        assertThat(found).containsExactly(INBOUND_EVENT_ID);
     }
 
     @Test
     void thatClassifyingAnInputShouldResultIntoQualifiedStoredAndPublishedElementsAndAnAnalyzedInboundEvent() {
         // given
-        var inboundEvent = inboundEvent(new ManualInputDataDto("Dentist on Tuesday, buy a gift before", null), 0);
+        var inboundEvent = storedInboundEvent(new ManualInputDataDto("Dentist on Tuesday, buy a gift before", null), 0);
         when(elementClassificationClient.classify("Dentist on Tuesday, buy a gift before", null)).thenReturn(
                 new ClassificationResultDto(List.of(LunaElementTypeDto.APPOINTMENT, LunaElementTypeDto.TASK)));
         var appointmentData = qualifies(LunaElementType.APPOINTMENT);
         var taskData = qualifies(LunaElementType.TASK);
 
         // when
-        classificationDomainService.classify(inboundEvent);
+        classificationDomainService.classify(INBOUND_EVENT_ID);
 
         // then
         var outboundEvents = savedOutboundEvents(2);
@@ -107,14 +108,14 @@ class ClassificationDomainServiceTest {
     @Test
     void thatClassifyingAnInputWithSeveralElementsOfOneTypeShouldResultIntoOneElementEach() {
         // given
-        var inboundEvent = inboundEvent(new ManualInputDataDto("Dentist on Monday, hairdresser on Friday", null), 0);
+        storedInboundEvent(new ManualInputDataDto("Dentist on Monday, hairdresser on Friday", null), 0);
         when(elementClassificationClient.classify("Dentist on Monday, hairdresser on Friday", null))
                 .thenReturn(new ClassificationResultDto(List.of(LunaElementTypeDto.APPOINTMENT)));
         when(processor(LunaElementType.APPOINTMENT).qualify(any(), eq(RECEIVED_AT)))
                 .thenReturn(List.of("dentist", "hairdresser"));
 
         // when
-        classificationDomainService.classify(inboundEvent);
+        classificationDomainService.classify(INBOUND_EVENT_ID);
 
         // then
         assertThat(savedOutboundEvents(2)).extracting(OutboundEvent::type)
@@ -127,13 +128,13 @@ class ClassificationDomainServiceTest {
     @EnumSource(LunaElementTypeDto.class)
     void thatClassifyingAnInputWithTypeHintShouldResultIntoAnElementOfTheHintedType(LunaElementTypeDto typeHint) {
         // given
-        var inboundEvent = inboundEvent(new ManualInputDataDto("Something", typeHint), 0);
+        storedInboundEvent(new ManualInputDataDto("Something", typeHint), 0);
         when(elementClassificationClient.classify("Something", typeHint)).thenReturn(new ClassificationResultDto(List.of()));
         var type = LunaElementType.valueOf(typeHint.name());
         var data = qualifies(type);
 
         // when
-        classificationDomainService.classify(inboundEvent);
+        classificationDomainService.classify(INBOUND_EVENT_ID);
 
         // then
         assertThat(savedOutboundEvents(1)).extracting(OutboundEvent::type).containsExactly(type);
@@ -143,11 +144,11 @@ class ClassificationDomainServiceTest {
     @Test
     void thatClassifyingWithAResultWithoutTypesShouldResultIntoNoElementAndAnAnalyzedInboundEvent() {
         // given
-        var inboundEvent = inboundEvent(new ManualInputDataDto("Something", null), 0);
+        var inboundEvent = storedInboundEvent(new ManualInputDataDto("Something", null), 0);
         when(elementClassificationClient.classify("Something", null)).thenReturn(new ClassificationResultDto(null));
 
         // when
-        classificationDomainService.classify(inboundEvent);
+        classificationDomainService.classify(INBOUND_EVENT_ID);
 
         // then
         verify(outboundEventRepository, never()).save(any());
@@ -157,11 +158,11 @@ class ClassificationDomainServiceTest {
     @Test
     void thatClassifyingWithoutResultShouldResultIntoNoElementAndAnAnalyzedInboundEvent() {
         // given
-        var inboundEvent = inboundEvent(new ManualInputDataDto("Something", null), 0);
+        var inboundEvent = storedInboundEvent(new ManualInputDataDto("Something", null), 0);
         when(elementClassificationClient.classify("Something", null)).thenReturn(null);
 
         // when
-        classificationDomainService.classify(inboundEvent);
+        classificationDomainService.classify(INBOUND_EVENT_ID);
 
         // then
         verify(outboundEventRepository, never()).save(any());
@@ -171,14 +172,14 @@ class ClassificationDomainServiceTest {
     @Test
     void thatAFailingQualificationShouldResultIntoNoElementAndAnIncreasedAttempt() {
         // given
-        var inboundEvent = inboundEvent(new ManualInputDataDto("Something", LunaElementTypeDto.NOTE), 0);
+        var inboundEvent = storedInboundEvent(new ManualInputDataDto("Something", LunaElementTypeDto.NOTE), 0);
         when(elementClassificationClient.classify("Something", LunaElementTypeDto.NOTE))
                 .thenReturn(new ClassificationResultDto(List.of()));
         when(processor(LunaElementType.NOTE).qualify("Something", RECEIVED_AT))
                 .thenThrow(new IllegalStateException("No NOTE data could be extracted"));
 
         // when
-        classificationDomainService.classify(inboundEvent);
+        classificationDomainService.classify(INBOUND_EVENT_ID);
 
         // then
         verify(outboundEventRepository, never()).save(any());
@@ -189,12 +190,12 @@ class ClassificationDomainServiceTest {
     @Test
     void thatAFailingClassificationAtTheLastAttemptShouldResultIntoAFailedInboundEvent() {
         // given
-        var inboundEvent = inboundEvent(new ManualInputDataDto("Something", null), 2);
+        var inboundEvent = storedInboundEvent(new ManualInputDataDto("Something", null), 2);
         when(elementClassificationClient.classify("Something", null))
                 .thenThrow(new IllegalStateException("provider unavailable"));
 
         // when
-        classificationDomainService.classify(inboundEvent);
+        classificationDomainService.classify(INBOUND_EVENT_ID);
 
         // then
         verify(outboundEventRepository, never()).save(any());
@@ -223,6 +224,12 @@ class ClassificationDomainServiceTest {
     private InboundEvent inboundEvent(ManualInputDataDto input, int attempts) {
         return new InboundEvent(INBOUND_EVENT_ID, EventSource.MANUAL, new EventData(jsonMapper.writeValueAsString(input)),
                 InboundEventStatus.RECEIVED, attempts, RECEIVED_AT, RECEIVED_AT, 0L);
+    }
+
+    private InboundEvent storedInboundEvent(ManualInputDataDto input, int attempts) {
+        var inboundEvent = inboundEvent(input, attempts);
+        when(inboundEventRepository.findById(INBOUND_EVENT_ID)).thenReturn(Optional.of(inboundEvent));
+        return inboundEvent;
     }
 
     private List<OutboundEvent> savedOutboundEvents(int count) {

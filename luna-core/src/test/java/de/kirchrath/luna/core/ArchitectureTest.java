@@ -2,14 +2,18 @@ package de.kirchrath.luna.core;
 
 import static com.tngtech.archunit.base.DescribedPredicate.describe;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.simpleNameEndingWith;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.stream.Stream;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,11 +37,18 @@ class ArchitectureTest {
     private static final String DATA = "de.kirchrath.luna.core.data..";
     private static final String DTO = "de.kirchrath.luna.core.dto..";
     private static final String REPOSITORY = "de.kirchrath.luna.core.data.repository..";
-    private static final String ENTITY = "de.kirchrath.luna.core.data.entity..";
     private static final String INBOUND = "de.kirchrath.luna.core.inbound..";
     private static final String DOMAIN_SERVICE = "DomainService";
     private static final String APPLICATION_SERVICE = "ApplicationService";
     private static final String SCHEDULER = "Scheduler";
+
+    private static final DescribedPredicate<JavaClass> DTO_LIKE = describe(
+            "a DTO, a java.* type, a primitive, Pageable or Page",
+            javaClass -> javaClass.isPrimitive()
+                    || javaClass.getPackageName().startsWith("java.")
+                    || resideInAPackage(DTO).test(javaClass)
+                    || javaClass.isEquivalentTo(Pageable.class)
+                    || javaClass.isEquivalentTo(Page.class));
 
     private static final DescribedPredicate<JavaClass> MANDATORY_TRANSACTIONAL = describe(
             "annotated with @Transactional(propagation = MANDATORY)",
@@ -104,13 +115,20 @@ class ArchitectureTest {
     }
 
     @ArchTest
-    void thatCheckingApplicationServicesShouldResultIntoNoDependenciesBesidesDomainServicesAndData(
-            JavaClasses classes) {
+    void thatCheckingApplicationServiceFieldsShouldResultIntoDomainServicesOnly(JavaClasses classes) {
         // given
-        var rule = classes().that().haveSimpleNameEndingWith(APPLICATION_SERVICE)
-                .should().onlyDependOnClassesThat(simpleNameEndingWith(DOMAIN_SERVICE)
-                        .or(simpleNameEndingWith(APPLICATION_SERVICE))
-                        .or(resideInAnyPackage("java..", DTO, ENTITY, "org.springframework.stereotype..")));
+        var rule = fields().that().areDeclaredInClassesThat().haveSimpleNameEndingWith(APPLICATION_SERVICE)
+                .should().haveRawType(simpleNameEndingWith(DOMAIN_SERVICE));
+
+        // when / then
+        assertNoViolation(rule, classes);
+    }
+
+    @ArchTest
+    void thatCheckingApplicationServiceMethodSignaturesShouldResultIntoDtoLikeTypesOnly(JavaClasses classes) {
+        // given
+        var rule = methods().that().areDeclaredInClassesThat().haveSimpleNameEndingWith(APPLICATION_SERVICE)
+                .should(onlyUseInSignature(DTO_LIKE));
 
         // when / then
         assertNoViolation(rule, classes);
@@ -160,6 +178,18 @@ class ArchitectureTest {
                 events.add(new SimpleConditionEvent(method, domainServiceCalls == expected,
                         method.getFullName() + " calls " + domainServiceCalls + " domain service method(s), expected "
                                 + expected));
+            }
+        };
+    }
+
+    private static ArchCondition<JavaMethod> onlyUseInSignature(DescribedPredicate<JavaClass> allowedTypes) {
+        return new ArchCondition<>("only use types in its signature that are " + allowedTypes.getDescription()) {
+            @Override
+            public void check(JavaMethod method, ConditionEvents events) {
+                Stream.concat(method.getParameterTypes().stream(), Stream.of(method.getReturnType()))
+                        .flatMap(type -> type.getAllInvolvedRawTypes().stream())
+                        .forEach(type -> events.add(new SimpleConditionEvent(method, allowedTypes.test(type),
+                                method.getFullName() + " uses " + type.getName() + " in its signature")));
             }
         };
     }

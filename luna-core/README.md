@@ -109,9 +109,9 @@ Ausdrücklich **nicht** Teil von `luna-core`:
 ### Klassifizierung per Spring AI (Schritt 3)
 
 - **Ablauf:** `ClassificationScheduler` läuft periodisch (`app.classification.interval`, Standard `30s`) und
-  holt über `ClassificationApplicationService` die ältesten eingehenden Events mit Status `RECEIVED` (höchstens
-  `app.classification.batch-size`, Standard `10`). Je Event klassifiziert der `ClassificationDomainService` in
-  **einer** Transaktion: Er fragt über den Client `ElementClassificationClient` (`outbound`, Spring AI), welche
+  holt über `ClassificationApplicationService` die IDs der ältesten eingehenden Events mit Status `RECEIVED`
+  (höchstens `app.classification.batch-size`, Standard `10`). Je Event lädt und klassifiziert der
+  `ClassificationDomainService` es in **einer** Transaktion: Er fragt über den Client `ElementClassificationClient` (`outbound`, Spring AI), welche
   Element-Typen entstehen (**null bis mehrere**), qualifiziert und veröffentlicht sie (siehe Schritt 4) und setzt
   das eingehende Event auf `ANALYZED` – bzw. speichert den Fehlversuch. Der ApplicationService leitet nur weiter.
 - **Typ-Hinweis:** Ist bei der manuellen Eingabe ein `typeHint` gesetzt, wird er der KI mitgegeben und ist immer

@@ -6,39 +6,39 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-import de.kirchrath.luna.core.data.entity.InboundEvent;
-
 class ClassificationApplicationServiceTest {
+
+    private static final UUID INBOUND_EVENT_ID = UUID.fromString("3f2b9c1d-7e6a-4b5c-9d8e-1a2b3c4d5e6f");
 
     private final ClassificationDomainService classificationDomainService = mock(ClassificationDomainService.class);
     private final ClassificationApplicationService classificationApplicationService =
             new ClassificationApplicationService(classificationDomainService);
 
     @Test
-    void thatFindingEventsToClassifyShouldResultIntoTheEventsOfTheDomainService() {
+    void thatFindingEventsToClassifyShouldResultIntoTheIdsOfTheDomainService() {
         // given
-        var inboundEvent = mock(InboundEvent.class);
-        when(classificationDomainService.findInboundEventsToClassify()).thenReturn(List.of(inboundEvent));
+        when(classificationDomainService.findInboundEventIdsToClassify()).thenReturn(List.of(INBOUND_EVENT_ID));
 
         // when
-        var found = classificationApplicationService.findInboundEventsToClassify();
+        var found = classificationApplicationService.findInboundEventIdsToClassify();
 
         // then
-        assertThat(found).containsExactly(inboundEvent);
+        assertThat(found).containsExactly(INBOUND_EVENT_ID);
     }
 
     @Test
     void thatClassifyingAnEventShouldResultIntoDelegatingToTheDomainService() {
         // given
-        var inboundEvent = mock(InboundEvent.class);
+        var inboundEventId = INBOUND_EVENT_ID;
 
         // when
-        classificationApplicationService.classify(inboundEvent);
+        classificationApplicationService.classify(inboundEventId);
 
         // then
-        verify(classificationDomainService).classify(inboundEvent);
+        verify(classificationDomainService).classify(inboundEventId);
     }
 }
