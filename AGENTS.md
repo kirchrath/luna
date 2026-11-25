@@ -36,8 +36,9 @@ Noch offen (bitte hier eintragen, sobald entschieden):
   2. Eingang: REST-Endpunkt für die manuelle Eingabe; eingehendes Event speichern (erledigt)
   3. Analyse per Spring AI (Entscheidung über den Element-Typ) (erledigt)
   4. Ausgang: erzeugte Elemente qualifizieren, speichern und auf `luna_core_<typ>` publizieren; `luna-core` im Stack (erledigt)
-  5. Frontend: Seite für die manuelle Eingabe
-  6. Danach weitere Quellen (z. B. E-Mail)
+  5. Backend: List-Endpunkt in `luna-core` für die letzten Eingaben (Status und daraus entstandene Elemente)
+  6. Frontend: Seite für die manuelle Eingabe (visuelle Planung in [frontend/docs](frontend/docs/README.md))
+  7. Danach weitere Quellen (z. B. E-Mail)
 
   Keiner dieser Schritte ist ohne ausdrücklichen Auftrag umzusetzen.
 
@@ -464,6 +465,7 @@ Monorepo mit mehreren Backends (je ein Top-Level-Ordner) und einem Frontend:
 ├── luna-core/       # Erstes Backend: Event-Analyse (Spring Boot, Maven, Jib), Port 7081
 ├── <backend-name>/  # Weitere Backends nach demselben Muster
 └── frontend/        # React-Frontend (Vite, npm, nginx-Image)
+    ├── docs/        # Visuelle Planung: Wireframes (SVG) und Festlegungen zum Aufbau der Anwendung
     └── src/
         ├── api/     # Generierte Wrapper, ein Unterordner pro Backend (eingecheckt, nicht manuell bearbeiten)
         └── ui/      # Wiederverwendbare, fachneutrale UI-Komponenten auf Basis von Bulma
