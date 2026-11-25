@@ -1,7 +1,10 @@
 package de.kirchrath.luna.core.services;
 
+import java.time.OffsetDateTime;
+import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.data.domain.Limit;
@@ -30,6 +33,7 @@ public class ClassificationDomainService {
     private final InboundEventRepository inboundEventRepository;
     private final OutboundEventRepository outboundEventRepository;
     private final ElementClassificationClient elementClassificationClient;
+    private final Map<LunaElementType, ElementProcessor<?, ?>> elementProcessors;
     private final LunaElementTypeConverter lunaElementTypeConverter;
     private final JsonMapper jsonMapper;
     private final ClassificationProperties classificationProperties;
@@ -38,12 +42,15 @@ public class ClassificationDomainService {
             InboundEventRepository inboundEventRepository,
             OutboundEventRepository outboundEventRepository,
             ElementClassificationClient elementClassificationClient,
+            List<ElementProcessor<?, ?>> elementProcessors,
             LunaElementTypeConverter lunaElementTypeConverter,
             JsonMapper jsonMapper,
             ClassificationProperties classificationProperties) {
         this.inboundEventRepository = inboundEventRepository;
         this.outboundEventRepository = outboundEventRepository;
         this.elementClassificationClient = elementClassificationClient;
+        this.elementProcessors = new EnumMap<>(LunaElementType.class);
+        elementProcessors.forEach(processor -> this.elementProcessors.put(processor.type(), processor));
         this.lunaElementTypeConverter = lunaElementTypeConverter;
         this.jsonMapper = jsonMapper;
         this.classificationProperties = classificationProperties;
@@ -55,17 +62,21 @@ public class ClassificationDomainService {
     }
 
     public void classify(InboundEvent inboundEvent) {
-        Set<LunaElementType> types;
+        List<QualifiedElement<?>> elements;
         try {
-            types = determineTypes(jsonMapper.readValue(inboundEvent.data().json(), ManualInputDataDto.class));
+            var input = jsonMapper.readValue(inboundEvent.data().json(), ManualInputDataDto.class);
+            elements = determineTypes(input).stream()
+                    .<QualifiedElement<?>>map(type -> qualify(
+                            elementProcessors.get(type), input.text(), inboundEvent.createdDate()))
+                    .toList();
         } catch (RuntimeException e) {
             recordFailedAttempt(inboundEvent, e);
             return;
         }
-        types.forEach(type -> outboundEventRepository.save(
-                new OutboundEvent(null, inboundEvent.id(), type, OutboundEventStatus.CLASSIFIED, null, null, null)));
+        elements.forEach(element -> element.storeAndPublish(outboundEventRepository.save(new OutboundEvent(
+                null, inboundEvent.id(), element.type(), OutboundEventStatus.PUBLISHED, null, null, null))));
         inboundEventRepository.save(inboundEvent.withStatus(InboundEventStatus.ANALYZED));
-        log.debug("Classified inbound event {} as {}", inboundEvent.id(), types);
+        log.debug("Published {} element(s) for inbound event {}", elements.size(), inboundEvent.id());
     }
 
     private Set<LunaElementType> determineTypes(ManualInputDataDto input) {
@@ -80,6 +91,10 @@ public class ClassificationDomainService {
         return types;
     }
 
+    private <D> QualifiedElement<D> qualify(ElementProcessor<D, ?> processor, String text, OffsetDateTime referenceTime) {
+        return new QualifiedElement<>(processor, processor.qualify(text, referenceTime));
+    }
+
     private void recordFailedAttempt(InboundEvent inboundEvent, RuntimeException cause) {
         var attempts = inboundEvent.attempts() + 1;
         var maxAttempts = classificationProperties.maxAttempts();
@@ -91,6 +106,17 @@ public class ClassificationDomainService {
             log.warn("Classification of inbound event {} failed (attempt {}/{})",
                     inboundEvent.id(), attempts, maxAttempts, cause);
             inboundEventRepository.save(inboundEvent.withAttempts(attempts).withStatus(InboundEventStatus.RECEIVED));
+        }
+    }
+
+    private record QualifiedElement<D>(ElementProcessor<D, ?> processor, D data) {
+
+        LunaElementType type() {
+            return processor.type();
+        }
+
+        void storeAndPublish(OutboundEvent outboundEvent) {
+            processor.storeAndPublish(outboundEvent, data);
         }
     }
 }

@@ -1,9 +1,16 @@
 spring:
+  config:
+    import: optional:configtree:/run/secrets/
   datasource:
     url: jdbc:postgresql://postgres:5432/luna?currentSchema=luna_core
     username: luna
+  kafka:
+    bootstrap-servers: kafka:9094
+    ssl:
+      trust-store-location: file:/step/certs/root_ca.crt
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: https://luna.internal/auth/realms/luna
+          jwk-set-uri: http://keycloak:8080/auth/realms/luna/protocol/openid-connect/certs

@@ -2,6 +2,7 @@ package de.kirchrath.luna.core.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -9,9 +10,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -39,18 +43,27 @@ import tools.jackson.databind.json.JsonMapper;
 class ClassificationDomainServiceTest {
 
     private static final UUID INBOUND_EVENT_ID = UUID.fromString("3f2b9c1d-7e6a-4b5c-9d8e-1a2b3c4d5e6f");
+    private static final OffsetDateTime RECEIVED_AT = OffsetDateTime.parse("2026-11-24T10:00:00+01:00");
 
     private final InboundEventRepository inboundEventRepository = mock(InboundEventRepository.class);
     private final OutboundEventRepository outboundEventRepository = mock(OutboundEventRepository.class);
     private final ElementClassificationClient elementClassificationClient = mock(ElementClassificationClient.class);
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
+    private final List<ElementProcessor<Object, ?>> processors = processors();
     private final ClassificationDomainService classificationDomainService = new ClassificationDomainService(
             inboundEventRepository,
             outboundEventRepository,
             elementClassificationClient,
+            List.copyOf(processors),
             new LunaElementTypeConverter(new LunaElementTypeMapperImpl()),
             jsonMapper,
             new ClassificationProperties(Duration.ofSeconds(30), 10, 3));
+
+    @BeforeEach
+    void setUp() {
+        when(outboundEventRepository.save(any()))
+                .thenAnswer(invocation -> invocation.<OutboundEvent>getArgument(0).withId(UUID.randomUUID()));
+    }
 
     @Test
     void thatFindingEventsToClassifyShouldResultIntoTheOldestReceivedEventsOfOneBatch() {
@@ -67,50 +80,49 @@ class ClassificationDomainServiceTest {
     }
 
     @Test
-    void thatClassifyingAnInputShouldResultIntoOneOutboundEventPerTypeAndAnAnalyzedInboundEvent() {
+    void thatClassifyingAnInputShouldResultIntoQualifiedStoredAndPublishedElementsAndAnAnalyzedInboundEvent() {
         // given
         var inboundEvent = inboundEvent(new ManualInputDataDto("Dentist on Tuesday, buy a gift before", null), 0);
         when(elementClassificationClient.classify("Dentist on Tuesday, buy a gift before", null)).thenReturn(
                 new ClassificationResultDto(List.of(LunaElementTypeDto.APPOINTMENT, LunaElementTypeDto.TASK)));
+        var appointmentData = qualifies(LunaElementType.APPOINTMENT);
+        var taskData = qualifies(LunaElementType.TASK);
 
         // when
         classificationDomainService.classify(inboundEvent);
 
         // then
-        assertThat(savedOutboundEventTypes(2)).containsExactly(LunaElementType.APPOINTMENT, LunaElementType.TASK);
+        var outboundEvents = savedOutboundEvents(2);
+        assertThat(outboundEvents).extracting(OutboundEvent::type)
+                .containsExactly(LunaElementType.APPOINTMENT, LunaElementType.TASK);
+        assertThat(outboundEvents).allSatisfy(outboundEvent -> {
+            assertThat(outboundEvent.inboundEventId()).isEqualTo(INBOUND_EVENT_ID);
+            assertThat(outboundEvent.status()).isEqualTo(OutboundEventStatus.PUBLISHED);
+        });
+        verify(processor(LunaElementType.APPOINTMENT)).storeAndPublish(any(), eq(appointmentData));
+        verify(processor(LunaElementType.TASK)).storeAndPublish(any(), eq(taskData));
         verify(inboundEventRepository).save(inboundEvent.withStatus(InboundEventStatus.ANALYZED));
-    }
-
-    @Test
-    void thatClassifyingAnInputWithTypeHintShouldResultIntoTheHintedTypeAndFurtherDeterminedTypes() {
-        // given
-        var inboundEvent = inboundEvent(new ManualInputDataDto("Bill", LunaElementTypeDto.INVOICE), 0);
-        when(elementClassificationClient.classify("Bill", LunaElementTypeDto.INVOICE)).thenReturn(
-                new ClassificationResultDto(List.of(LunaElementTypeDto.INVOICE, LunaElementTypeDto.CONTRACT)));
-
-        // when
-        classificationDomainService.classify(inboundEvent);
-
-        // then
-        assertThat(savedOutboundEventTypes(2)).containsExactly(LunaElementType.INVOICE, LunaElementType.CONTRACT);
     }
 
     @ParameterizedTest
     @EnumSource(LunaElementTypeDto.class)
-    void thatClassifyingAnInputWithTypeHintShouldResultIntoTheMatchingEntityType(LunaElementTypeDto typeHint) {
+    void thatClassifyingAnInputWithTypeHintShouldResultIntoAnElementOfTheHintedType(LunaElementTypeDto typeHint) {
         // given
         var inboundEvent = inboundEvent(new ManualInputDataDto("Something", typeHint), 0);
         when(elementClassificationClient.classify("Something", typeHint)).thenReturn(new ClassificationResultDto(List.of()));
+        var type = LunaElementType.valueOf(typeHint.name());
+        var data = qualifies(type);
 
         // when
         classificationDomainService.classify(inboundEvent);
 
         // then
-        assertThat(savedOutboundEventTypes(1)).containsExactly(LunaElementType.valueOf(typeHint.name()));
+        assertThat(savedOutboundEvents(1)).extracting(OutboundEvent::type).containsExactly(type);
+        verify(processor(type)).storeAndPublish(any(), eq(data));
     }
 
     @Test
-    void thatClassifyingWithAResultWithoutTypesShouldResultIntoNoOutboundEventAndAnAnalyzedInboundEvent() {
+    void thatClassifyingWithAResultWithoutTypesShouldResultIntoNoElementAndAnAnalyzedInboundEvent() {
         // given
         var inboundEvent = inboundEvent(new ManualInputDataDto("Something", null), 0);
         when(elementClassificationClient.classify("Something", null)).thenReturn(new ClassificationResultDto(null));
@@ -124,7 +136,7 @@ class ClassificationDomainServiceTest {
     }
 
     @Test
-    void thatClassifyingWithoutResultShouldResultIntoNoOutboundEventAndAnAnalyzedInboundEvent() {
+    void thatClassifyingWithoutResultShouldResultIntoNoElementAndAnAnalyzedInboundEvent() {
         // given
         var inboundEvent = inboundEvent(new ManualInputDataDto("Something", null), 0);
         when(elementClassificationClient.classify("Something", null)).thenReturn(null);
@@ -138,17 +150,20 @@ class ClassificationDomainServiceTest {
     }
 
     @Test
-    void thatAFailingClassificationShouldResultIntoAnIncreasedAttemptAndAReceivedInboundEvent() {
+    void thatAFailingQualificationShouldResultIntoNoElementAndAnIncreasedAttempt() {
         // given
-        var inboundEvent = inboundEvent(new ManualInputDataDto("Something", null), 0);
-        when(elementClassificationClient.classify("Something", null))
-                .thenThrow(new IllegalStateException("provider unavailable"));
+        var inboundEvent = inboundEvent(new ManualInputDataDto("Something", LunaElementTypeDto.NOTE), 0);
+        when(elementClassificationClient.classify("Something", LunaElementTypeDto.NOTE))
+                .thenReturn(new ClassificationResultDto(List.of()));
+        when(processor(LunaElementType.NOTE).qualify("Something", RECEIVED_AT))
+                .thenThrow(new IllegalStateException("No NOTE data could be extracted"));
 
         // when
         classificationDomainService.classify(inboundEvent);
 
         // then
         verify(outboundEventRepository, never()).save(any());
+        verify(processor(LunaElementType.NOTE), never()).storeAndPublish(any(), any());
         verify(inboundEventRepository).save(inboundEvent.withAttempts(1).withStatus(InboundEventStatus.RECEIVED));
     }
 
@@ -167,19 +182,33 @@ class ClassificationDomainServiceTest {
         verify(inboundEventRepository).save(inboundEvent.withAttempts(3).withStatus(InboundEventStatus.FAILED));
     }
 
-    private InboundEvent inboundEvent(ManualInputDataDto input, int attempts) {
-        return new InboundEvent(INBOUND_EVENT_ID, EventSource.MANUAL, new EventData(jsonMapper.writeValueAsString(input)),
-                InboundEventStatus.RECEIVED, attempts, null, null, 0L);
+    @SuppressWarnings("unchecked")
+    private static List<ElementProcessor<Object, ?>> processors() {
+        return Arrays.stream(LunaElementType.values()).<ElementProcessor<Object, ?>>map(type -> {
+            ElementProcessor<Object, ?> processor = mock(ElementProcessor.class);
+            when(processor.type()).thenReturn(type);
+            return processor;
+        }).toList();
     }
 
-    private List<LunaElementType> savedOutboundEventTypes(int count) {
+    private ElementProcessor<Object, ?> processor(LunaElementType type) {
+        return processors.stream().filter(processor -> processor.type() == type).findFirst().orElseThrow();
+    }
+
+    private Object qualifies(LunaElementType type) {
+        var data = type.name() + " data";
+        when(processor(type).qualify(any(), eq(RECEIVED_AT))).thenReturn(data);
+        return data;
+    }
+
+    private InboundEvent inboundEvent(ManualInputDataDto input, int attempts) {
+        return new InboundEvent(INBOUND_EVENT_ID, EventSource.MANUAL, new EventData(jsonMapper.writeValueAsString(input)),
+                InboundEventStatus.RECEIVED, attempts, RECEIVED_AT, RECEIVED_AT, 0L);
+    }
+
+    private List<OutboundEvent> savedOutboundEvents(int count) {
         var captor = ArgumentCaptor.forClass(OutboundEvent.class);
         verify(outboundEventRepository, times(count)).save(captor.capture());
-        captor.getAllValues().forEach(outboundEvent -> {
-            assertThat(outboundEvent.id()).isNull();
-            assertThat(outboundEvent.inboundEventId()).isEqualTo(INBOUND_EVENT_ID);
-            assertThat(outboundEvent.status()).isEqualTo(OutboundEventStatus.CLASSIFIED);
-        });
-        return captor.getAllValues().stream().map(OutboundEvent::type).toList();
+        return captor.getAllValues();
     }
 }
