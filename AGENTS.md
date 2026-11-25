@@ -37,7 +37,14 @@ Noch offen (bitte hier eintragen, sobald entschieden):
   3. Analyse per Spring AI (Entscheidung über den Element-Typ) (erledigt)
   4. Ausgang: erzeugte Elemente qualifizieren, speichern und auf `luna_core_<typ>` publizieren; `luna-core` im Stack (erledigt)
   5. Backend: List-Endpunkt in `luna-core` für die letzten Eingaben (Status und daraus entstandene Elemente) (erledigt)
-  6. Frontend: Seite für die manuelle Eingabe (visuelle Planung in [frontend/docs](frontend/docs/README.md))
+  6. Frontend: Seite für die manuelle Eingabe (visuelle Planung in [frontend/docs](frontend/docs/README.md)),
+     in Teilschritten:
+     - 6a Grundgerüst mit Layout, Navigation und Platzhaltern (erledigt)
+     - 6b Anmeldung: Realm `luna` per Realm-Import im Stack, Client fürs Frontend, OIDC mit
+       `oidc-client-ts` + `react-oidc-context`
+     - 6c Schnelleingabe mit Liste der letzten Eingaben über den generierten API-Wrapper
+     - 6d nginx-Image und `swarm/frontend.yml`
+     - 6e E2E-Tests mit Playwright
   7. Danach weitere Quellen (z. B. E-Mail)
 
   Keiner dieser Schritte ist ohne ausdrücklichen Auftrag umzusetzen.
@@ -340,6 +347,12 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
 | API-Zugriff | generierter Wrapper in `src/api/<backend>/` (**openapi-typescript** + **openapi-fetch**) |
 | i18n | **react-i18next**; Sprachen **Deutsch (Standard/Fallback)** und **Englisch** |
 | Tests | **Vitest** + **Testing Library**; E2E mit **Playwright** |
+| Testabdeckung | **100 %** (Statements, Branches, Functions, Lines), per Vitest-Coverage (v8) erzwungen; ausgenommen `main.tsx`, Typdefinitionen und der generierte API-Wrapper |
+| Codequalität | **ESLint** (typescript-eslint `strictTypeChecked`, React-Hooks) und **Prettier** (`npm run lint`) |
+| Icons | **lucide-react**; Logo als eigene Komponente |
+| Schriften | **Inter** und **Space Grotesk** (Überschriften), lokal über `@fontsource-variable` |
+| Design | Primärfarbe **`#1f7a8c`** (Bulma `$primary`); dunkler Modus automatisch nach Geräteeinstellung |
+| Versionen | in `package.json` **exakt gepinnt** (`.npmrc`: `save-exact`), `package-lock.json` eingecheckt; TypeScript **5.9.x** (neuere Versionen werden von typescript-eslint und openapi-typescript noch nicht unterstützt) |
 
 - **Keine UI-Komponentenbibliothek** (kein MUI, Ant Design, Chakra, shadcn o. ä.).
   Wiederverwendbare Komponenten werden im Projekt erstellt und unter **`src/ui`** abgelegt.
@@ -360,6 +373,11 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
   API-Aufrufe routet **Traefik direkt an das jeweilige Backend**.
 - **Texte:** Keine fest codierten UI-Texte; alle Texte über react-i18next. Neue Schlüssel immer in
   **Deutsch und Englisch** anlegen.
+- **Routen** sind englisch (`/`, `/tasks`, `/calendar`, `/shopping`, `/finance`, `/monitoring`) und stehen in
+  `src/navigation.ts`.
+- **Sprache:** Start auf Deutsch; die Wahl im DE/EN-Umschalter wird im `localStorage` gemerkt.
+- **Tests** folgen denselben Konventionen wie im Backend: Namen `that … should result into …`, Abschnitte
+  `// given`, `// when`, `// then`.
 
 ### Ende-zu-Ende
 
@@ -500,12 +518,17 @@ cd luna-core
 Lokal starten: Profil `local` ist Standard; das DB-Passwort kommt aus der Umgebungsvariable
 `SPRING_DATASOURCE_PASSWORD` (Spring-Standardnamen, keine Platzhalter in den yml-Dateien).
 
+Frontend (benötigt Node 24, siehe `frontend/.nvmrc`):
+
+```bash
+cd frontend
+npm ci && npm run lint && npm run coverage && npm run build
+npm run dev   # http://localhost:5173
+```
+
 Noch nicht angelegt:
 
 ```bash
-# Frontend: Abhängigkeiten installieren, bauen, testen
-# <befehl>
-
 # API-Wrapper eines Backends aus OpenAPI neu generieren
 # <befehl>
 

@@ -1,0 +1,35 @@
+{
+  "app": {
+    "name": "Luna"
+  },
+  "navigation": {
+    "label": "Main navigation",
+    "areas": "Areas",
+    "soon": "soon",
+    "open": "Open navigation",
+    "close": "Close navigation",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "quickInput": "Quick input",
+    "tasks": "Tasks",
+    "calendar": "Calendar",
+    "shopping": "Shopping & household",
+    "finance": "Finances & contracts",
+    "monitoring": "Monitoring"
+  },
+  "language": {
+    "label": "Language",
+    "de": "German",
+    "en": "English"
+  },
+  "user": {
+    "menu": "User menu"
+  },
+  "quickInput": {
+    "title": "What's on your mind?",
+    "lead": "Write it down the way it comes to you. Luna works out what it becomes: a task, an appointment, an invoice …"
+  },
+  "comingSoon": {
+    "text": "This area comes in a later step."
+  }
+}

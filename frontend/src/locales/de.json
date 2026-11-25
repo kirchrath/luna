@@ -1,0 +1,35 @@
+{
+  "app": {
+    "name": "Luna"
+  },
+  "navigation": {
+    "label": "Hauptnavigation",
+    "areas": "Bereiche",
+    "soon": "bald",
+    "open": "Navigation öffnen",
+    "close": "Navigation schließen",
+    "collapse": "Einklappen",
+    "expand": "Ausklappen",
+    "quickInput": "Schnelleingabe",
+    "tasks": "Aufgaben",
+    "calendar": "Termine",
+    "shopping": "Einkauf & Haushalt",
+    "finance": "Finanzen & Verträge",
+    "monitoring": "Monitoring"
+  },
+  "language": {
+    "label": "Sprache",
+    "de": "Deutsch",
+    "en": "Englisch"
+  },
+  "user": {
+    "menu": "Benutzermenü"
+  },
+  "quickInput": {
+    "title": "Was steht an?",
+    "lead": "Schreib es auf, wie es dir einfällt. Luna erkennt, was daraus wird: eine Aufgabe, ein Termin, eine Rechnung …"
+  },
+  "comingSoon": {
+    "text": "Dieser Bereich kommt in einem späteren Schritt."
+  }
+}
