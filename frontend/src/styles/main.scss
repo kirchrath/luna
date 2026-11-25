@@ -1,5 +1,7 @@
 // Layout as planned in frontend/docs: header on top, collapsible navigation on the left, content beside it.
-$luna-primary: #1f7a8c;
+// Calm grey surface as in the wireframes; the strong petrol colour is reserved for highlights (Bulma $link).
+$luna-primary: #4a5260;
+$luna-highlight: #1f7a8c;
 $luna-font-body:
   'Inter Variable',
   system-ui,
@@ -14,12 +16,17 @@ $mobile: 768px;
 
 @use 'bulma/sass' with (
   $primary: $luna-primary,
+  $link: $luna-highlight,
   $family-primary: $luna-font-body
 );
 
 .title,
 .brand {
   font-family: $luna-font-display;
+}
+
+html {
+  background-color: var(--bulma-background);
 }
 
 .app-shell {
@@ -69,12 +76,12 @@ $mobile: 768px;
   color: var(--bulma-text-strong);
 
   .logo {
-    color: var(--bulma-primary);
+    color: var(--bulma-text-strong);
   }
 }
 
 .logo-surface {
-  fill: var(--bulma-primary-soft);
+  fill: var(--bulma-border-weak);
 }
 
 .user-menu {
@@ -226,6 +233,7 @@ $mobile: 768px;
 
   .placeholder-icon {
     display: inline-flex;
+    color: var(--bulma-text);
     margin-bottom: 0.75rem;
   }
 

@@ -57,7 +57,8 @@ Verhalten, nicht das endgültige Aussehen: Farben, Schriften und Icons sind dort
 
 ## Entschieden in Schritt 6a
 
-- Primärfarbe **`#1f7a8c`** (Petrol), Schriften **Inter** und **Space Grotesk** (Überschriften).
+- Farben wie im Wireframe: Hintergrund **`#f3f4f6`**, Primärfarbe **`#4a5260`** (dunkles Grau); kräftige Farbe nur für
+  Highlights: Petrol **`#1f7a8c`**. Schriften **Inter** und **Space Grotesk** (Überschriften).
 - Icons aus **lucide-react**; das Logo bleibt das eigene Mond-SVG.
 - Dunkler Modus automatisch nach Geräteeinstellung.
 - Routen: `/`, `/tasks`, `/calendar`, `/shopping`, `/finance`, `/monitoring`.

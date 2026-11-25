@@ -352,7 +352,7 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
 | Codequalität | **ESLint** (typescript-eslint `strictTypeChecked`, React-Hooks) und **Prettier** (`npm run lint`) |
 | Icons | **lucide-react**; Logo als eigene Komponente |
 | Schriften | **Inter** und **Space Grotesk** (Überschriften), lokal über `@fontsource-variable` |
-| Design | Primärfarbe **`#1f7a8c`** (Bulma `$primary`); dunkler Modus automatisch nach Geräteeinstellung |
+| Design | Ruhige, graue Oberfläche: Hintergrund **`#f3f4f6`** (Bulma `--bulma-background`), Primärfarbe **`#4a5260`** (Bulma `$primary`); kräftige Farbe nur für Highlights: Petrol **`#1f7a8c`** (Bulma `$link`); dunkler Modus automatisch nach Geräteeinstellung |
 | Versionen | in `package.json` **exakt gepinnt** (`.npmrc`: `save-exact`), `package-lock.json` eingecheckt; TypeScript **5.9.x** (neuere Versionen werden von typescript-eslint und openapi-typescript noch nicht unterstützt) |
 
 - **Keine UI-Komponentenbibliothek** (kein MUI, Ant Design, Chakra, shadcn o. ä.).
