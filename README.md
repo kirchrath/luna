@@ -180,6 +180,20 @@ docker service logs luna_luna-core
 - Auf jedem Gerät in der hosts-Datei: `<IP des Servers>  luna.internal`
 - Root-Zertifikat aus Schritt 7 installieren.
 
+#### 13. Luna-Konto anlegen (First start only)
+
+Keycloak legt beim ersten Start den Realm `luna` mit dem Client `luna-frontend` aus
+[`swarm/keycloak/luna-realm.json`](swarm/keycloak/luna-realm.json) an. Benutzer enthält der Import bewusst nicht.
+
+1. Admin-Konsole öffnen (`https://luna.internal/auth/admin`, lokal `http://localhost:7080/auth/admin`) und mit dem
+   Bootstrap-Admin `admin` anmelden.
+2. Oben links den Realm **luna** auswählen.
+3. **Users → Create new user:** Benutzername, E-Mail und **Vorname** eintragen (der Vorname erscheint im
+   Benutzermenü von Luna), **Email verified** einschalten, **Create**.
+4. Reiter **Credentials → Set password:** Passwort setzen, **Temporary** ausschalten, speichern.
+
+Danach meldet sich Luna mit diesem Konto an.
+
 Danach ist Keycloak unter `https://luna.internal/auth` erreichbar (Admin-Konsole: `https://luna.internal/auth/admin`).
 Lokal: PostgreSQL unter `localhost:7432`, Keycloak unter `http://localhost:7080/auth`, Kafka unter
 `localhost:7094` (TLS + SCRAM).
@@ -212,6 +226,7 @@ Alte Versionen können danach mit `docker secret rm kafka_keystore_v1 kafka_keys
 | DB-Benutzer | heißen wie ihre Datenbanken: `keycloak` (Datenbank `keycloak`) und `luna` (Datenbank `luna`) |
 | Secrets | alle extern, siehe oben |
 | Netzwerk | Overlay-Netz `luna`, `attachable` – auch Container außerhalb des Stacks können sich verbinden |
+| Keycloak-Realm | `luna` aus `swarm/keycloak/luna-realm.json`: Anmeldeseite Deutsch (Standard) und Englisch, „Angemeldet bleiben“, keine Registrierung. Client `luna-frontend`: öffentlich, Authorization Code mit PKCE (S256), Weiterleitungen nur an `https://luna.internal/*` und `http://localhost:5173/*`. Keine Benutzer im Import (siehe Schritt 13) |
 | Keycloak-URL | Variable `LUNA_KEYCLOAK_URL` setzt den Issuer der Tokens. Standard: `https://luna.internal/auth`; lokal `http://localhost:7080/auth` |
 | Kafka-Adresse | Backends im Stack nutzen `kafka:9094`. Für Clients außerhalb des Stacks (Port 7094) teilt Kafka die Adresse aus `LUNA_KAFKA_HOST` mit. Standard: `localhost:7094`; auf dem Server z. B. `LUNA_KAFKA_HOST=luna.internal:7094` setzen, damit Entwicklungsrechner zugreifen können |
 | Kafka | ein Knoten im KRaft-Modus (ohne ZooKeeper), feste `CLUSTER_ID` in der Stack-Datei, Daten im Volume `kafka-data` |
@@ -232,6 +247,10 @@ Alte Versionen können danach mit `docker secret rm kafka_keystore_v1 kafka_keys
   das ist bewusst so akzeptiert (kein zusätzliches `TZ`).
 - **Kafka-Admin-Passwort:** Wird nur beim allerersten Start (leeres Volume `kafka-data`) übernommen. Spätere
   Änderungen am Secret `kafka_admin_password` wirken nicht automatisch.
+- **Realm-Import:** Keycloak importiert `luna-realm.json` nur, wenn der Realm `luna` noch nicht existiert. Spätere
+  Änderungen an der Datei wirken nicht auf eine bestehende Installation; sie müssen zusätzlich in der Admin-Konsole
+  nachgezogen werden. Außerdem lehnt Swarm geänderte Configs ab (`only updates to Labels are allowed`): Dann in
+  `swarm/infrastructure.yml` den Config-Namen ändern (z. B. `keycloak_luna_realm_v2`).
 - **Kafka-ACLs:** `kafka-init` ergänzt Benutzer und Rechte nur; entfernte Services oder Lese-Freigaben müssen
   von Hand mit `kafka-acls.sh --remove` entfernt werden.
 - **Swarm-Load-Balancing:** Swarm nutzt für Service-IPs IPVS im Kernel. Fehlt es (z. B. in manchen Sandboxes

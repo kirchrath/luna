@@ -1,0 +1,31 @@
+{
+  "realm": "luna",
+  "displayName": "Luna",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "rememberMe": true,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["de", "en"],
+  "defaultLocale": "de",
+  "clients": [
+    {
+      "clientId": "luna-frontend",
+      "name": "Luna Frontend",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "redirectUris": ["https://luna.internal/*", "http://localhost:5173/*"],
+      "webOrigins": ["https://luna.internal", "http://localhost:5173"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://luna.internal/*##http://localhost:5173/*"
+      }
+    }
+  ]
+}
