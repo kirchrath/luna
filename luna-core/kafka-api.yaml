@@ -1,0 +1,240 @@
+openapi: 3.1.0
+info:
+  title: Luna Core Kafka API
+  description: Events published by luna-core on Kafka. The key of each message is
+    the id of the event.
+  version: 0.0.1-SNAPSHOT
+components:
+  schemas:
+    AuditDto:
+      type: object
+      properties:
+        createdDate:
+          type: string
+          format: date-time
+        lastModifiedDate:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+      required:
+      - createdDate
+      - lastModifiedDate
+      - version
+    TaskEventDataDto:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        priority:
+          type: string
+          enum:
+          - LOW
+          - NORMAL
+          - HIGH
+      required:
+      - priority
+      - title
+    TaskEventDto:
+      type: object
+      description: Published on topic luna_core_task. The key of each message is the
+        id of the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+        data:
+          $ref: "#/components/schemas/TaskEventDataDto"
+      required:
+      - audit
+      - data
+      - id
+    AlertEventDataDto:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        message:
+          type: string
+          minLength: 1
+        severity:
+          type: string
+          enum:
+          - INFO
+          - WARNING
+          - CRITICAL
+        affectedSystem:
+          type: string
+      required:
+      - message
+      - severity
+      - title
+    AlertEventDto:
+      type: object
+      description: Published on topic luna_core_alert. The key of each message is
+        the id of the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+        data:
+          $ref: "#/components/schemas/AlertEventDataDto"
+      required:
+      - audit
+      - data
+      - id
+    AppointmentEventDataDto:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        allDay:
+          type: boolean
+        location:
+          type: string
+        description:
+          type: string
+      required:
+      - allDay
+      - start
+      - title
+    AppointmentEventDto:
+      type: object
+      description: Published on topic luna_core_appointment. The key of each message
+        is the id of the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+        data:
+          $ref: "#/components/schemas/AppointmentEventDataDto"
+      required:
+      - audit
+      - data
+      - id
+    InvoiceEventDataDto:
+      type: object
+      properties:
+        issuer:
+          type: string
+          minLength: 1
+        invoiceNumber:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+          minLength: 1
+        dueDate:
+          type: string
+          format: date-time
+        description:
+          type: string
+      required:
+      - amount
+      - currency
+      - issuer
+    InvoiceEventDto:
+      type: object
+      description: Published on topic luna_core_invoice. The key of each message is
+        the id of the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+        data:
+          $ref: "#/components/schemas/InvoiceEventDataDto"
+      required:
+      - audit
+      - data
+      - id
+    ContractEventDataDto:
+      type: object
+      properties:
+        counterparty:
+          type: string
+          minLength: 1
+        title:
+          type: string
+          minLength: 1
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        cancellationDeadline:
+          type: string
+          format: date-time
+        description:
+          type: string
+      required:
+      - counterparty
+      - title
+    ContractEventDto:
+      type: object
+      description: Published on topic luna_core_contract. The key of each message
+        is the id of the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+        data:
+          $ref: "#/components/schemas/ContractEventDataDto"
+      required:
+      - audit
+      - data
+      - id
+    NoteEventDataDto:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        summary:
+          type: string
+          minLength: 1
+      required:
+      - summary
+      - title
+    NoteEventDto:
+      type: object
+      description: Published on topic luna_core_note. The key of each message is the
+        id of the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+        data:
+          $ref: "#/components/schemas/NoteEventDataDto"
+      required:
+      - audit
+      - data
+      - id

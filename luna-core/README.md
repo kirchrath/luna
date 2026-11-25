@@ -151,11 +151,13 @@ Transaktion**:
 
 1. Klassifizieren wie bisher (null bis mehrere Element-Typen).
 2. **Qualifizieren:** je ermitteltem Typ **ein eigener KI-Aufruf** (`ElementQualificationClient`) mit
-   typspezifischem Prompt (`prompts/qualification/<typ>.st`) und strukturierter Antwort (`<Typ>EventDataDto`).
+   typspezifischem Prompt (`app.prompts.<typ>`) und strukturierter Antwort `QualificationResultDto<<Typ>EventDataDto>`
+   – einer **Liste aller Elemente** dieses Typs (z. B. zwei Termine aus einer Eingabe).
    Extrahierte Texte in der **Sprache der Eingabe**; relative Angaben („nächsten Dienstag“) bezogen auf den
    **Eingangszeitpunkt** des Events. Fehlen Pflichtfelder (Bean Validation), gilt der Versuch als fehlgeschlagen.
 3. Je Element ein `OutboundEvent` (Status **`PUBLISHED`**) und ein `<Typ>Element` mit allen Feldern speichern.
-4. Je Element ein `<Typ>EventDto` **synchron** an `luna_core_<typ>` senden (Kafka-Key = ID des `OutboundEvent`).
+4. Je Element ein `<Typ>EventDto` **synchron** an das Topic aus `app.kafka.topics.<typ>` senden
+   (`KafkaTemplate<UUID, ElementEventDto>`, Kafka-Key = ID des `OutboundEvent`).
 5. Eingehendes Event auf `ANALYZED`.
 
 Die KI-Aufrufe laufen vor allen Schreibzugriffen; schlägt einer fehl, wird `attempts` erhöht und das Event später
@@ -186,7 +188,9 @@ sendet; die Abbildung erledigen `<Typ>ElementConverter`/`<Typ>ElementMapper`.
 | `NOTE` | `NoteElement` / `note_element` | **`title`**, **`summary`** |
 
 **Kafka-Nachrichten:** je Typ `<Typ>EventDto(id, audit, data)` mit `data: <Typ>EventDataDto` (Felder wie oben,
-**ohne** Originaltext); `id` und `audit` stammen vom `OutboundEvent`. Topics `luna_core_task`, `luna_core_alert`,
+**ohne** Originaltext); `id` und `audit` stammen vom `OutboundEvent`. Alle Events implementieren das sealed
+Interface `ElementEventDto`. Die Schemas aller Nachrichten stehen in **`luna-core/kafka-api.yaml`** (erzeugt mit
+`./mvnw verify -Popenapi`). Topics `luna_core_task`, `luna_core_alert`,
 `luna_core_appointment`, `luna_core_invoice`, `luna_core_contract`, `luna_core_note` (Anlage beim ersten
 Schreiben; ACL für `luna-core` auf `luna_core_*` besteht bereits).
 
@@ -210,6 +214,16 @@ Schreiben; ACL für `luna-core` auf `luna_core_*` besteht bereits).
 
 **Tests:** Unit-Tests je Klasse (100 % Abdeckung), Integrationstest von der Eingabe bis zur Nachricht auf dem Topic
 mit PostgreSQL und Kafka per Testcontainers (ohne TLS/SASL), gemocktes `ChatModel`; ArchUnit-Regeln gelten weiter.
+
+### Konfiguration von Topics und Prompts
+
+| Property | Inhalt |
+|---|---|
+| `app.kafka.topics.<typ>` | Topic je Element-Typ (`task`, `alert`, `appointment`, `invoice`, `contract`, `note`) |
+| `app.prompts.classification` | Prompt der Klassifizierung |
+| `app.prompts.<typ>` | Prompt der Qualifizierung je Element-Typ |
+
+Der Kafka-Benutzer ist `${spring.application.name}`.
 
 ### Lokale Entwicklung
 

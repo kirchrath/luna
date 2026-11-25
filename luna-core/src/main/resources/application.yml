@@ -30,7 +30,12 @@ spring:
       trust-store-location:
     properties:
       "[sasl.mechanism]": SCRAM-SHA-512
-      "[sasl.jaas.config]": org.apache.kafka.common.security.scram.ScramLoginModule required username="luna-core" password="${app.kafka.password}";
+      "[sasl.jaas.config]": org.apache.kafka.common.security.scram.ScramLoginModule required username="${spring.application.name}" password="${app.kafka.password}";
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        "[spring.json.add.type.headers]": false
   security:
     oauth2:
       resourceserver:
@@ -46,6 +51,21 @@ app:
     allowed-origins:
   kafka:
     password:
+    topics:
+      task: luna_core_task
+      alert: luna_core_alert
+      appointment: luna_core_appointment
+      invoice: luna_core_invoice
+      contract: luna_core_contract
+      note: luna_core_note
+  prompts:
+    classification: classpath:prompts/classification.st
+    task: classpath:prompts/qualification/task.st
+    alert: classpath:prompts/qualification/alert.st
+    appointment: classpath:prompts/qualification/appointment.st
+    invoice: classpath:prompts/qualification/invoice.st
+    contract: classpath:prompts/qualification/contract.st
+    note: classpath:prompts/qualification/note.st
   classification:
     interval: 30s
     batch-size: 10

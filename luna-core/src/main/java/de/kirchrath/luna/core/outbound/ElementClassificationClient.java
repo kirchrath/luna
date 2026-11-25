@@ -1,10 +1,9 @@
 package de.kirchrath.luna.core.outbound;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
+import de.kirchrath.luna.core.config.PromptProperties;
 import de.kirchrath.luna.core.dto.ClassificationResultDto;
 import de.kirchrath.luna.core.dto.LunaElementTypeDto;
 
@@ -12,18 +11,17 @@ import de.kirchrath.luna.core.dto.LunaElementTypeDto;
 public class ElementClassificationClient {
 
     private final ChatClient chatClient;
-    private final Resource classificationPrompt;
+    private final PromptProperties promptProperties;
 
     public ElementClassificationClient(
-            ChatClient.Builder chatClientBuilder,
-            @Value("classpath:prompts/classification.st") Resource classificationPrompt) {
+            ChatClient.Builder chatClientBuilder, PromptProperties promptProperties) {
         this.chatClient = chatClientBuilder.build();
-        this.classificationPrompt = classificationPrompt;
+        this.promptProperties = promptProperties;
     }
 
     public ClassificationResultDto classify(String text, LunaElementTypeDto typeHint) {
         return chatClient.prompt()
-                .user(user -> user.text(classificationPrompt)
+                .user(user -> user.text(promptProperties.classification())
                         .param("text", text)
                         .param("typeHint", typeHintInstruction(typeHint)))
                 .call()

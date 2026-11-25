@@ -5,20 +5,18 @@ import java.util.UUID;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
-import tools.jackson.databind.json.JsonMapper;
+import de.kirchrath.luna.core.dto.ElementEventDto;
 
 @Component
 public class ElementEventPublisher {
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
-    private final JsonMapper jsonMapper;
+    private final KafkaTemplate<UUID, ElementEventDto> kafkaTemplate;
 
-    public ElementEventPublisher(KafkaTemplate<String, String> kafkaTemplate, JsonMapper jsonMapper) {
+    public ElementEventPublisher(KafkaTemplate<UUID, ElementEventDto> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
-        this.jsonMapper = jsonMapper;
     }
 
-    public void publish(String topic, UUID key, Object event) {
-        kafkaTemplate.send(topic, key.toString(), jsonMapper.writeValueAsString(event)).join();
+    public void publish(String topic, ElementEventDto event) {
+        kafkaTemplate.send(topic, event.id(), event).join();
     }
 }

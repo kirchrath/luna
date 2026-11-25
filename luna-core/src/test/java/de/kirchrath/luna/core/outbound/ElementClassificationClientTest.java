@@ -16,16 +16,16 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.core.io.ClassPathResource;
 
 import de.kirchrath.luna.core.config.ChatModelTestConfig;
+import de.kirchrath.luna.core.config.TestProperties;
 import de.kirchrath.luna.core.dto.LunaElementTypeDto;
 
 class ElementClassificationClientTest {
 
     private final ChatModel chatModel = chatModel();
     private final ElementClassificationClient elementClassificationClient = new ElementClassificationClient(
-            ChatClient.builder(chatModel), new ClassPathResource("prompts/classification.st"));
+            ChatClient.builder(chatModel), TestProperties.prompts());
 
     @Test
     void thatClassifyingATextWithoutTypeHintShouldResultIntoTheTypesOfTheModel() {

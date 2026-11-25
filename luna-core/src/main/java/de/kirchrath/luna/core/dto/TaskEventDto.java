@@ -2,5 +2,11 @@ package de.kirchrath.luna.core.dto;
 
 import java.util.UUID;
 
-public record TaskEventDto(UUID id, AuditDto audit, TaskEventDataDto data) {
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Task element published by luna-core")
+public record TaskEventDto(
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) AuditDto audit,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) TaskEventDataDto data) implements ElementEventDto {
 }
