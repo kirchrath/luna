@@ -50,6 +50,12 @@ for secret in step_ca_password postgres_password keycloak_db_password luna_db_pa
 done
 ```
 
+Den API-Key des KI-Anbieters für `luna-core` selbst eintragen (bei Ollama einen beliebigen Platzhalter):
+
+```bash
+printf '%s' '<api-key>' | docker secret create luna_core_ai_api_key -
+```
+
 Das Keycloak-Admin-Passwort vorher notieren bzw. selbst wählen, z. B.:
 
 ```bash
@@ -66,6 +72,7 @@ printf '%s' 'mein-passwort' | docker secret create keycloak_admin_password -
 | `kafka_admin_password` | Kafka-Superuser `admin` (wird nur beim allerersten Start von Kafka übernommen) |
 | `kafka_<service>_password` | Kafka-Benutzer je Service, z. B. `kafka_luna_core_password` für `luna-core` |
 | `kafka_keystore_v<n>`, `kafka_keystore_password_v<n>` | TLS-Zertifikat von Kafka in Version `<n>` – erzeugt das Skript in Schritt 8 |
+| `luna_core_ai_api_key` | API-Key des KI-Anbieters für `luna-core` (bei Ollama ein Platzhalter) |
 
 #### 4. Umgebungsvariablen setzen
 
@@ -78,7 +85,24 @@ export LUNA_KAFKA_HOST=luna.internal:7094
 
 # Nur lokal: Issuer der Tokens passend zur lokalen Keycloak-URL (Standard: https://luna.internal/auth).
 export LUNA_KEYCLOAK_URL=http://localhost:7080/auth
+
+# luna-core: Version des lokal gebauten Images (siehe luna-core/pom.xml). Pflicht.
+export LUNA_CORE_VERSION=0.0.1-SNAPSHOT
+
+# luna-core: KI-Anbieter (ollama, anthropic oder openai) und Property, unter der das Secret
+# luna_core_ai_api_key eingebunden wird. Beides Pflicht.
+export SPRING_AI_MODEL_CHAT=anthropic
+export LUNA_AI_API_KEY_PROPERTY=spring.ai.anthropic.api-key
+
+# luna-core: optionale Einstellungen des Anbieters, z. B.:
+export SPRING_AI_ANTHROPIC_CHAT_MODEL=<modell>
+# export SPRING_AI_OLLAMA_BASE_URL=http://<ollama-host>:11434
+# export SPRING_AI_OLLAMA_CHAT_MODEL=<modell>
+# export SPRING_AI_OPENAI_BASE_URL=<url>
+# export SPRING_AI_OPENAI_CHAT_MODEL=<modell>
 ```
+
+Nicht gesetzte optionale Variablen werden nicht an den Container übergeben.
 
 Die aktuell verwendete Zertifikat-Version zeigt `docker secret ls --filter name=kafka_keystore_v`
 (höchste Version verwenden).
@@ -105,10 +129,10 @@ until docker ps --filter name=luna_step-ca --filter health=healthy --quiet | gre
 docker service update --force luna_traefik
 ```
 
-#### 7. Root-Zertifikat holen, einchecken und verteilen (First start only)
+#### 7. Root-Zertifikat holen und verteilen (First start only)
 
-Root-Zertifikat aus step-ca holen, prüfen und einchecken – Details im Abschnitt
-[Root-Zertifikat aus step-ca holen und einchecken](#1-root-zertifikat-aus-step-ca-holen-und-einchecken).
+Root-Zertifikat aus step-ca holen und prüfen – Details im Abschnitt
+[Root-Zertifikat von step-ca](#root-zertifikat-von-step-ca).
 Anschließend auf allen Geräten installieren, die Luna nutzen.
 
 #### 8. Kafka-Zertifikat erzeugen (First start only)
@@ -120,27 +144,38 @@ swarm/kafka/create-certificate.sh "$LUNA_KAFKA_CERT_VERSION"
 Das Skript legt beim ersten Aufruf den step-ca-Provisioner `kafka` (max. 1 Jahr) an, startet step-ca neu und
 erzeugt die Secrets `kafka_keystore_v<n>` und `kafka_keystore_password_v<n>`.
 
-#### 9. Gesamten Stack deployen
+#### 9. luna-core-Image bauen
+
+Immer, wenn sich `luna-core` geändert hat (Java 25 nötig):
 
 ```bash
-docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml luna
+(cd luna-core && ./mvnw package jib:dockerBuild)
+```
+
+#### 10. Gesamten Stack deployen
+
+```bash
+docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml luna
 ```
 
 Beim ersten Start von Kafka legt das Startskript ([`swarm/kafka/start.sh`](swarm/kafka/start.sh)) den Superuser
 `admin` an. Der Service `kafka-init` ([`swarm/kafka/init.sh`](swarm/kafka/init.sh)) legt bei jeder Änderung seiner
 Konfiguration die Benutzer und ACLs aller Services aus `LUNA_KAFKA_SERVICES` in `swarm/kafka.yml` an.
 
-#### 10. Prüfen
+#### 11. Prüfen
 
 ```bash
 docker service ls
 docker service logs luna_kafka-init
+docker service logs luna_luna-core
 ```
 
 - Alle Services zeigen `1/1`. Ausnahme: `kafka-init` beendet sich nach getaner Arbeit und zeigt dann `0/1`.
 - Das Log von `kafka-init` endet mit `Kafka users and ACLs are up to date.`
+- Das Log von `luna-core` enthält `Started Application`; `https://luna.internal/api/luna-core/actuator/health`
+  meldet `UP`.
 
-#### 11. Geräte einrichten (First start only)
+#### 12. Geräte einrichten (First start only)
 
 - Auf jedem Gerät in der hosts-Datei: `<IP des Servers>  luna.internal`
 - Root-Zertifikat aus Schritt 7 installieren.
@@ -156,7 +191,7 @@ Lokal: PostgreSQL unter `localhost:7432`, Keycloak unter `http://localhost:7080/
 ```bash
 export LUNA_KAFKA_CERT_VERSION=2
 swarm/kafka/create-certificate.sh "$LUNA_KAFKA_CERT_VERSION"
-docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml luna
+docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml luna
 ```
 
 Alte Versionen können danach mit `docker secret rm kafka_keystore_v1 kafka_keystore_password_v1` entfernt werden.
@@ -166,7 +201,7 @@ Alte Versionen können danach mit `docker secret rm kafka_keystore_v1 kafka_keys
 1. Secret `kafka_<service>_password` anlegen (Bindestriche als `_`, z. B. `kafka_luna_mail_password`).
 2. In `swarm/kafka.yml` beim Service `kafka-init` eine Zeile in `LUNA_KAFKA_SERVICES` ergänzen
    (`<service>: <Topics, die er lesen darf>`) und das Secret unter `secrets` eintragen (Service und Datei-Ende).
-3. Neu deployen (Schritt 9) – `kafka-init` läuft bei jeder Änderung seiner Konfiguration erneut.
+3. Neu deployen (Schritt 10) – `kafka-init` läuft bei jeder Änderung seiner Konfiguration erneut.
    Ohne Änderung erneut ausführen: `docker service update --force luna_kafka-init`.
 
 ### Festlegungen der Infrastruktur
@@ -203,147 +238,32 @@ Alte Versionen können danach mit `docker secret rm kafka_keystore_v1 kafka_keys
   oder Containern), schlagen Verbindungen mit `no route to host` fehl. Auf einem normalen Linux-Server ist IPVS
   vorhanden.
 
-## Root-Zertifikat von step-ca in die Backend-Images bringen
+## Root-Zertifikat von step-ca
 
-Im Stack stellt **step-ca** die Zertifikate für `luna.internal` aus. Die Backends rufen Keycloak über
-Traefik per HTTPS auf (`https://luna.internal/auth`) und müssen dem Root-Zertifikat von step-ca deshalb vertrauen.
+Im Stack stellt **step-ca** die Zertifikate für `luna.internal` und für Kafka aus.
 
-Vorgehen:
+- **Geräte** müssen dem Root-Zertifikat vertrauen (Browser, lokale Entwicklung).
+- **Backends** lesen es **zur Laufzeit** aus dem step-ca-Volume (`/step/certs/root_ca.crt`, read-only
+  eingebunden) und nutzen es als PEM-Truststore für Kafka. Keycloak erreichen sie im Stack intern per HTTP
+  (`jwk-set-uri`), dafür ist kein Truststore nötig. Ein eingechecktes Zertifikat oder ein Truststore im Image ist
+  daher nicht nötig.
 
-1. Das öffentliche Root-Zertifikat liegt im Repo unter `certs/luna-root-ca.crt`.
-2. Beim Maven-Build erzeugt jedes Backend einen eigenen **Truststore**: die Standard-CAs des JDK
-   plus das Root-Zertifikat von step-ca.
-3. **Jib** legt den Truststore unter `/opt/luna/truststore.p12` ins Image.
-4. Die JVM wird per `jvmFlags` angewiesen, diesen Truststore zu verwenden.
+> Der **private Schlüssel** der CA verlässt step-ca nie.
 
-> Der **private Schlüssel** der CA verlässt step-ca nie und kommt niemals ins Repo.
-> Nur das öffentliche Root-Zertifikat (`root_ca.crt`) wird eingecheckt.
-
-### 1. Root-Zertifikat aus step-ca holen und einchecken
-
-Einmalig nach der Initialisierung von step-ca (und erneut, falls die CA neu aufgesetzt wird).
-Im offiziellen Image `smallstep/step-ca` liegt das Root-Zertifikat unter `/home/step/certs/root_ca.crt`:
+Root-Zertifikat holen (einmalig nach der Initialisierung von step-ca und erneut, falls die CA neu aufgesetzt wird):
 
 ```bash
-mkdir -p certs
-docker exec "$(docker ps -q -f name=step-ca)" cat /home/step/certs/root_ca.crt > certs/luna-root-ca.crt
+docker exec "$(docker ps -q -f name=luna_step-ca)" cat /home/step/certs/root_ca.crt > luna-root-ca.crt
 ```
 
 Fingerprint prüfen und mit der Ausgabe von step-ca beim Initialisieren vergleichen:
 
 ```bash
-openssl x509 -in certs/luna-root-ca.crt -noout -subject -enddate -fingerprint -sha256
+openssl x509 -in luna-root-ca.crt -noout -subject -enddate -fingerprint -sha256
 ```
 
-Danach einchecken:
+Anschließend auf allen Geräten installieren. Für die lokale Entwicklung von `luna-core` wird die Datei außerdem als
+Kafka-Truststore genutzt (siehe [luna-core/README.md](luna-core/README.md)).
 
-```bash
-git add certs/luna-root-ca.crt
-git commit -m "chore: add step-ca root certificate"
-```
-
-### 2. Truststore beim Build erzeugen (`pom.xml` des Backends)
-
-Das `maven-antrun-plugin` kopiert die `cacerts` des JDK, mit dem Maven läuft (Java 25), und importiert
-das Root-Zertifikat per `keytool`. Ergebnis: `target/jib-truststore/truststore.p12`.
-
-Der Pfad `${project.basedir}/../certs/` funktioniert, weil jedes Backend ein Top-Level-Ordner im Repo ist.
-
-```xml
-<plugin>
-  <groupId>org.apache.maven.plugins</groupId>
-  <artifactId>maven-antrun-plugin</artifactId>
-  <executions>
-    <execution>
-      <id>create-truststore</id>
-      <phase>prepare-package</phase>
-      <goals>
-        <goal>run</goal>
-      </goals>
-      <configuration>
-        <target>
-          <mkdir dir="${project.build.directory}/jib-truststore"/>
-          <copy file="${java.home}/lib/security/cacerts"
-                tofile="${project.build.directory}/jib-truststore/truststore.p12"
-                overwrite="true"/>
-          <exec executable="${java.home}/bin/keytool" failonerror="true">
-            <arg line="-importcert -noprompt -alias luna-root-ca"/>
-            <arg line="-file ${project.basedir}/../certs/luna-root-ca.crt"/>
-            <arg line="-keystore ${project.build.directory}/jib-truststore/truststore.p12"/>
-            <arg line="-storetype PKCS12 -storepass changeit"/>
-          </exec>
-        </target>
-      </configuration>
-    </execution>
-  </executions>
-</plugin>
-```
-
-> `changeit` ist das Standardpasswort der JDK-`cacerts`. Der Truststore enthält nur öffentliche Zertifikate;
-> das Passwort schützt nur vor Veränderung und ist kein Geheimnis.
-
-### 3. Truststore per Jib ins Image legen und aktivieren
-
-```xml
-<plugin>
-  <groupId>com.google.cloud.tools</groupId>
-  <artifactId>jib-maven-plugin</artifactId>
-  <configuration>
-    <from>
-      <image>amazoncorretto:25</image>
-      <platforms>
-        <platform>
-          <architecture>amd64</architecture>
-          <os>linux</os>
-        </platform>
-      </platforms>
-    </from>
-    <extraDirectories>
-      <paths>
-        <path>
-          <from>${project.build.directory}/jib-truststore</from>
-          <into>/opt/luna</into>
-        </path>
-      </paths>
-    </extraDirectories>
-    <container>
-      <jvmFlags>
-        <jvmFlag>-Djavax.net.ssl.trustStore=/opt/luna/truststore.p12</jvmFlag>
-        <jvmFlag>-Djavax.net.ssl.trustStoreType=PKCS12</jvmFlag>
-        <jvmFlag>-Djavax.net.ssl.trustStorePassword=changeit</jvmFlag>
-      </jvmFlags>
-    </container>
-  </configuration>
-</plugin>
-```
-
-### 4. Image bauen
-
-Der Truststore entsteht in der Phase `prepare-package`. Deshalb immer zusammen mit `package` bauen:
-
-```bash
-cd luna-core
-./mvnw package jib:dockerBuild
-```
-
-### 5. Prüfen
-
-Ist das Root-Zertifikat im Image-Truststore?
-
-```bash
-docker run --rm --entrypoint sh luna-core -c \
-  '"$JAVA_HOME"/bin/keytool -list -keystore /opt/luna/truststore.p12 -storepass changeit -alias luna-root-ca'
-```
-
-Im laufenden Stack: Die Backend-Logs dürfen beim Abruf von `https://luna.internal/auth/...` keine
-`PKIX path building failed`-Fehler zeigen.
-
-### Hinweise
-
-- **Lokale Entwicklung** braucht den Truststore nicht: Lokal rufen die Backends Keycloak direkt unter
-  `http://localhost:7080/auth` auf.
-- **Öffentliche CAs** stammen aus dem JDK, mit dem gebaut wird, nicht aus dem Basis-Image.
-  Backends regelmäßig neu bauen, damit die CA-Liste aktuell bleibt.
-- **Neue CA:** Wird step-ca neu initialisiert, ändert sich das Root-Zertifikat. Dann Schritt 1 wiederholen
-  und **alle** Backends neu bauen und deployen. Außerdem das neue Root-Zertifikat auf allen Geräten installieren.
-- **Neue Backends** übernehmen die Konfiguration aus Schritt 2 und 3 unverändert.
+- **Neue CA:** Wird step-ca neu initialisiert, ändert sich das Root-Zertifikat. Dann das Kafka-Zertifikat neu
+  erzeugen (Wartung), alle Services neu starten und das neue Root-Zertifikat auf allen Geräten installieren.

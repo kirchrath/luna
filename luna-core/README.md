@@ -29,9 +29,9 @@ Konventionen, Tech-Stack und Betrieb stehen in [AGENTS.md](../AGENTS.md).
 | # | Funktion | Status |
 |---|---|---|
 | 1 | Events aus unterschiedlichen Quellen empfangen | manuelle Eingabe umgesetzt; Kafka-Quellen _TODO_ |
-| 2 | Eingehende Events per Spring AI analysieren | _TODO_ |
-| 3 | Anhand der Analyse entscheiden, welche neuen Elemente entstehen (z. B. Aufgabe, Alert) | _TODO_ |
-| 4 | Neue Events für die entstandenen Elemente erzeugen | _TODO_ |
+| 2 | Eingehende Events per Spring AI analysieren | umgesetzt (Schritt 3) |
+| 3 | Anhand der Analyse entscheiden, welche neuen Elemente entstehen (z. B. Aufgabe, Alert) | umgesetzt (Schritte 3 und 4) |
+| 4 | Neue Events für die entstandenen Elemente erzeugen | umgesetzt (Schritt 4) |
 
 ## Entscheidungen
 
@@ -112,15 +112,14 @@ Ausdrücklich **nicht** Teil von `luna-core`:
   holt über `ClassificationApplicationService` die ältesten eingehenden Events mit Status `RECEIVED` (höchstens
   `app.classification.batch-size`, Standard `10`). Je Event klassifiziert der `ClassificationDomainService` in
   **einer** Transaktion: Er fragt über den Client `ElementClassificationClient` (`outbound`, Spring AI), welche
-  Element-Typen entstehen (**null bis mehrere**), legt je Typ ein `OutboundEvent` mit Status `CLASSIFIED` an und
-  setzt das eingehende Event auf `ANALYZED` – bzw. speichert den Fehlversuch. Der ApplicationService leitet nur
-  weiter.
+  Element-Typen entstehen (**null bis mehrere**), qualifiziert und veröffentlicht sie (siehe Schritt 4) und setzt
+  das eingehende Event auf `ANALYZED` – bzw. speichert den Fehlversuch. Der ApplicationService leitet nur weiter.
 - **Typ-Hinweis:** Ist bei der manuellen Eingabe ein `typeHint` gesetzt, wird er der KI mitgegeben und ist immer
   im Ergebnis enthalten; die KI kann weitere Typen ergänzen.
-- **Fehler:** Schlägt der KI-Aufruf fehl, wird `attempts` erhöht; ab `app.classification.max-attempts`
+- **Fehler:** Schlägt ein KI-Aufruf fehl (Klassifizierung oder Qualifizierung), wird `attempts` erhöht; ab `app.classification.max-attempts`
   (Standard `3`) wird das eingehende Event `FAILED`, sonst beim nächsten Lauf erneut versucht.
 - **Status:** eingehende Events `RECEIVED` → `ANALYZED` bzw. `FAILED` (`InboundEventStatus`); erzeugte Events
-  zunächst `CLASSIFIED` (`OutboundEventStatus`), weitere Status folgen mit den nächsten Schritten.
+  `PUBLISHED` (`OutboundEventStatus`).
 - **Speicherung:** Tabelle `outbound_event` mit `id`, `inbound_event_id` (Fremdschlüssel), `type`
   (`LunaElementType`), `status` und den Audit-Feldern; `inbound_event` hat zusätzlich `status` und `attempts`.
 - **Prompt:** `src/main/resources/prompts/classification.st` (Englisch); `NOTE` steht für Inhalte, die
@@ -143,26 +142,31 @@ Moderation, Decision) sind mit `none` abgeschaltet.
 | Anthropic Claude | `anthropic` | `SPRING_AI_ANTHROPIC_API_KEY`, `SPRING_AI_ANTHROPIC_CHAT_MODEL` |
 | OpenAI-kompatibel | `openai` | `SPRING_AI_OPENAI_API_KEY`, `SPRING_AI_OPENAI_BASE_URL`, `SPRING_AI_OPENAI_CHAT_MODEL` |
 
-API-Keys nie ins Repo; im Stack als Docker Secrets bereitstellen.
+API-Keys nie ins Repo; im Stack als Docker Secret `luna_core_ai_api_key` bereitstellen (siehe unten).
 
-### Qualifizieren und Veröffentlichen (Schritt 4, geplant)
-
-> [!NOTE]
-> Geplant, noch nicht umgesetzt. Umsetzung erst nach ausdrücklichem Auftrag.
+### Qualifizieren und Veröffentlichen (Schritt 4)
 
 **Ablauf** – direkt im Anschluss an die Klassifizierung, im `ClassificationDomainService`, **alles in einer
 Transaktion**:
 
 1. Klassifizieren wie bisher (null bis mehrere Element-Typen).
-2. **Qualifizieren:** je ermitteltem Typ **ein eigener KI-Aufruf** mit typspezifischem Prompt und strukturierter
-   Antwort (`<Typ>EventDataDto`). Extrahierte Texte in der **Sprache der Eingabe**.
+2. **Qualifizieren:** je ermitteltem Typ **ein eigener KI-Aufruf** (`ElementQualificationClient`) mit
+   typspezifischem Prompt (`prompts/qualification/<typ>.st`) und strukturierter Antwort (`<Typ>EventDataDto`).
+   Extrahierte Texte in der **Sprache der Eingabe**; relative Angaben („nächsten Dienstag“) bezogen auf den
+   **Eingangszeitpunkt** des Events. Fehlen Pflichtfelder (Bean Validation), gilt der Versuch als fehlgeschlagen.
 3. Je Element ein `OutboundEvent` (Status **`PUBLISHED`**) und ein `<Typ>Element` mit allen Feldern speichern.
 4. Je Element ein `<Typ>EventDto` **synchron** an `luna_core_<typ>` senden (Kafka-Key = ID des `OutboundEvent`).
 5. Eingehendes Event auf `ANALYZED`.
 
-Bei einem Fehler wird alles zurückgerollt, `attempts` erhöht und das Event später erneut verarbeitet
-(ab `max-attempts` `FAILED`). Restrisiko: Senden erfolgreich, Commit scheitert → später doppelt gesendet; die
-Fach-Backends erkennen Duplikate über die ID.
+Die KI-Aufrufe laufen vor allen Schreibzugriffen; schlägt einer fehl, wird `attempts` erhöht und das Event später
+erneut verarbeitet (ab `max-attempts` `FAILED`). **Kafka gilt als immer verfügbar:** Scheitert das Senden, wird die
+Transaktion zurückgerollt, ohne dass ein Fehlversuch gezählt wird; der nächste Lauf versucht es erneut.
+Restrisiko: Senden erfolgreich, Commit scheitert → später doppelt gesendet; die Fach-Backends erkennen Duplikate
+über die ID.
+
+Umgesetzt durch je einen `<Typ>ElementProcessor` (`services`, `@Transactional(propagation = MANDATORY)`, Basis
+`ElementProcessor`), der qualifiziert, das `<Typ>Element` speichert und per `ElementEventPublisher` (`outbound`)
+sendet; die Abbildung erledigen `<Typ>ElementConverter`/`<Typ>ElementMapper`.
 
 **Datenmodell** (Migration `V3`):
 
@@ -170,23 +174,23 @@ Fach-Backends erkennen Duplikate über die ID.
   `CLASSIFIED` (Zwischenstände werden wegen der einen Transaktion nie gespeichert).
 - Je Typ eine Tabelle/Entity **`<typ>_element` / `<Typ>Element`** mit eigener ID, `outbound_event_id`
   (Fremdschlüssel, eindeutig), allen Feldern und den Audit-Feldern. Alle Zeitangaben als `OffsetDateTime`
-  (`TIMESTAMPTZ`), Beträge als `BigDecimal`.
+  (`TIMESTAMPTZ`), Beträge als `BigDecimal` (`NUMERIC` ohne Grenze). Pflichtfelder sind **fett**.
 
 | Typ | Entity / Tabelle | Felder |
 |---|---|---|
-| `TASK` | `TaskElement` / `task_element` | `title`, `description`, `dueDate`, `priority` (`LOW`/`NORMAL`/`HIGH`, Standard `NORMAL`) |
-| `ALERT` | `AlertElement` / `alert_element` | `title`, `message`, `severity` (`INFO`/`WARNING`/`CRITICAL`), `affectedSystem` |
-| `APPOINTMENT` | `AppointmentElement` / `appointment_element` | `title`, `start`, `end`, `allDay`, `location`, `description` |
-| `INVOICE` | `InvoiceElement` / `invoice_element` | `issuer`, `invoiceNumber`, `amount`, `currency` (ISO 4217), `dueDate`, `description` |
-| `CONTRACT` | `ContractElement` / `contract_element` | `counterparty`, `title`, `startDate`, `endDate`, `cancellationDeadline`, `description` |
-| `NOTE` | `NoteElement` / `note_element` | `title`, `summary` |
+| `TASK` | `TaskElement` / `task_element` | **`title`**, `description`, `dueDate`, **`priority`** (`LOW`/`NORMAL`/`HIGH`, Standard `NORMAL`) |
+| `ALERT` | `AlertElement` / `alert_element` | **`title`**, **`message`**, **`severity`** (`INFO`/`WARNING`/`CRITICAL`), `affectedSystem` |
+| `APPOINTMENT` | `AppointmentElement` / `appointment_element` | **`title`**, **`start`**, `end`, **`allDay`**, `location`, `description` |
+| `INVOICE` | `InvoiceElement` / `invoice_element` | **`issuer`**, `invoiceNumber`, **`amount`**, **`currency`** (ISO 4217), `dueDate`, `description` |
+| `CONTRACT` | `ContractElement` / `contract_element` | **`counterparty`**, **`title`**, `startDate`, `endDate`, `cancellationDeadline`, `description` |
+| `NOTE` | `NoteElement` / `note_element` | **`title`**, **`summary`** |
 
 **Kafka-Nachrichten:** je Typ `<Typ>EventDto(id, audit, data)` mit `data: <Typ>EventDataDto` (Felder wie oben,
 **ohne** Originaltext); `id` und `audit` stammen vom `OutboundEvent`. Topics `luna_core_task`, `luna_core_alert`,
 `luna_core_appointment`, `luna_core_invoice`, `luna_core_contract`, `luna_core_note` (Anlage beim ersten
 Schreiben; ACL für `luna-core` auf `luna_core_*` besteht bereits).
 
-**Stack** (`swarm/luna-core.yml`, Image per `./mvnw package jib:dockerBuild`):
+**Stack** (`swarm/luna-core.yml`, Image per `./mvnw package jib:dockerBuild`, Version über `LUNA_CORE_VERSION`):
 
 - Erreichbar **nur über Traefik** unter `https://luna.internal/api/luna-core` (StripPrefix), kein veröffentlichter
   Port; Profil `prod`.
@@ -196,22 +200,28 @@ Schreiben; ACL für `luna-core` auf `luna_core_*` besteht bereits).
   `http://keycloak:8080/auth/realms/luna/protocol/openid-connect/certs`), `issuer-uri` bleibt
   `https://luna.internal/auth/realms/luna` und wird im Token geprüft.
 - **KI-Anbieter:** Spring-Namen direkt beim Deploy (`SPRING_AI_MODEL_CHAT`, `SPRING_AI_<ANBIETER>_…`), von der
-  Stack-Datei durchgereicht.
-- Datenbank-Passwort aus `luna_db_password`; Zeitzone über `/etc/localtime`.
-- Die bisher dokumentierte Truststore-Variante (Build + Jib mit eingechecktem `certs/luna-root-ca.crt`) wird
-  dadurch ersetzt; AGENTS.md und README werden bei der Umsetzung angepasst.
+  Stack-Datei durchgereicht; nicht gesetzte Variablen werden nicht übergeben. Der API-Key kommt aus dem Secret
+  `luna_core_ai_api_key`, eingebunden unter dem Property-Namen aus `LUNA_AI_API_KEY_PROPERTY`
+  (z. B. `spring.ai.anthropic.api-key`; bei Ollama ein Platzhalter).
+- **Secrets per configtree:** `spring.config.import=optional:configtree:/run/secrets/` (Profil `prod`); Secrets
+  werden mit dem Property-Namen als Ziel eingebunden: `luna_db_password` → `spring.datasource.password`,
+  `kafka_luna_core_password` → `app.kafka.password`.
+- Zeitzone über `/etc/localtime`.
 
 **Tests:** Unit-Tests je Klasse (100 % Abdeckung), Integrationstest von der Eingabe bis zur Nachricht auf dem Topic
 mit PostgreSQL und Kafka per Testcontainers (ohne TLS/SASL), gemocktes `ChatModel`; ArchUnit-Regeln gelten weiter.
 
-**Noch offen** (vor der Umsetzung zu entscheiden):
+### Lokale Entwicklung
 
-- **Fehler nach Schreibzugriffen:** Wie der Fehlversuch (`attempts`) gespeichert wird, wenn das Senden an Kafka
-  nach dem Speichern scheitert und die Transaktion zurückgerollt wird. _TODO_
-- **Secrets für Spring:** Wie Docker Secrets (DB-, Kafka-Passwort, KI-API-Key) in Spring-Properties gelangen
-  (z. B. `spring.config.import=configtree:/run/secrets/`). _TODO_
-- **Pflichtfelder je Typ:** Welche Felder die KI immer liefern muss und welche optional sind. _TODO_
-- **Betrag:** Genauigkeit der Spalte `amount` (z. B. `NUMERIC(12,2)`). _TODO_
+`luna-core` lokal (Profil `local`) braucht neben PostgreSQL und Keycloak auch Kafka aus dem lokalen Stack
+(`localhost:7094`, TLS + SCRAM). Umgebungsvariablen beim Start:
+
+| Variable | Wert |
+|---|---|
+| `SPRING_DATASOURCE_PASSWORD` | Passwort des DB-Benutzers `luna` |
+| `APP_KAFKA_PASSWORD` | Kafka-Passwort von `luna-core` (Secret `kafka_luna_core_password`) |
+| `SPRING_KAFKA_SSL_TRUST_STORE_LOCATION` | `file:<pfad>/luna-root-ca.crt` (Root-Zertifikat von step-ca, siehe README) |
+| `SPRING_AI_MODEL_CHAT` + Anbieter-Variablen | siehe [KI-Anbieter konfigurieren](#ki-anbieter-konfigurieren) |
 
 ## Offene Punkte
 
@@ -220,6 +230,6 @@ Noch nicht entschieden (bitte hier eintragen, sobald entschieden):
 - **Fehlerformat:** Body von Fehlerantworten (z. B. `400`) ist noch nicht festgelegt und daher nicht in der
   OpenAPI-Spezifikation beschrieben. _TODO_
 
-- **Event-Daten:** Inhalt von `data` je Element-Typ und je weiterer Quelle (Feldnamen und Typen). _TODO_
+- **Event-Daten weiterer Quellen:** Inhalt von `data` eingehender Events weiterer Quellen (z. B. E-Mail). _TODO_
 - **Zuordnung zu Fach-Backends:** Welches Backend ist für welchen Element-Typ zuständig?
   (Entscheidung bei Konzeption des jeweiligen Fach-Backends) _TODO_

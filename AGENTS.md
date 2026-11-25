@@ -35,7 +35,7 @@ Noch offen (bitte hier eintragen, sobald entschieden):
   1. Kafka im Stack (`swarm/kafka.yml`) mit TLS, SASL/SCRAM und ACLs (erledigt)
   2. Eingang: REST-Endpunkt für die manuelle Eingabe; eingehendes Event speichern (erledigt)
   3. Analyse per Spring AI (Entscheidung über den Element-Typ) (erledigt)
-  4. Ausgang: erzeugte Events auf `luna_core_<typ>` publizieren und mit dem Eingang verknüpft speichern
+  4. Ausgang: erzeugte Elemente qualifizieren, speichern und auf `luna_core_<typ>` publizieren; `luna-core` im Stack (erledigt)
   5. Frontend: Seite für die manuelle Eingabe
   6. Danach weitere Quellen (z. B. E-Mail)
 
@@ -360,12 +360,18 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
 
 - **Stack-Dateien** liegen unter `swarm/`. Ein Stack `luna`, mehrere Dateien:
   `swarm/infrastructure.yml` (Traefik, step-ca, PostgreSQL, Keycloak), `swarm/kafka.yml` (Kafka und `kafka-init`),
-  später weitere für Frontend und Backends.
-  Deploy gemeinsam: `LUNA_KAFKA_CERT_VERSION=<n> docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml [-c …] luna`.
+  `swarm/luna-core.yml` (Backend `luna-core`), später weitere für Frontend und Backends (je Backend eine Datei
+  `swarm/<backend>.yml`).
+  Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml [-c …] luna`
+  (Pflichtvariablen siehe README).
   Kafka steht in einer eigenen Datei, weil sein Zertifikat erst erzeugt werden kann, wenn step-ca läuft.
 - **Image-Versionen** sind **exakt gepinnt** (aktuell Traefik `v3.7.19`, step-ca `0.30.2`, PostgreSQL `18.7`,
   Keycloak `26.8.2`, Kafka `apache/kafka:4.4.0`). Updates nur bewusst per Commit.
 - **Secrets** sind **externe Docker Secrets** (`docker secret create` auf dem Server).
+  Backends lesen sie per **`spring.config.import=optional:configtree:/run/secrets/`** (Profil `prod`); das Secret
+  wird dazu mit dem **Property-Namen als Ziel** eingebunden (z. B. `target: spring.datasource.password`).
+- **Backend-Images** werden im Stack über eine Versions-Variable referenziert (z. B. `luna-core:${LUNA_CORE_VERSION}`),
+  nie über `latest`.
 - Die Infrastruktur-Datei dient **auch der lokalen Entwicklung**; PostgreSQL (7432) und Keycloak (7080) sind
   daher auch auf dem Server veröffentlicht. Die Keycloak-URL (Issuer) ist über `LUNA_KEYCLOAK_URL` umschaltbar.
 - **Kafka** (`apache/kafka`, KRaft-Modus, ein Knoten) läuft in `swarm/kafka.yml`, ist wie PostgreSQL und
@@ -396,11 +402,13 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
   lokal und in Produktion dieselben Pfade.
 
 - Das Root-Zertifikat von step-ca muss auf jedem Gerät installiert werden, das Luna nutzt.
-- **Backends → Keycloak:** Backends erreichen Keycloak **über Traefik per HTTPS** (`https://luna.internal/auth`).
-  Dafür liegt das öffentliche Root-Zertifikat von step-ca eingecheckt unter `certs/luna-root-ca.crt`.
-  Jedes Backend erzeugt beim Maven-Build einen **eigenen Truststore** (JDK-`cacerts` + Root-Zertifikat),
-  den **Jib** ins Image legt; die JVM nutzt ihn per `javax.net.ssl.trustStore`. Anleitung: [README.md](README.md). Innerhalb des Stacks löst `luna.internal` über einen
-  **Netzwerk-Alias am Traefik-Service** auf Traefik auf.
+- **Backends → Keycloak:** Im Stack holen Backends die Schlüssel **intern per HTTP**
+  (`jwk-set-uri: http://keycloak:8080/auth/realms/luna/protocol/openid-connect/certs`); die `issuer-uri` bleibt
+  `https://luna.internal/auth/realms/luna` und wird im Token geprüft. Dafür ist kein Truststore nötig.
+- **Backends → Kafka:** TLS mit dem Root-Zertifikat von step-ca, das **zur Laufzeit** aus dem read-only
+  eingebundenen step-ca-Volume gelesen wird (`/step/certs/root_ca.crt`, PEM). Kein eingechecktes Zertifikat,
+  kein Truststore im Image.
+- Innerhalb des Stacks löst `luna.internal` über einen **Netzwerk-Alias am Traefik-Service** auf Traefik auf.
 - **Lokale Entwicklung:** Backends erreichen Keycloak direkt unter `http://localhost:7080/auth` (ohne Traefik/TLS).
   Die Keycloak-/Issuer-URL ist daher je Umgebung konfigurierbar und nie fest im Code.
 - Secrets (DB-Passwörter, Keycloak-Admin, Kafka-Passwörter und -Keystore, CA-Schlüssel und -Passwort) als **Docker Secrets** bzw. außerhalb des Repos
@@ -419,8 +427,7 @@ Monorepo mit mehreren Backends (je ein Top-Level-Ordner) und einem Frontend:
 ├── AGENTS.md        # Diese Datei – Regeln für Agenten
 ├── README.md        # Projektbeschreibung für Menschen
 ├── LICENSE          # MIT-Lizenz
-├── swarm/           # Docker-Stack-Dateien (infrastructure.yml, kafka.yml) und zugehörige Configs/Skripte
-├── certs/           # Öffentliches Root-Zertifikat von step-ca (luna-root-ca.crt), nie private Schlüssel
+├── swarm/           # Docker-Stack-Dateien (infrastructure.yml, kafka.yml, <backend>.yml) und Configs/Skripte
 ├── luna-core/       # Erstes Backend: Event-Analyse (Spring Boot, Maven, Jib), Port 7081
 ├── <backend-name>/  # Weitere Backends nach demselben Muster
 └── frontend/        # React-Frontend (Vite, npm, nginx-Image)
