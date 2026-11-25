@@ -53,7 +53,7 @@ public class InboundEventController {
                 @ApiResponse(responseCode = "401", description = "Missing or invalid access token", content = @Content)
             })
     public ManualInboundEventListDto listManualInboundEvents(@Parameter(hidden = true) Pageable pageable) {
-        return inboundEventApplicationService.listManualInboundEvents(pageable.getPageNumber(), pageable.getPageSize());
+        return inboundEventApplicationService.listManualInboundEvents(pageable);
     }
 
     @PostMapping(

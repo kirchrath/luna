@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,9 +58,9 @@ public class InboundEventDomainService {
     }
 
     @Transactional(readOnly = true)
-    public ManualInboundEventListDto listManualInboundEvents(int page, int size) {
-        var inboundEvents = inboundEventRepository.findBySource(
-                EventSource.MANUAL, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, CREATED_DATE)));
+    public ManualInboundEventListDto listManualInboundEvents(Pageable pageable) {
+        var inboundEvents = inboundEventRepository.findBySource(EventSource.MANUAL, PageRequest.of(
+                pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, CREATED_DATE)));
         var outboundEvents = outboundEventRepository
                 .findByInboundEventIdIn(inboundEvents.map(InboundEvent::id).getContent())
                 .stream()

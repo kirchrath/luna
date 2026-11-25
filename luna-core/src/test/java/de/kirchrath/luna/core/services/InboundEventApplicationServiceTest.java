@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageRequest;
 
 import de.kirchrath.luna.core.dto.ManualInboundEventListDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
@@ -37,10 +38,11 @@ class InboundEventApplicationServiceTest {
     void thatListingManualInboundEventsShouldResultIntoThePageOfTheDomainService() {
         // given
         var list = new ManualInboundEventListDto(List.of(), 0, 0);
-        when(inboundEventDomainService.listManualInboundEvents(1, 20)).thenReturn(list);
+        var pageable = PageRequest.of(1, 20);
+        when(inboundEventDomainService.listManualInboundEvents(pageable)).thenReturn(list);
 
         // when
-        var listed = inboundEventApplicationService.listManualInboundEvents(1, 20);
+        var listed = inboundEventApplicationService.listManualInboundEvents(pageable);
 
         // then
         assertThat(listed).isEqualTo(list);

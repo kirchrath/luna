@@ -225,8 +225,8 @@ mit PostgreSQL und Kafka per Testcontainers (ohne TLS/SASL), gemocktes `ChatMode
   `RECEIVED`, `ANALYZED`, `FAILED`), `createdDate` und `elements` (`ElementReferenceDto` mit `id` und `type`;
   `id` ist die ID des auf Kafka veröffentlichten Events).
 - **Abfrage:** Eine Seite `inbound_event` (`findBySource`) plus deren `outbound_event` in einer Abfrage
-  (`findByInboundEventIdIn`). Der Controller reicht nur `page` und `size` weiter, da ApplicationServices nicht
-  von Spring Data abhängen dürfen.
+  (`findByInboundEventIdIn`). Das `Pageable` wird bis zum DomainService durchgereicht, der die Sortierung
+  festlegt; eine übergebene Sortierung wird ignoriert.
 
 ### Konfiguration von Topics und Prompts
 

@@ -275,8 +275,8 @@ record TaskDataDto(String title, String description) {}
 
 - **Pagination** von List-Anfragen über die Query-Parameter `page` (**ab 0**) und `size`.
   Der Controller nimmt ein Spring-`Pageable` entgegen (Standard/Obergrenze über `spring.data.web.pageable.*`,
-  zu große Werte werden gekappt; `sort` ist in der OpenAPI ausgeblendet) und reicht nur `page` und `size` an den
-  ApplicationService weiter; die Sortierung legt der DomainService fest.
+  zu große Werte werden gekappt; `sort` ist in der OpenAPI ausgeblendet) und reicht es über den ApplicationService
+  an den DomainService weiter; die Sortierung legt der DomainService fest.
 
 #### API / OpenAPI
 
