@@ -93,7 +93,7 @@ services:
       - |
         export KC_DB_PASSWORD="$$(< /run/secrets/keycloak_db_password)"
         export KC_BOOTSTRAP_ADMIN_PASSWORD="$$(< /run/secrets/keycloak_admin_password)"
-        exec /opt/keycloak/bin/kc.sh start
+        exec /opt/keycloak/bin/kc.sh start --import-realm
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
@@ -109,6 +109,10 @@ services:
       - "7080:8080"
     volumes:
       - /etc/localtime:/etc/localtime:ro
+    configs:
+      # Imported on startup only if the realm does not exist yet; later changes are not applied (see README).
+      - source: keycloak_luna_realm
+        target: /opt/keycloak/data/import/luna-realm.json
     secrets:
       - keycloak_db_password
       - keycloak_admin_password
@@ -136,6 +140,8 @@ volumes:
 configs:
   postgres_init:
     file: ./postgres/create-databases.sh
+  keycloak_luna_realm:
+    file: ./keycloak/luna-realm.json
 
 secrets:
   step_ca_password:
