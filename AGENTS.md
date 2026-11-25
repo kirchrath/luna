@@ -353,6 +353,7 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
 | Icons | **lucide-react**; Logo als eigene Komponente |
 | Schriften | **Inter** und **Space Grotesk** (Überschriften), lokal über `@fontsource-variable` |
 | Design | Ruhige, graue Oberfläche: Hintergrund **`#f3f4f6`** (Bulma `--bulma-background`), Primärfarbe **`#4a5260`** (Bulma `$primary`); kräftige Farbe nur für Highlights: Petrol **`#1f7a8c`** (Bulma `$link`); dunkler Modus automatisch nach Geräteeinstellung |
+| Install-Skripte | npm 11 führt Install-Skripte von Abhängigkeiten nur nach Freigabe aus (`allowScripts` in `package.json`). Jedes neue Skript **prüfen** und bewusst freigeben (`true`) oder ablehnen (`false`); abgelehnt sind `@parcel/watcher` und `fsevents` (bringen fertige Binaries mit, die Skripte würden nur nativ kompilieren) |
 | Versionen | in `package.json` **exakt gepinnt** (`.npmrc`: `save-exact`), `package-lock.json` eingecheckt; TypeScript **5.9.x** (neuere Versionen werden von typescript-eslint und openapi-typescript noch nicht unterstützt) |
 
 - **Keine UI-Komponentenbibliothek** (kein MUI, Ant Design, Chakra, shadcn o. ä.).

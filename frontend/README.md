@@ -7,6 +7,8 @@ geplant (Wireframes).
 
 - Node.js **24** (siehe `.nvmrc`, z. B. `nvm use`)
 - npm (Versionen in `package.json` sind exakt gepinnt, `package-lock.json` ist eingecheckt)
+- Install-Skripte von Abhängigkeiten laufen nur nach Freigabe in `allowScripts` (`package.json`); neue Skripte
+  vor der Freigabe prüfen (`npm install-scripts ls`).
 
 ## Befehle
 
