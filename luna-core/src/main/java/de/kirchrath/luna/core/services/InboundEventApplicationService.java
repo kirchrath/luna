@@ -2,6 +2,7 @@ package de.kirchrath.luna.core.services;
 
 import org.springframework.stereotype.Service;
 
+import de.kirchrath.luna.core.dto.ManualInboundEventListDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.ResourceReferenceDto;
 
@@ -16,5 +17,9 @@ public class InboundEventApplicationService {
 
     public ResourceReferenceDto createManualInboundEvent(ManualInputDataDto input) {
         return inboundEventDomainService.createManualInboundEvent(input);
+    }
+
+    public ManualInboundEventListDto listManualInboundEvents(int page, int size) {
+        return inboundEventDomainService.listManualInboundEvents(page, size);
     }
 }

@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import de.kirchrath.luna.core.dto.ManualInboundEventListDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.ResourceReferenceDto;
 
@@ -29,5 +31,18 @@ class InboundEventApplicationServiceTest {
 
         // then
         assertThat(created).isEqualTo(reference);
+    }
+
+    @Test
+    void thatListingManualInboundEventsShouldResultIntoThePageOfTheDomainService() {
+        // given
+        var list = new ManualInboundEventListDto(List.of(), 0, 0);
+        when(inboundEventDomainService.listManualInboundEvents(1, 20)).thenReturn(list);
+
+        // when
+        var listed = inboundEventApplicationService.listManualInboundEvents(1, 20);
+
+        // then
+        assertThat(listed).isEqualTo(list);
     }
 }
