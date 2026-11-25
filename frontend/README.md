@@ -24,16 +24,17 @@ npm run format      # Formatierung mit Prettier anwenden
 
 ## Aufbau
 
-| Pfad                          | Inhalt                                                                                                        |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `src/ui/`                     | Fachneutrale Komponenten auf Basis von Bulma (`AppShell`, `Sidebar`, `LanguageSwitch`, `Placeholder`, `Logo`) |
-| `src/layout/`                 | Anwendungsrahmen mit Kopfzeile und Navigation (`AppLayout`)                                                   |
-| `src/pages/`                  | Seiten (`QuickInputPage`, `ComingSoonPage`)                                                                   |
-| `src/navigation.ts`           | Pfade und Bereiche der Navigation                                                                             |
-| `src/routes.tsx`              | Routen (React Router)                                                                                         |
-| `src/i18n.ts`, `src/locales/` | Übersetzungen (Deutsch Standard, Englisch); die gewählte Sprache wird im Browser gemerkt                      |
-| `src/services/storage.ts`     | Einstellungen im `localStorage` (Sprache, eingeklappte Navigation)                                            |
-| `src/styles/main.scss`        | Bulma mit Primärfarbe `#1f7a8c`, Schriften Inter und Space Grotesk, Layout                                    |
+| Pfad                          | Inhalt                                                                                                                           |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `src/ui/`                     | Fachneutrale Komponenten auf Basis von Bulma (`AppShell`, `Sidebar`, `LanguageSwitch`, `Placeholder`, `Logo`)                    |
+| `src/layout/`                 | Anwendungsrahmen mit Kopfzeile und Navigation (`AppLayout`)                                                                      |
+| `src/pages/`                  | Seiten (`QuickInputPage`, `ComingSoonPage`)                                                                                      |
+| `src/navigation.ts`           | Pfade und Bereiche der Navigation                                                                                                |
+| `src/routes.tsx`              | Routen (React Router)                                                                                                            |
+| `src/i18n.ts`, `src/locales/` | Übersetzungen (Deutsch Standard, Englisch); die gewählte Sprache wird im Browser gemerkt                                         |
+| `src/stores/`                 | MobX-Stores: `RootStore` (erzeugt alle Stores), `StoresProvider` und `useStores()`; jede Backend-Kommunikation läuft über Stores |
+| `src/services/storage.ts`     | Einstellungen im `localStorage` (Sprache, eingeklappte Navigation)                                                               |
+| `src/styles/main.scss`        | Bulma mit Primärfarbe `#1f7a8c`, Schriften Inter und Space Grotesk, Layout                                                       |
 
 - **Icons:** `lucide-react`; das Logo (Vollmond mit Kratern) ist eine eigene Komponente.
 - **Dunkler Modus:** folgt automatisch der Geräteeinstellung (Bulma 1.x).
