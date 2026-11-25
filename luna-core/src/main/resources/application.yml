@@ -21,11 +21,22 @@ spring:
       audio:
         speech: none
         transcription: none
+  kafka:
+    bootstrap-servers:
+    security:
+      protocol: SASL_SSL
+    ssl:
+      trust-store-type: PEM
+      trust-store-location:
+    properties:
+      "[sasl.mechanism]": SCRAM-SHA-512
+      "[sasl.jaas.config]": org.apache.kafka.common.security.scram.ScramLoginModule required username="luna-core" password="${app.kafka.password}";
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri:
+          jwk-set-uri:
 
 server:
   port: 7081
@@ -33,6 +44,8 @@ server:
 app:
   cors:
     allowed-origins:
+  kafka:
+    password:
   classification:
     interval: 30s
     batch-size: 10

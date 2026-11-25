@@ -2,6 +2,8 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:7432/luna?currentSchema=luna_core
     username: luna
+  kafka:
+    bootstrap-servers: localhost:7094
   security:
     oauth2:
       resourceserver:

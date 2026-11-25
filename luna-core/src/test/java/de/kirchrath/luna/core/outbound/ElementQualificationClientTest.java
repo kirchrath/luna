@@ -1,0 +1,56 @@
+package de.kirchrath.luna.core.outbound;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.core.io.ClassPathResource;
+
+import de.kirchrath.luna.core.config.ChatModelTestConfig;
+import de.kirchrath.luna.core.dto.NoteEventDataDto;
+
+class ElementQualificationClientTest {
+
+    private final ChatModel chatModel = chatModel();
+    private final ElementQualificationClient elementQualificationClient =
+            new ElementQualificationClient(ChatClient.builder(chatModel));
+
+    @Test
+    void thatQualifyingATextShouldResultIntoTheDataOfTheModel() {
+        // given
+        when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(List.of(new Generation(
+                new AssistantMessage("{\"title\": \"Minutes\", \"summary\": \"Budget approved\"}")))));
+        var referenceTime = OffsetDateTime.parse("2026-11-24T10:00:00+01:00");
+
+        // when
+        var data = elementQualificationClient.qualify(new ClassPathResource("prompts/qualification/note.st"),
+                "Minutes of the meeting: the budget was approved", referenceTime, NoteEventDataDto.class);
+
+        // then
+        assertThat(data).isEqualTo(new NoteEventDataDto("Minutes", "Budget approved"));
+        var captor = ArgumentCaptor.forClass(Prompt.class);
+        verify(chatModel).call(captor.capture());
+        assertThat(captor.getValue().getContents())
+                .contains("Minutes of the meeting: the budget was approved")
+                .contains("2026-11-24T10:00+01:00");
+    }
+
+    private static ChatModel chatModel() {
+        var chatModel = mock(ChatModel.class);
+        ChatModelTestConfig.stubOptions(chatModel);
+        return chatModel;
+    }
+}
