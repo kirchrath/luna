@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import type { AreaDefinition } from '../navigation';
-import { Placeholder } from '../ui/Placeholder';
+import { Placeholder } from '../ui';
 
 const ICON_SIZE = 40;
 

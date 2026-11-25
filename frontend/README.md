@@ -36,6 +36,8 @@ npm run format      # Formatierung mit Prettier anwenden
 | `src/services/storage.ts`     | Einstellungen im `localStorage` (Sprache, eingeklappte Navigation)                                                               |
 | `src/styles/main.scss`        | Bulma mit Primärfarbe `#1f7a8c`, Schriften Inter und Space Grotesk, Layout                                                       |
 
+- **Importe:** Jeder Ordner unter `src/` exportiert seine Dateien über ein `index.ts`; von außen nur darüber
+  importieren, innerhalb eines Ordners direkt. ESLint prüft das.
 - **Icons:** `lucide-react`; das Logo (Vollmond mit Kratern) ist eine eigene Komponente.
 - **Dunkler Modus:** folgt automatisch der Geräteeinstellung (Bulma 1.x).
 - **Tests:** Namen nach dem Muster `that … should result into …`, jeweils mit `// given`, `// when`, `// then`.

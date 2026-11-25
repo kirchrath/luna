@@ -378,6 +378,10 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
   API-Aufrufe routet **Traefik direkt an das jeweilige Backend**.
 - **Texte:** Keine fest codierten UI-Texte; alle Texte über react-i18next. Neue Schlüssel immer in
   **Deutsch und Englisch** anlegen.
+- **Barrel-Dateien:** Jeder Ordner unter `src/` hat ein `index.ts`, das alle Dateien und Unterordner exportiert.
+  Von außen wird ein Ordner **nur über sein `index.ts`** importiert (z. B. `from '../ui'`); innerhalb eines Ordners
+  importieren sich Dateien **direkt** (z. B. `from './Sidebar'`), damit keine zirkulären Importe entstehen.
+  ESLint (`no-restricted-imports`) verbietet Importe an einem `index.ts` vorbei; ausgenommen sind Stylesheets.
 - **Routen** sind englisch (`/`, `/tasks`, `/calendar`, `/shopping`, `/finance`, `/monitoring`) und stehen in
   `src/navigation.ts`.
 - **Sprache:** Start auf Deutsch; die Wahl im DE/EN-Umschalter wird im `localStorage` gemerkt.

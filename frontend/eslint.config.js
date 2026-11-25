@@ -17,6 +17,21 @@ export default defineConfig([
       reactRefresh.configs.vite,
       prettier,
     ],
+    rules: {
+      'no-duplicate-imports': 'error',
+      // Folders are imported through their index.ts (stylesheets excepted); files inside a folder import each other directly.
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: String.raw`^\.{1,2}/(\.\./)*[^./][^/]*/(?!.*\.s?css$)`,
+              message: 'Import the folder through its index.ts instead of a file inside it.',
+            },
+          ],
+        },
+      ],
+    },
     languageOptions: {
       globals: globals.browser,
       parserOptions: {

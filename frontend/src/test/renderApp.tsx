@@ -3,8 +3,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { initI18n } from '../i18n';
 import { routes } from '../routes';
-import { RootStore } from '../stores/RootStore';
-import { StoresProvider } from '../stores/StoresProvider';
+import { RootStore, StoresProvider } from '../stores';
 
 export async function renderApp(path: string, rootStore = new RootStore()) {
   await initI18n();

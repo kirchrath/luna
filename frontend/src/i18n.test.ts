@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import { describe, expect, it } from 'vitest';
 
 import { changeLanguage, initI18n, initialLanguage } from './i18n';
-import { readPreference, STORAGE_KEYS, writePreference } from './services/storage';
+import { readPreference, STORAGE_KEYS, writePreference } from './services';
 
 describe('i18n', () => {
   it('that starting without a stored language should result into German', () => {
