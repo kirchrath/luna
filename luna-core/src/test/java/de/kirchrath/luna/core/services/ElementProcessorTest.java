@@ -4,13 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -19,9 +19,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.data.repository.CrudRepository;
 
+import de.kirchrath.luna.core.config.TestProperties;
 import de.kirchrath.luna.core.converter.AlertElementConverter;
 import de.kirchrath.luna.core.converter.AlertElementMapperImpl;
 import de.kirchrath.luna.core.converter.AppointmentElementConverter;
@@ -49,8 +49,10 @@ import de.kirchrath.luna.core.dto.AlertSeverityDto;
 import de.kirchrath.luna.core.dto.AppointmentEventDataDto;
 import de.kirchrath.luna.core.dto.AuditDto;
 import de.kirchrath.luna.core.dto.ContractEventDataDto;
+import de.kirchrath.luna.core.dto.ElementEventDto;
 import de.kirchrath.luna.core.dto.InvoiceEventDataDto;
 import de.kirchrath.luna.core.dto.NoteEventDataDto;
+import de.kirchrath.luna.core.dto.QualificationResultDto;
 import de.kirchrath.luna.core.dto.TaskEventDataDto;
 import de.kirchrath.luna.core.dto.TaskPriorityDto;
 import de.kirchrath.luna.core.outbound.ElementEventPublisher;
@@ -75,10 +77,9 @@ class ElementProcessorTest {
             LunaElementType type,
             String topic,
             String prompt,
-            Class<D> dataType,
             D validData,
             D invalidData,
-            Function<Fixture, ElementProcessor<D, ?>> factory) {
+            Function<Fixture, ElementProcessor<D, ?, ?>> factory) {
 
         @Override
         public String toString() {
@@ -92,44 +93,41 @@ class ElementProcessorTest {
 
     static Stream<Case<?>> cases() {
         return Stream.of(
-                new Case<>(LunaElementType.TASK, "luna_core_task", "prompts/qualification/task.st", TaskEventDataDto.class,
+                new Case<>(LunaElementType.TASK, "luna_core_task", "prompts/qualification/task.st",
                         new TaskEventDataDto("Pay bill", "Electricity", NOW, TaskPriorityDto.HIGH),
                         new TaskEventDataDto(" ", null, null, null),
-                        fixture -> new TaskElementProcessor(prompt("task"), fixture.client(), fixture.publisher(),
-                                VALIDATOR, (TaskElementRepository) fixture.repository(),
+                        fixture -> new TaskElementProcessor(TestProperties.topics(), TestProperties.prompts(),
+                                fixture.client(), fixture.publisher(), VALIDATOR, (TaskElementRepository) fixture.repository(),
                                 new TaskElementConverter(new TaskElementMapperImpl()))),
-                new Case<>(LunaElementType.ALERT, "luna_core_alert", "prompts/qualification/alert.st", AlertEventDataDto.class,
+                new Case<>(LunaElementType.ALERT, "luna_core_alert", "prompts/qualification/alert.st",
                         new AlertEventDataDto("Mail bounced", "Mailbox full", AlertSeverityDto.WARNING, "Mailserver"),
                         new AlertEventDataDto("Mail bounced", null, null, null),
-                        fixture -> new AlertElementProcessor(prompt("alert"), fixture.client(), fixture.publisher(),
-                                VALIDATOR, (AlertElementRepository) fixture.repository(),
+                        fixture -> new AlertElementProcessor(TestProperties.topics(), TestProperties.prompts(),
+                                fixture.client(), fixture.publisher(), VALIDATOR, (AlertElementRepository) fixture.repository(),
                                 new AlertElementConverter(new AlertElementMapperImpl()))),
                 new Case<>(LunaElementType.APPOINTMENT, "luna_core_appointment", "prompts/qualification/appointment.st",
-                        AppointmentEventDataDto.class,
                         new AppointmentEventDataDto("Dentist", NOW, NOW.plusHours(1), false, "Main street", null),
                         new AppointmentEventDataDto("Dentist", null, null, null, null, null),
-                        fixture -> new AppointmentElementProcessor(prompt("appointment"), fixture.client(),
-                                fixture.publisher(), VALIDATOR, (AppointmentElementRepository) fixture.repository(),
+                        fixture -> new AppointmentElementProcessor(TestProperties.topics(), TestProperties.prompts(),
+                                fixture.client(), fixture.publisher(), VALIDATOR, (AppointmentElementRepository) fixture.repository(),
                                 new AppointmentElementConverter(new AppointmentElementMapperImpl()))),
                 new Case<>(LunaElementType.INVOICE, "luna_core_invoice", "prompts/qualification/invoice.st",
-                        InvoiceEventDataDto.class,
                         new InvoiceEventDataDto("Power Ltd", "R-1", new BigDecimal("42.50"), "EUR", NOW, null),
                         new InvoiceEventDataDto("Power Ltd", null, null, null, null, null),
-                        fixture -> new InvoiceElementProcessor(prompt("invoice"), fixture.client(), fixture.publisher(),
-                                VALIDATOR, (InvoiceElementRepository) fixture.repository(),
+                        fixture -> new InvoiceElementProcessor(TestProperties.topics(), TestProperties.prompts(),
+                                fixture.client(), fixture.publisher(), VALIDATOR, (InvoiceElementRepository) fixture.repository(),
                                 new InvoiceElementConverter(new InvoiceElementMapperImpl()))),
                 new Case<>(LunaElementType.CONTRACT, "luna_core_contract", "prompts/qualification/contract.st",
-                        ContractEventDataDto.class,
                         new ContractEventDataDto("Power Ltd", "Electricity", NOW, null, NOW.plusMonths(1), null),
                         new ContractEventDataDto(null, "Electricity", null, null, null, null),
-                        fixture -> new ContractElementProcessor(prompt("contract"), fixture.client(), fixture.publisher(),
-                                VALIDATOR, (ContractElementRepository) fixture.repository(),
+                        fixture -> new ContractElementProcessor(TestProperties.topics(), TestProperties.prompts(),
+                                fixture.client(), fixture.publisher(), VALIDATOR, (ContractElementRepository) fixture.repository(),
                                 new ContractElementConverter(new ContractElementMapperImpl()))),
-                new Case<>(LunaElementType.NOTE, "luna_core_note", "prompts/qualification/note.st", NoteEventDataDto.class,
+                new Case<>(LunaElementType.NOTE, "luna_core_note", "prompts/qualification/note.st",
                         new NoteEventDataDto("Minutes", "Budget approved"),
                         new NoteEventDataDto("Minutes", ""),
-                        fixture -> new NoteElementProcessor(prompt("note"), fixture.client(), fixture.publisher(),
-                                VALIDATOR, (NoteElementRepository) fixture.repository(),
+                        fixture -> new NoteElementProcessor(TestProperties.topics(), TestProperties.prompts(),
+                                fixture.client(), fixture.publisher(), VALIDATOR, (NoteElementRepository) fixture.repository(),
                                 new NoteElementConverter(new NoteElementMapperImpl()))));
     }
 
@@ -138,17 +136,17 @@ class ElementProcessorTest {
     <D> void thatQualifyingValidDataShouldResultIntoTheData(Case<D> testCase) {
         // given
         var processor = processor(testCase, mock(repositoryType(testCase.type())));
-        when(elementQualificationClient.qualify(any(), eq("Some input"), eq(NOW), eq(testCase.dataType())))
-                .thenReturn(testCase.validData());
+        when(elementQualificationClient.<D>qualify(any(), eq("Some input"), eq(NOW), any()))
+                .thenReturn(new QualificationResultDto<>(List.of(testCase.validData(), testCase.validData())));
 
         // when
         var data = processor.qualify("Some input", NOW);
 
         // then
-        assertThat(data).isEqualTo(testCase.validData());
+        assertThat(data).containsExactly(testCase.validData(), testCase.validData());
         assertThat(processor.type()).isEqualTo(testCase.type());
         verify(elementQualificationClient).qualify(eq(new ClassPathResource(testCase.prompt())), eq("Some input"),
-                eq(NOW), eq(testCase.dataType()));
+                eq(NOW), any());
     }
 
     @ParameterizedTest
@@ -156,8 +154,8 @@ class ElementProcessorTest {
     <D> void thatQualifyingDataWithoutRequiredFieldsShouldResultIntoAConstraintViolation(Case<D> testCase) {
         // given
         var processor = processor(testCase, mock(repositoryType(testCase.type())));
-        when(elementQualificationClient.qualify(any(), any(), any(), eq(testCase.dataType())))
-                .thenReturn(testCase.invalidData());
+        when(elementQualificationClient.<D>qualify(any(), any(), any(), any()))
+                .thenReturn(new QualificationResultDto<>(List.of(testCase.validData(), testCase.invalidData())));
 
         // when / then
         assertThatThrownBy(() -> processor.qualify("Some input", NOW)).isInstanceOf(ConstraintViolationException.class);
@@ -165,7 +163,7 @@ class ElementProcessorTest {
 
     @ParameterizedTest
     @MethodSource("cases")
-    <D> void thatQualifyingWithoutDataShouldResultIntoAnError(Case<D> testCase) {
+    <D> void thatQualifyingWithoutResultShouldResultIntoAnError(Case<D> testCase) {
         // given
         var processor = processor(testCase, mock(repositoryType(testCase.type())));
 
@@ -173,6 +171,30 @@ class ElementProcessorTest {
         assertThatThrownBy(() -> processor.qualify("Some input", NOW))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining(testCase.type().name());
+    }
+
+    @ParameterizedTest
+    @MethodSource("cases")
+    <D> void thatQualifyingWithoutItemsShouldResultIntoAnError(Case<D> testCase) {
+        // given
+        var processor = processor(testCase, mock(repositoryType(testCase.type())));
+        when(elementQualificationClient.<D>qualify(any(), any(), any(), any()))
+                .thenReturn(new QualificationResultDto<>(null));
+
+        // when / then
+        assertThatThrownBy(() -> processor.qualify("Some input", NOW)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @ParameterizedTest
+    @MethodSource("cases")
+    <D> void thatQualifyingWithAnEmptyItemListShouldResultIntoAnError(Case<D> testCase) {
+        // given
+        var processor = processor(testCase, mock(repositoryType(testCase.type())));
+        when(elementQualificationClient.<D>qualify(any(), any(), any(), any()))
+                .thenReturn(new QualificationResultDto<>(List.of()));
+
+        // when / then
+        assertThatThrownBy(() -> processor.qualify("Some input", NOW)).isInstanceOf(IllegalStateException.class);
     }
 
     @ParameterizedTest
@@ -189,20 +211,16 @@ class ElementProcessorTest {
         processor.storeAndPublish(OUTBOUND_EVENT, testCase.validData());
 
         // then
-        var captor = ArgumentCaptor.forClass(Object.class);
-        verify(elementEventPublisher).publish(same(testCase.topic()), eq(OUTBOUND_EVENT_ID), captor.capture());
+        var captor = ArgumentCaptor.forClass(ElementEventDto.class);
+        verify(elementEventPublisher).publish(eq(testCase.topic()), captor.capture());
         var event = (Record) captor.getValue();
         assertThat(event).hasFieldOrPropertyWithValue("id", OUTBOUND_EVENT_ID)
                 .hasFieldOrPropertyWithValue("audit", new AuditDto(NOW, NOW, 0L))
                 .hasFieldOrPropertyWithValue("data", testCase.validData());
     }
 
-    private <D> ElementProcessor<D, ?> processor(Case<D> testCase, CrudRepository<?, UUID> repository) {
+    private <D> ElementProcessor<D, ?, ?> processor(Case<D> testCase, CrudRepository<?, UUID> repository) {
         return testCase.factory().apply(new Fixture(elementQualificationClient, elementEventPublisher, repository));
-    }
-
-    private static Resource prompt(String name) {
-        return new ClassPathResource("prompts/qualification/" + name + ".st");
     }
 
     private static Class<? extends CrudRepository> repositoryType(LunaElementType type) {

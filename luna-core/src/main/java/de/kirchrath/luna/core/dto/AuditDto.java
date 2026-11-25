@@ -2,5 +2,10 @@ package de.kirchrath.luna.core.dto;
 
 import java.time.OffsetDateTime;
 
-public record AuditDto(OffsetDateTime createdDate, OffsetDateTime lastModifiedDate, Long version) {
+import io.swagger.v3.oas.annotations.media.Schema;
+
+public record AuditDto(
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) OffsetDateTime createdDate,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) OffsetDateTime lastModifiedDate,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Long version) {
 }

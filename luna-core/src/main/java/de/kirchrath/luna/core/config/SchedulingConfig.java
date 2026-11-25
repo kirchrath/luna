@@ -6,6 +6,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
 @EnableScheduling
-@EnableConfigurationProperties(ClassificationProperties.class)
+@EnableConfigurationProperties({ClassificationProperties.class, TopicProperties.class, PromptProperties.class})
 public class SchedulingConfig {
 }

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -83,7 +84,7 @@ class ClassificationIntegrationTest {
     void thatRunningTheClassificationSchedulerShouldResultIntoStoredAndPublishedElements() {
         // given
         var reference = inboundEventApplicationService.createManualInboundEvent(
-                new ManualInputDataDto("Dentist on Tuesday at 10, bring the bonus booklet", null));
+                new ManualInputDataDto("Dentist on Tuesday at 10, bring the bonus booklet and pay the invoice there", null));
         when(chatModel.call(any(Prompt.class))).thenAnswer(invocation -> answer(invocation.<Prompt>getArgument(0)));
 
         // when
@@ -94,22 +95,27 @@ class ClassificationIntegrationTest {
         assertThat(inboundEvent.status()).isEqualTo(InboundEventStatus.ANALYZED);
         var outboundEvents = outboundEventRepository.findByInboundEventId(reference.id());
         assertThat(outboundEvents).extracting(OutboundEvent::type)
-                .containsExactlyInAnyOrder(LunaElementType.APPOINTMENT, LunaElementType.TASK);
+                .containsExactlyInAnyOrder(LunaElementType.APPOINTMENT, LunaElementType.TASK, LunaElementType.TASK);
         assertThat(outboundEvents).extracting(OutboundEvent::status).containsOnly(OutboundEventStatus.PUBLISHED);
-        var taskEvent = outboundEvents.stream().filter(event -> event.type() == LunaElementType.TASK).findFirst().orElseThrow();
-        var task = taskElementRepository.findByOutboundEventId(taskEvent.id()).orElseThrow();
-        assertThat(task.title()).isEqualTo("Bring the bonus booklet");
-        assertThat(task.priority()).isEqualTo(TaskPriority.NORMAL);
+        var taskEvents = outboundEvents.stream().filter(event -> event.type() == LunaElementType.TASK).toList();
+        assertThat(taskEvents).extracting(event -> taskElementRepository.findByOutboundEventId(event.id())
+                        .orElseThrow().title())
+                .containsExactlyInAnyOrder("Bring the bonus booklet", "Pay the invoice");
+        assertThat(taskElementRepository.findByOutboundEventId(taskEvents.getFirst().id()).orElseThrow().priority())
+                .isEqualTo(TaskPriority.NORMAL);
         var appointmentEvent = outboundEvents.stream()
                 .filter(event -> event.type() == LunaElementType.APPOINTMENT).findFirst().orElseThrow();
         assertThat(appointmentElementRepository.findByOutboundEventId(appointmentEvent.id())).isPresent();
 
-        var records = consumeRecords("luna_core_task", "luna_core_appointment");
-        assertThat(records).containsKeys(taskEvent.id().toString(), appointmentEvent.id().toString());
-        var taskMessage = jsonMapper.readTree(records.get(taskEvent.id().toString()));
-        assertThat(taskMessage.get("id").asString()).isEqualTo(taskEvent.id().toString());
-        assertThat(taskMessage.get("data").get("title").asString()).isEqualTo("Bring the bonus booklet");
-        assertThat(taskMessage.get("audit").get("version").asLong()).isZero();
+        var records = consumeRecords(3, "luna_core_task", "luna_core_appointment");
+        assertThat(records).containsOnlyKeys(
+                taskEvents.get(0).id().toString(), taskEvents.get(1).id().toString(), appointmentEvent.id().toString());
+        var appointmentMessage = jsonMapper.readTree(records.get(appointmentEvent.id().toString()));
+        assertThat(appointmentMessage.get("id").asString()).isEqualTo(appointmentEvent.id().toString());
+        assertThat(appointmentMessage.get("data").get("title").asString()).isEqualTo("Dentist");
+        assertThat(OffsetDateTime.parse(appointmentMessage.get("data").get("start").asString()))
+                .isAtSameInstantAs(OffsetDateTime.parse("2026-12-01T10:00:00+01:00"));
+        assertThat(appointmentMessage.get("audit").get("version").asLong()).isZero();
     }
 
     @Test
@@ -131,22 +137,24 @@ class ClassificationIntegrationTest {
     private ChatResponse answer(Prompt prompt) {
         var contents = prompt.getContents();
         String json;
-        if (contents.contains("You extract a task")) {
-            json = "{\"title\": \"Bring the bonus booklet\", \"priority\": \"NORMAL\"}";
-        } else if (contents.contains("You extract an appointment")) {
-            json = "{\"title\": \"Dentist\", \"start\": \"2026-12-01T10:00:00+01:00\", \"allDay\": false}";
+        if (contents.contains("You extract all tasks")) {
+            json = "{\"items\": [{\"title\": \"Bring the bonus booklet\", \"priority\": \"NORMAL\"},"
+                    + " {\"title\": \"Pay the invoice\", \"priority\": \"NORMAL\"}]}";
+        } else if (contents.contains("You extract all appointments")) {
+            json = "{\"items\": [{\"title\": \"Dentist\", \"start\": \"2026-12-01T10:00:00+01:00\","
+                    + " \"allDay\": false}]}";
         } else {
             json = "{\"types\": [\"APPOINTMENT\", \"TASK\"]}";
         }
         return new ChatResponse(List.of(new Generation(new AssistantMessage(json))));
     }
 
-    private Map<String, String> consumeRecords(String... topics) {
+    private Map<String, String> consumeRecords(int count, String... topics) {
         var overrides = new Properties();
         overrides.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         try (var consumer = consumerFactory.createConsumer("integration-test", null, null, overrides)) {
             consumer.subscribe(List.of(topics));
-            var records = KafkaTestUtils.getRecords(consumer, Duration.ofSeconds(10), 2);
+            var records = KafkaTestUtils.getRecords(consumer, Duration.ofSeconds(10), count);
             var byKey = new java.util.HashMap<String, String>();
             records.forEach(record -> byKey.put(record.key(), record.value()));
             return byKey;

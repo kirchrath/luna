@@ -33,7 +33,7 @@ public class ClassificationDomainService {
     private final InboundEventRepository inboundEventRepository;
     private final OutboundEventRepository outboundEventRepository;
     private final ElementClassificationClient elementClassificationClient;
-    private final Map<LunaElementType, ElementProcessor<?, ?>> elementProcessors;
+    private final Map<LunaElementType, ElementProcessor<?, ?, ?>> elementProcessors;
     private final LunaElementTypeConverter lunaElementTypeConverter;
     private final JsonMapper jsonMapper;
     private final ClassificationProperties classificationProperties;
@@ -42,7 +42,7 @@ public class ClassificationDomainService {
             InboundEventRepository inboundEventRepository,
             OutboundEventRepository outboundEventRepository,
             ElementClassificationClient elementClassificationClient,
-            List<ElementProcessor<?, ?>> elementProcessors,
+            List<ElementProcessor<?, ?, ?>> elementProcessors,
             LunaElementTypeConverter lunaElementTypeConverter,
             JsonMapper jsonMapper,
             ClassificationProperties classificationProperties) {
@@ -66,8 +66,7 @@ public class ClassificationDomainService {
         try {
             var input = jsonMapper.readValue(inboundEvent.data().json(), ManualInputDataDto.class);
             elements = determineTypes(input).stream()
-                    .<QualifiedElement<?>>map(type -> qualify(
-                            elementProcessors.get(type), input.text(), inboundEvent.createdDate()))
+                    .flatMap(type -> qualify(elementProcessors.get(type), input.text(), inboundEvent.createdDate()).stream())
                     .toList();
         } catch (RuntimeException e) {
             recordFailedAttempt(inboundEvent, e);
@@ -91,8 +90,11 @@ public class ClassificationDomainService {
         return types;
     }
 
-    private <D> QualifiedElement<D> qualify(ElementProcessor<D, ?> processor, String text, OffsetDateTime referenceTime) {
-        return new QualifiedElement<>(processor, processor.qualify(text, referenceTime));
+    private <D> List<QualifiedElement<?>> qualify(
+            ElementProcessor<D, ?, ?> processor, String text, OffsetDateTime referenceTime) {
+        return processor.qualify(text, referenceTime).stream()
+                .<QualifiedElement<?>>map(data -> new QualifiedElement<>(processor, data))
+                .toList();
     }
 
     private void recordFailedAttempt(InboundEvent inboundEvent, RuntimeException cause) {
@@ -109,7 +111,7 @@ public class ClassificationDomainService {
         }
     }
 
-    private record QualifiedElement<D>(ElementProcessor<D, ?> processor, D data) {
+    private record QualifiedElement<D>(ElementProcessor<D, ?, ?> processor, D data) {
 
         LunaElementType type() {
             return processor.type();

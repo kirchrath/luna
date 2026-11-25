@@ -49,7 +49,7 @@ class ClassificationDomainServiceTest {
     private final OutboundEventRepository outboundEventRepository = mock(OutboundEventRepository.class);
     private final ElementClassificationClient elementClassificationClient = mock(ElementClassificationClient.class);
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
-    private final List<ElementProcessor<Object, ?>> processors = processors();
+    private final List<ElementProcessor<Object, ?, ?>> processors = processors();
     private final ClassificationDomainService classificationDomainService = new ClassificationDomainService(
             inboundEventRepository,
             outboundEventRepository,
@@ -102,6 +102,25 @@ class ClassificationDomainServiceTest {
         verify(processor(LunaElementType.APPOINTMENT)).storeAndPublish(any(), eq(appointmentData));
         verify(processor(LunaElementType.TASK)).storeAndPublish(any(), eq(taskData));
         verify(inboundEventRepository).save(inboundEvent.withStatus(InboundEventStatus.ANALYZED));
+    }
+
+    @Test
+    void thatClassifyingAnInputWithSeveralElementsOfOneTypeShouldResultIntoOneElementEach() {
+        // given
+        var inboundEvent = inboundEvent(new ManualInputDataDto("Dentist on Monday, hairdresser on Friday", null), 0);
+        when(elementClassificationClient.classify("Dentist on Monday, hairdresser on Friday", null))
+                .thenReturn(new ClassificationResultDto(List.of(LunaElementTypeDto.APPOINTMENT)));
+        when(processor(LunaElementType.APPOINTMENT).qualify(any(), eq(RECEIVED_AT)))
+                .thenReturn(List.of("dentist", "hairdresser"));
+
+        // when
+        classificationDomainService.classify(inboundEvent);
+
+        // then
+        assertThat(savedOutboundEvents(2)).extracting(OutboundEvent::type)
+                .containsExactly(LunaElementType.APPOINTMENT, LunaElementType.APPOINTMENT);
+        verify(processor(LunaElementType.APPOINTMENT)).storeAndPublish(any(), eq("dentist"));
+        verify(processor(LunaElementType.APPOINTMENT)).storeAndPublish(any(), eq("hairdresser"));
     }
 
     @ParameterizedTest
@@ -183,21 +202,21 @@ class ClassificationDomainServiceTest {
     }
 
     @SuppressWarnings("unchecked")
-    private static List<ElementProcessor<Object, ?>> processors() {
-        return Arrays.stream(LunaElementType.values()).<ElementProcessor<Object, ?>>map(type -> {
-            ElementProcessor<Object, ?> processor = mock(ElementProcessor.class);
+    private static List<ElementProcessor<Object, ?, ?>> processors() {
+        return Arrays.stream(LunaElementType.values()).<ElementProcessor<Object, ?, ?>>map(type -> {
+            ElementProcessor<Object, ?, ?> processor = mock(ElementProcessor.class);
             when(processor.type()).thenReturn(type);
             return processor;
         }).toList();
     }
 
-    private ElementProcessor<Object, ?> processor(LunaElementType type) {
+    private ElementProcessor<Object, ?, ?> processor(LunaElementType type) {
         return processors.stream().filter(processor -> processor.type() == type).findFirst().orElseThrow();
     }
 
     private Object qualifies(LunaElementType type) {
         var data = type.name() + " data";
-        when(processor(type).qualify(any(), eq(RECEIVED_AT))).thenReturn(data);
+        when(processor(type).qualify(any(), eq(RECEIVED_AT))).thenReturn(List.of(data));
         return data;
     }
 
