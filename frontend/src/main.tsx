@@ -8,6 +8,8 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 
 import { initI18n } from './i18n';
 import { routes } from './routes';
+import { RootStore } from './stores/RootStore';
+import { StoresProvider } from './stores/StoresProvider';
 
 const ROOT_ELEMENT_ID = 'root';
 
@@ -19,7 +21,9 @@ if (root === null) {
 void initI18n().then(() => {
   createRoot(root).render(
     <StrictMode>
-      <RouterProvider router={createBrowserRouter(routes)} />
+      <StoresProvider rootStore={new RootStore()}>
+        <RouterProvider router={createBrowserRouter(routes)} />
+      </StoresProvider>
     </StrictMode>,
   );
 });
