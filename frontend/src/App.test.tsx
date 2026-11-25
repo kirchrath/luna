@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { App } from './App';
 import { initI18n } from './i18n';
-import { fakeAuth } from './test';
+import { fakeAuth, fakeRootStore } from './test';
 
 describe('App', () => {
   it('that rendering the app should result into the page of the current address', async () => {
@@ -15,7 +15,7 @@ describe('App', () => {
     // when
     render(
       <AuthContext value={fakeAuth()}>
-        <App />
+        <App rootStore={fakeRootStore().rootStore} />
       </AuthContext>,
     );
 

@@ -178,3 +178,14 @@ components:
       - id
       - status
       - text
+    InboundEventChangedDto:
+      type: object
+      description: Push message via STOMP over WebSocket (endpoint /ws) on topic /topic/inbound-events/manual
+        when an inbound event becomes ANALYZED or FAILED.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID of the changed inbound event
+      required:
+      - id

@@ -4,8 +4,9 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { initI18n } from '../i18n';
 import { routes } from '../routes';
-import { RootStore, StoresProvider } from '../stores';
+import { StoresProvider, type RootStore } from '../stores';
 import { fakeAuth } from './fakeAuth';
+import { fakeRootStore } from './fakeStores';
 
 interface RenderAppOptions {
   rootStore?: RootStore;
@@ -14,7 +15,7 @@ interface RenderAppOptions {
 
 export async function renderApp(
   path: string,
-  { rootStore = new RootStore(), auth = fakeAuth() }: RenderAppOptions = {},
+  { rootStore = fakeRootStore().rootStore, auth = fakeAuth() }: RenderAppOptions = {},
 ) {
   await initI18n();
   const router = createMemoryRouter(routes, { initialEntries: [path] });

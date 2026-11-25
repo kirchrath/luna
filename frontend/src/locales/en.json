@@ -27,7 +27,27 @@
   },
   "quickInput": {
     "title": "What's on your mind?",
-    "lead": "Write it down the way it comes to you. Luna works out what it becomes: a task, an appointment, an invoice …"
+    "lead": "Write it down the way it comes to you. Luna works out what it becomes: a task, an appointment, an invoice …",
+    "textLabel": "Input",
+    "textHelp": "Free text, at most 10,000 characters.",
+    "textMissing": "Please enter some text.",
+    "invalid": "Luna could not accept the input. Check the text and try again.",
+    "typeLabel": "What should it become?",
+    "automatic": "Automatic",
+    "shortcut": "Ctrl + Enter",
+    "submit": "Submit",
+    "submitFailed": "Sending failed. Your text is kept – try again in a moment.",
+    "listTitle": "Recent inputs",
+    "empty": "No inputs yet. Your first input appears here.",
+    "loadMore": "Load more",
+    "loadError": "The list could not be loaded.",
+    "retry": "Try again",
+    "liveInterrupted": "Live updates interrupted – Luna is reconnecting.",
+    "status": {
+      "RECEIVED": "Analysing",
+      "ANALYZED": "Analysed",
+      "FAILED": "Failed"
+    }
   },
   "comingSoon": {
     "text": "This area comes in a later step."
@@ -38,5 +58,13 @@
     "errorText": "Luna could not sign you in with Keycloak. Check that Keycloak is reachable and try again.",
     "retry": "Try again",
     "logout": "Sign out"
+  },
+  "elementType": {
+    "TASK": "Task",
+    "APPOINTMENT": "Appointment",
+    "INVOICE": "Invoice",
+    "CONTRACT": "Contract",
+    "ALERT": "Alert",
+    "NOTE": "Note"
   }
 }
