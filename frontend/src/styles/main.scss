@@ -84,9 +84,45 @@ html {
   fill: var(--bulma-border-weak);
 }
 
-.user-menu {
-  display: inline-flex;
+.user-menu-button {
+  gap: 0.5rem;
+  color: var(--bulma-text);
+}
+
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.status-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+
+  .title {
+    margin-bottom: 0;
+  }
+}
+
+.status-spinner {
   color: var(--bulma-text-weak);
+  animation: status-spin 1s linear infinite;
+}
+
+@keyframes status-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .app-body {
@@ -247,6 +283,10 @@ html {
     display: inline-flex;
   }
 
+  .user-menu-name {
+    display: none;
+  }
+
   .app-body,
   .app-shell.is-collapsed .app-body {
     grid-template-columns: minmax(0, 1fr);
@@ -320,5 +360,9 @@ html {
   .app-body,
   .sidebar {
     transition: none;
+  }
+
+  .status-spinner {
+    animation: none;
   }
 }

@@ -31,5 +31,12 @@
   },
   "comingSoon": {
     "text": "Dieser Bereich kommt in einem späteren Schritt."
+  },
+  "auth": {
+    "signingIn": "Anmeldung läuft …",
+    "errorTitle": "Anmeldung fehlgeschlagen",
+    "errorText": "Luna konnte dich nicht bei Keycloak anmelden. Prüfe, ob Keycloak erreichbar ist, und versuche es erneut.",
+    "retry": "Erneut versuchen",
+    "logout": "Abmelden"
   }
 }
