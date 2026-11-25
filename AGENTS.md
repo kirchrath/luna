@@ -345,6 +345,7 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
 | CSS | **Bulma 1.x** über **Sass** (Anpassung über Sass-Variablen) |
 | UI-Komponenten | **keine UI-Bibliothek** – eigene Komponenten in `src/ui` |
 | API-Zugriff | generierter Wrapper in `src/api/<backend>/` (**openapi-typescript** + **openapi-fetch**) |
+| State | **MobX** mit **mobx-react-lite**; Stores unter `src/stores/`, ein `RootStore` per React-Context (`StoresProvider`, `useStores()`) |
 | i18n | **react-i18next**; Sprachen **Deutsch (Standard/Fallback)** und **Englisch** |
 | Tests | **Vitest** + **Testing Library**; E2E mit **Playwright** |
 | Testabdeckung | **100 %** (Statements, Branches, Functions, Lines), per Vitest-Coverage (v8) erzwungen; ausgenommen `main.tsx`, Typdefinitionen und der generierte API-Wrapper |
@@ -366,6 +367,10 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
     lokal direkt der Backend-Port (z. B. `http://localhost:7081`), in Produktion das Pfad-Präfix
     (z. B. `/api/luna-core`). Keine URLs fest im Code.
   - Keine direkten `fetch`/`axios`-Aufrufe an eigene Backends außerhalb von `src/api`.
+  - **Jede Kommunikation mit einem Backend läuft über MobX-Stores** (ausgenommen die OIDC-Anmeldung).
+    Komponenten rufen den API-Wrapper nie direkt auf, sondern lesen Daten und Ladezustand aus Stores
+    (`observer`) und lösen Aktionen über Store-Methoden aus. Alle Stores erzeugt der `RootStore`.
+  - Reiner UI-Zustand (z. B. Sprache, eingeklappte Navigation) bleibt in React-State bzw. i18next.
   - Generierter Code wird **eingecheckt** und nie von Hand geändert. Bei API-Änderungen: Backend anpassen,
     Spec erzeugen, Wrapper neu generieren und im selben Commit mit einchecken.
 - **Docker-Image:** Das Frontend wird als eigenes **nginx-Image** ausgeliefert (Dockerfile im Frontend-Projekt,
