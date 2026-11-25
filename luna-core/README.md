@@ -145,6 +145,74 @@ Moderation, Decision) sind mit `none` abgeschaltet.
 
 API-Keys nie ins Repo; im Stack als Docker Secrets bereitstellen.
 
+### Qualifizieren und Veröffentlichen (Schritt 4, geplant)
+
+> [!NOTE]
+> Geplant, noch nicht umgesetzt. Umsetzung erst nach ausdrücklichem Auftrag.
+
+**Ablauf** – direkt im Anschluss an die Klassifizierung, im `ClassificationDomainService`, **alles in einer
+Transaktion**:
+
+1. Klassifizieren wie bisher (null bis mehrere Element-Typen).
+2. **Qualifizieren:** je ermitteltem Typ **ein eigener KI-Aufruf** mit typspezifischem Prompt und strukturierter
+   Antwort (`<Typ>EventDataDto`). Extrahierte Texte in der **Sprache der Eingabe**.
+3. Je Element ein `OutboundEvent` (Status **`PUBLISHED`**) und ein `<Typ>Element` mit allen Feldern speichern.
+4. Je Element ein `<Typ>EventDto` **synchron** an `luna_core_<typ>` senden (Kafka-Key = ID des `OutboundEvent`).
+5. Eingehendes Event auf `ANALYZED`.
+
+Bei einem Fehler wird alles zurückgerollt, `attempts` erhöht und das Event später erneut verarbeitet
+(ab `max-attempts` `FAILED`). Restrisiko: Senden erfolgreich, Commit scheitert → später doppelt gesendet; die
+Fach-Backends erkennen Duplikate über die ID.
+
+**Datenmodell** (Migration `V3`):
+
+- `outbound_event` bleibt (ID, Verweis auf Eingang, Typ, Status, Audit); Status **`PUBLISHED`** ersetzt
+  `CLASSIFIED` (Zwischenstände werden wegen der einen Transaktion nie gespeichert).
+- Je Typ eine Tabelle/Entity **`<typ>_element` / `<Typ>Element`** mit eigener ID, `outbound_event_id`
+  (Fremdschlüssel, eindeutig), allen Feldern und den Audit-Feldern. Alle Zeitangaben als `OffsetDateTime`
+  (`TIMESTAMPTZ`), Beträge als `BigDecimal`.
+
+| Typ | Entity / Tabelle | Felder |
+|---|---|---|
+| `TASK` | `TaskElement` / `task_element` | `title`, `description`, `dueDate`, `priority` (`LOW`/`NORMAL`/`HIGH`, Standard `NORMAL`) |
+| `ALERT` | `AlertElement` / `alert_element` | `title`, `message`, `severity` (`INFO`/`WARNING`/`CRITICAL`), `affectedSystem` |
+| `APPOINTMENT` | `AppointmentElement` / `appointment_element` | `title`, `start`, `end`, `allDay`, `location`, `description` |
+| `INVOICE` | `InvoiceElement` / `invoice_element` | `issuer`, `invoiceNumber`, `amount`, `currency` (ISO 4217), `dueDate`, `description` |
+| `CONTRACT` | `ContractElement` / `contract_element` | `counterparty`, `title`, `startDate`, `endDate`, `cancellationDeadline`, `description` |
+| `NOTE` | `NoteElement` / `note_element` | `title`, `summary` |
+
+**Kafka-Nachrichten:** je Typ `<Typ>EventDto(id, audit, data)` mit `data: <Typ>EventDataDto` (Felder wie oben,
+**ohne** Originaltext); `id` und `audit` stammen vom `OutboundEvent`. Topics `luna_core_task`, `luna_core_alert`,
+`luna_core_appointment`, `luna_core_invoice`, `luna_core_contract`, `luna_core_note` (Anlage beim ersten
+Schreiben; ACL für `luna-core` auf `luna_core_*` besteht bereits).
+
+**Stack** (`swarm/luna-core.yml`, Image per `./mvnw package jib:dockerBuild`):
+
+- Erreichbar **nur über Traefik** unter `https://luna.internal/api/luna-core` (StripPrefix), kein veröffentlichter
+  Port; Profil `prod`.
+- **Kafka:** `kafka:9094`, SASL/SCRAM als Benutzer `luna-core` (Secret `kafka_luna_core_password`), TLS mit dem
+  Root-Zertifikat **zur Laufzeit aus dem step-ca-Volume** (`/step/certs/root_ca.crt`, PEM, read-only eingebunden).
+- **Keycloak:** Schlüssel intern per HTTP (`jwk-set-uri` =
+  `http://keycloak:8080/auth/realms/luna/protocol/openid-connect/certs`), `issuer-uri` bleibt
+  `https://luna.internal/auth/realms/luna` und wird im Token geprüft.
+- **KI-Anbieter:** Spring-Namen direkt beim Deploy (`SPRING_AI_MODEL_CHAT`, `SPRING_AI_<ANBIETER>_…`), von der
+  Stack-Datei durchgereicht.
+- Datenbank-Passwort aus `luna_db_password`; Zeitzone über `/etc/localtime`.
+- Die bisher dokumentierte Truststore-Variante (Build + Jib mit eingechecktem `certs/luna-root-ca.crt`) wird
+  dadurch ersetzt; AGENTS.md und README werden bei der Umsetzung angepasst.
+
+**Tests:** Unit-Tests je Klasse (100 % Abdeckung), Integrationstest von der Eingabe bis zur Nachricht auf dem Topic
+mit PostgreSQL und Kafka per Testcontainers (ohne TLS/SASL), gemocktes `ChatModel`; ArchUnit-Regeln gelten weiter.
+
+**Noch offen** (vor der Umsetzung zu entscheiden):
+
+- **Fehler nach Schreibzugriffen:** Wie der Fehlversuch (`attempts`) gespeichert wird, wenn das Senden an Kafka
+  nach dem Speichern scheitert und die Transaktion zurückgerollt wird. _TODO_
+- **Secrets für Spring:** Wie Docker Secrets (DB-, Kafka-Passwort, KI-API-Key) in Spring-Properties gelangen
+  (z. B. `spring.config.import=configtree:/run/secrets/`). _TODO_
+- **Pflichtfelder je Typ:** Welche Felder die KI immer liefern muss und welche optional sind. _TODO_
+- **Betrag:** Genauigkeit der Spalte `amount` (z. B. `NUMERIC(12,2)`). _TODO_
+
 ## Offene Punkte
 
 Noch nicht entschieden (bitte hier eintragen, sobald entschieden):
