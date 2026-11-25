@@ -1,9 +1,9 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { readPreference, STORAGE_KEYS, writePreference } from '../services';
-import { renderApp } from '../test';
+import { fakeAuth, fakeUser, renderApp } from '../test';
 
 describe('AppLayout', () => {
   it('that opening the start page should result into the quick input with all areas in the navigation', async () => {
@@ -72,5 +72,51 @@ describe('AppLayout', () => {
     expect(await screen.findByRole('heading', { name: "What's on your mind?" })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'German' })).toHaveAttribute('aria-pressed', 'false');
     expect(readPreference(STORAGE_KEYS.language)).toBe('en');
+  });
+
+  it('that a signed in user should result into the first name in the user menu', async () => {
+    // given
+    const path = '/';
+
+    // when
+    await renderApp(path);
+
+    // then
+    expect(screen.getByRole('button', { name: 'Benutzermenü' })).toHaveTextContent('Chandra');
+  });
+
+  it('that a user without first name should result into the user name in the user menu', async () => {
+    // given
+    const auth = fakeAuth({ user: fakeUser({ preferred_username: 'chandra' }) });
+
+    // when
+    await renderApp('/', { auth });
+
+    // then
+    expect(screen.getByRole('button', { name: 'Benutzermenü' })).toHaveTextContent('chandra');
+  });
+
+  it('that a missing user should result into an empty name in the user menu', async () => {
+    // given
+    const auth = fakeAuth({ user: null });
+
+    // when
+    await renderApp('/', { auth });
+
+    // then
+    expect(screen.getByRole('button', { name: 'Benutzermenü' })).toHaveTextContent('');
+  });
+
+  it('that signing out should result into a sign out at keycloak', async () => {
+    // given
+    const signoutRedirect = vi.fn(() => Promise.resolve());
+    await renderApp('/', { auth: fakeAuth({ signoutRedirect }) });
+    await userEvent.click(screen.getByRole('button', { name: 'Benutzermenü' }));
+
+    // when
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Abmelden' }));
+
+    // then
+    expect(signoutRedirect).toHaveBeenCalledTimes(1);
   });
 });

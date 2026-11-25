@@ -31,5 +31,12 @@
   },
   "comingSoon": {
     "text": "This area comes in a later step."
+  },
+  "auth": {
+    "signingIn": "Signing in …",
+    "errorTitle": "Sign-in failed",
+    "errorText": "Luna could not sign you in with Keycloak. Check that Keycloak is reachable and try again.",
+    "retry": "Try again",
+    "logout": "Sign out"
   }
 }

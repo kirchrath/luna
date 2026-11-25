@@ -4,11 +4,11 @@ import './styles/main.scss';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router';
+import { AuthProvider } from 'react-oidc-context';
 
+import { App } from './App';
+import { AuthGate, createOidcConfig } from './auth';
 import { initI18n } from './i18n';
-import { routes } from './routes';
-import { RootStore, StoresProvider } from './stores';
 
 const ROOT_ELEMENT_ID = 'root';
 
@@ -20,9 +20,11 @@ if (root === null) {
 void initI18n().then(() => {
   createRoot(root).render(
     <StrictMode>
-      <StoresProvider rootStore={new RootStore()}>
-        <RouterProvider router={createBrowserRouter(routes)} />
-      </StoresProvider>
+      <AuthProvider {...createOidcConfig()}>
+        <AuthGate>
+          <App />
+        </AuthGate>
+      </AuthProvider>
     </StrictMode>,
   );
 });

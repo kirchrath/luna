@@ -3,3 +3,5 @@ export * from './LanguageSwitch';
 export * from './Logo';
 export * from './Placeholder';
 export * from './Sidebar';
+export * from './StatusScreen';
+export * from './UserMenu';

@@ -41,7 +41,7 @@ Noch offen (bitte hier eintragen, sobald entschieden):
      in Teilschritten:
      - 6a Grundgerüst mit Layout, Navigation und Platzhaltern (erledigt)
      - 6b Anmeldung: Realm `luna` per Realm-Import im Stack, Client fürs Frontend, OIDC mit
-       `oidc-client-ts` + `react-oidc-context`
+       `oidc-client-ts` + `react-oidc-context` (erledigt)
      - 6c Schnelleingabe mit Liste der letzten Eingaben über den generierten API-Wrapper
      - 6d nginx-Image und `swarm/frontend.yml`
      - 6e E2E-Tests mit Playwright
@@ -383,6 +383,15 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
   Von außen wird ein Ordner **nur über sein `index.ts`** importiert (z. B. `from '../ui'`); innerhalb eines Ordners
   importieren sich Dateien **direkt** (z. B. `from './Sidebar'`), damit keine zirkulären Importe entstehen.
   ESLint (`no-restricted-imports`) verbietet Importe an einem `index.ts` vorbei; ausgenommen sind Stylesheets.
+- **Anmeldung (OIDC):** `oidc-client-ts` + `react-oidc-context` gegen den Keycloak-Client `luna-frontend`.
+  - Die ganze App ist geschützt: Ohne Anmeldung leitet `AuthGate` sofort zu Keycloak weiter und kehrt danach zur
+    angeforderten Seite zurück (Pfad im OIDC-`state`). Abmelden beendet auch die Keycloak-Sitzung.
+  - Tokens im **sessionStorage**, Erneuerung automatisch per Refresh-Token.
+  - Konfiguration über `VITE_OIDC_AUTHORITY` und `VITE_OIDC_CLIENT_ID` in **`.env.development`** und
+    **`.env.production`**. Diese beiden Dateien sind **eingecheckt** und enthalten **nur öffentliche Werte** – eine
+    bewusste Ausnahme von der Regel „keine `.env`-Dateien committen“; Secrets gehören nie hinein.
+  - Router und Stores entstehen erst nach der Anmeldung (`App`), damit der Router die wiederhergestellte Adresse liest.
+  - In Tests ersetzt `fakeAuth()` (`src/test`) den `AuthContext`; `react-oidc-context` wird nicht gemockt.
 - **Routen** sind englisch (`/`, `/tasks`, `/calendar`, `/shopping`, `/finance`, `/monitoring`) und stehen in
   `src/navigation.ts`.
 - **Sprache:** Start auf Deutsch; die Wahl im DE/EN-Umschalter wird im `localStorage` gemerkt.
@@ -463,7 +472,12 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
 - Traefik leitet HTTP auf HTTPS um; **kein Traefik-Dashboard**.
 - PostgreSQL legt beim ersten Start per Init-Skript die Datenbanken `keycloak` und `luna` mit je einem Benutzer an.
 - Der **Keycloak-Realm** für Luna heißt **`luna`** (Issuer lokal `http://localhost:7080/auth/realms/luna`,
-  im Stack `https://luna.internal/auth/realms/luna`). Er ist noch nicht Teil der Stack-Datei.
+  im Stack `https://luna.internal/auth/realms/luna`). Er wird aus **`swarm/keycloak/luna-realm.json`** per
+  `--import-realm` angelegt – **nur wenn er noch nicht existiert**; spätere Änderungen an der Datei zusätzlich in der
+  Admin-Konsole nachziehen. Der Import enthält **keine Benutzer und keine Secrets**.
+  - Client **`luna-frontend`**: öffentlich, nur Authorization Code mit **PKCE (S256)**, Weiterleitungen nur an
+    `https://luna.internal/*` und `http://localhost:5173/*`.
+  - Realm: Anmeldeseite Deutsch (Standard) und Englisch, „Angemeldet bleiben“, keine Registrierung.
 - **Schema-Namen** in der Luna-Datenbank: Service-Name mit `_` statt `-` (z. B. `luna_core`).
 - Traefik entfernt das Pfad-Präfix vor der Weiterleitung; Backends kennen ihr Präfix nicht und haben
   lokal und in Produktion dieselben Pfade.
@@ -587,6 +601,7 @@ Vor jedem Commit müssen Build, Tests und Linter (sofern vorhanden) grün sein.
 ## Sicherheit
 
 - Keine Secrets (API-Keys, Tokens, Passwörter, Client-Secrets, `.env`-Dateien) committen.
+  Ausnahme: `frontend/.env.development` und `frontend/.env.production` mit ausschließlich öffentlichen Werten.
 - Neue Abhängigkeiten nur mit Begründung hinzufügen und auf Pflege/Lizenz prüfen.
 - Externe Eingaben immer validieren.
 

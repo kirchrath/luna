@@ -1,18 +1,22 @@
-import { CircleUser, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { CircleUser, LogOut, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from 'react-oidc-context';
 import { Link, Outlet } from 'react-router';
 
 import { changeLanguage, LANGUAGES, type Language } from '../i18n';
 import { AREAS, PATHS, QUICK_INPUT_ICON } from '../navigation';
 import { readPreference, STORAGE_KEYS, writePreference } from '../services';
-import { AppShell, LanguageSwitch, Logo } from '../ui';
+import { AppShell, LanguageSwitch, Logo, UserMenu } from '../ui';
 
 const ICON_SIZE = 20;
 const COLLAPSED = 'true';
 
 export function AppLayout() {
   const { t, i18n } = useTranslation();
+  const auth = useAuth();
+  const profile = auth.user?.profile;
+  const userName = profile?.given_name ?? profile?.preferred_username ?? '';
   const [collapsed, setCollapsed] = useState(() => readPreference(STORAGE_KEYS.navigationCollapsed) === COLLAPSED);
   const QuickInputIcon = QUICK_INPUT_ICON;
 
@@ -40,9 +44,14 @@ export function AppLayout() {
             value={i18n.language as Language}
             onChange={(language) => void changeLanguage(language)}
           />
-          <span className="user-menu" role="img" aria-label={t('user.menu')}>
-            <CircleUser size={28} aria-hidden="true" />
-          </span>
+          <UserMenu
+            label={t('user.menu')}
+            name={userName}
+            icon={<CircleUser size={ICON_SIZE} aria-hidden="true" />}
+            logoutLabel={t('auth.logout')}
+            logoutIcon={<LogOut size={16} aria-hidden="true" />}
+            onLogout={() => void auth.signoutRedirect()}
+          />
         </>
       }
       navigationLabel={t('navigation.label')}
