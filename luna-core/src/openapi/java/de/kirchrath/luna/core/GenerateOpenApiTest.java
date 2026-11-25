@@ -22,6 +22,7 @@ import de.kirchrath.luna.core.config.TopicProperties;
 import de.kirchrath.luna.core.dto.AlertEventDto;
 import de.kirchrath.luna.core.dto.AppointmentEventDto;
 import de.kirchrath.luna.core.dto.ContractEventDto;
+import de.kirchrath.luna.core.dto.ElementEventDto;
 import de.kirchrath.luna.core.dto.InvoiceEventDto;
 import de.kirchrath.luna.core.dto.NoteEventDto;
 import de.kirchrath.luna.core.dto.TaskEventDto;
@@ -83,6 +84,7 @@ class GenerateOpenApiTest {
                 .components(new Components());
 
         // when
+        ModelConverters.getInstance(true).readAll(ElementEventDto.class).forEach(kafkaApi.getComponents()::addSchemas);
         topics.forEach((type, topic) -> {
             ModelConverters.getInstance(true).readAll(type).forEach(kafkaApi.getComponents()::addSchemas);
             kafkaApi.getComponents().getSchemas().get(type.getSimpleName())
@@ -92,6 +94,6 @@ class GenerateOpenApiTest {
 
         // then
         assertThat(kafkaApiFile).content()
-                .contains("TaskEventDto", "NoteEventDto", "Published on topic " + topicProperties.task());
+                .contains("ElementEventDto", "discriminator", "TaskEventDto", "NoteEventDto", "Published on topic " + topicProperties.task());
     }
 }

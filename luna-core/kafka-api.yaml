@@ -6,58 +6,6 @@ info:
   version: 0.0.1-SNAPSHOT
 components:
   schemas:
-    AuditDto:
-      type: object
-      properties:
-        createdDate:
-          type: string
-          format: date-time
-        lastModifiedDate:
-          type: string
-          format: date-time
-        version:
-          type: integer
-          format: int64
-      required:
-      - createdDate
-      - lastModifiedDate
-      - version
-    TaskEventDataDto:
-      type: object
-      properties:
-        title:
-          type: string
-          minLength: 1
-        description:
-          type: string
-        dueDate:
-          type: string
-          format: date-time
-        priority:
-          type: string
-          enum:
-          - LOW
-          - NORMAL
-          - HIGH
-      required:
-      - priority
-      - title
-    TaskEventDto:
-      type: object
-      description: Published on topic luna_core_task. The key of each message is the
-        id of the event.
-      properties:
-        id:
-          type: string
-          format: uuid
-        audit:
-          $ref: "#/components/schemas/AuditDto"
-        data:
-          $ref: "#/components/schemas/TaskEventDataDto"
-      required:
-      - audit
-      - data
-      - id
     AlertEventDataDto:
       type: object
       properties:
@@ -133,44 +81,22 @@ components:
       - audit
       - data
       - id
-    InvoiceEventDataDto:
+    AuditDto:
       type: object
       properties:
-        issuer:
-          type: string
-          minLength: 1
-        invoiceNumber:
-          type: string
-        amount:
-          type: number
-        currency:
-          type: string
-          minLength: 1
-        dueDate:
+        createdDate:
           type: string
           format: date-time
-        description:
+        lastModifiedDate:
           type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
       required:
-      - amount
-      - currency
-      - issuer
-    InvoiceEventDto:
-      type: object
-      description: Published on topic luna_core_invoice. The key of each message is
-        the id of the event.
-      properties:
-        id:
-          type: string
-          format: uuid
-        audit:
-          $ref: "#/components/schemas/AuditDto"
-        data:
-          $ref: "#/components/schemas/InvoiceEventDataDto"
-      required:
-      - audit
-      - data
-      - id
+      - createdDate
+      - lastModifiedDate
+      - version
     ContractEventDataDto:
       type: object
       properties:
@@ -210,6 +136,68 @@ components:
       - audit
       - data
       - id
+    ElementEventDto:
+      description: Element published by luna-core; the property type determines the
+        kind of element
+      discriminator:
+        propertyName: type
+        mapping:
+          TASK: "#/components/schemas/TaskEventDto"
+          ALERT: "#/components/schemas/AlertEventDto"
+          APPOINTMENT: "#/components/schemas/AppointmentEventDto"
+          INVOICE: "#/components/schemas/InvoiceEventDto"
+          CONTRACT: "#/components/schemas/ContractEventDto"
+          NOTE: "#/components/schemas/NoteEventDto"
+      oneOf:
+      - $ref: "#/components/schemas/TaskEventDto"
+      - $ref: "#/components/schemas/AlertEventDto"
+      - $ref: "#/components/schemas/AppointmentEventDto"
+      - $ref: "#/components/schemas/InvoiceEventDto"
+      - $ref: "#/components/schemas/ContractEventDto"
+      - $ref: "#/components/schemas/NoteEventDto"
+      properties:
+        type:
+          type: string
+      required:
+      - type
+    InvoiceEventDataDto:
+      type: object
+      properties:
+        issuer:
+          type: string
+          minLength: 1
+        invoiceNumber:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+          minLength: 1
+        dueDate:
+          type: string
+          format: date-time
+        description:
+          type: string
+      required:
+      - amount
+      - currency
+      - issuer
+    InvoiceEventDto:
+      type: object
+      description: Published on topic luna_core_invoice. The key of each message is
+        the id of the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+        data:
+          $ref: "#/components/schemas/InvoiceEventDataDto"
+      required:
+      - audit
+      - data
+      - id
     NoteEventDataDto:
       type: object
       properties:
@@ -234,6 +222,42 @@ components:
           $ref: "#/components/schemas/AuditDto"
         data:
           $ref: "#/components/schemas/NoteEventDataDto"
+      required:
+      - audit
+      - data
+      - id
+    TaskEventDataDto:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        priority:
+          type: string
+          enum:
+          - LOW
+          - NORMAL
+          - HIGH
+      required:
+      - priority
+      - title
+    TaskEventDto:
+      type: object
+      description: Published on topic luna_core_task. The key of each message is the
+        id of the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+        data:
+          $ref: "#/components/schemas/TaskEventDataDto"
       required:
       - audit
       - data
