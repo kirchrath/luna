@@ -1,9 +1,8 @@
 import type { RouteObject } from 'react-router';
 
-import { AppLayout } from './layout/AppLayout';
+import { AppLayout } from './layout';
 import { AREAS, PATHS } from './navigation';
-import { ComingSoonPage } from './pages/ComingSoonPage';
-import { QuickInputPage } from './pages/QuickInputPage';
+import { ComingSoonPage, QuickInputPage } from './pages';
 
 export const routes: RouteObject[] = [
   {

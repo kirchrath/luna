@@ -2,8 +2,8 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
-import { readPreference, STORAGE_KEYS, writePreference } from '../services/storage';
-import { renderApp } from '../test/renderApp';
+import { readPreference, STORAGE_KEYS, writePreference } from '../services';
+import { renderApp } from '../test';
 
 describe('AppLayout', () => {
   it('that opening the start page should result into the quick input with all areas in the navigation', async () => {

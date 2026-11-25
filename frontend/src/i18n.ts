@@ -1,9 +1,8 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-import de from './locales/de.json';
-import en from './locales/en.json';
-import { readPreference, STORAGE_KEYS, writePreference } from './services/storage';
+import { de, en } from './locales';
+import { readPreference, STORAGE_KEYS, writePreference } from './services';
 
 export const LANGUAGES = ['de', 'en'] as const;
 export type Language = (typeof LANGUAGES)[number];

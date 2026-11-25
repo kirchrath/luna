@@ -5,10 +5,8 @@ import { Link, Outlet } from 'react-router';
 
 import { changeLanguage, LANGUAGES, type Language } from '../i18n';
 import { AREAS, PATHS, QUICK_INPUT_ICON } from '../navigation';
-import { readPreference, STORAGE_KEYS, writePreference } from '../services/storage';
-import { AppShell } from '../ui/AppShell';
-import { LanguageSwitch } from '../ui/LanguageSwitch';
-import { Logo } from '../ui/Logo';
+import { readPreference, STORAGE_KEYS, writePreference } from '../services';
+import { AppShell, LanguageSwitch, Logo } from '../ui';
 
 const ICON_SIZE = 20;
 const COLLAPSED = 'true';
