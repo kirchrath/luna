@@ -228,6 +228,22 @@ mit PostgreSQL und Kafka per Testcontainers (ohne TLS/SASL), gemocktes `ChatMode
   (`findByInboundEventIdIn`). Das `Pageable` wird bis zum DomainService durchgereicht, der die Sortierung
   festlegt; eine übergebene Sortierung wird ignoriert.
 
+### Push-Signal an das Frontend (Schritt 6c-1)
+
+- **Verbindung:** STOMP über natives WebSocket (ohne SockJS) am Endpunkt `/ws` (im Stack `/api/luna-core/ws`),
+  einfacher In-Memory-Broker unter `/topic`. Endpunkt, Broker-Präfix und Topic stehen in `app.websocket.*`.
+- **Anmeldung:** Der Handshake braucht ein gültiges JWT. Weil Browser beim WebSocket-Handshake keinen
+  Authorization-Header setzen können, akzeptiert `luna-core` das Token **nur auf `/ws`** auch als Query-Parameter
+  `access_token` (eigener `BearerTokenResolver`); REST-Endpunkte verlangen weiterhin den Header.
+  Ohne gültiges Token wird der Handshake mit `401` abgelehnt. Erlaubte Origins wie bei CORS (`app.cors.allowed-origins`).
+- **Topic `/topic/inbound-events/manual`:** Nachricht `InboundEventChangedDto` (`{"id": "<UUID>"}`), sobald eine
+  Eingabe `ANALYZED` oder `FAILED` wird. Fehlversuche mit erneutem Versuch lösen kein Signal aus. Das Signal enthält
+  bewusst nur die ID; der Client lädt die Liste neu (`GET /inbound-events/manual`).
+- **Ablauf:** `ClassificationDomainService` veröffentlicht in der Transaktion ein `InboundEventStatusChangedEvent`;
+  der `InboundEventNotifier` (`outbound`) sendet erst **nach dem Commit** (`@TransactionalEventListener`), damit
+  zurückgerollte Änderungen kein Signal auslösen.
+- STOMP-Nachrichten sind nicht Teil der `openapi.yaml`; ihr Format ist hier beschrieben.
+
 ### Konfiguration von Topics und Prompts
 
 | Property | Inhalt |

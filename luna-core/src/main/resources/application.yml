@@ -54,6 +54,11 @@ server:
 app:
   cors:
     allowed-origins:
+  websocket:
+    endpoint: /ws
+    broker-prefix: /topic
+    topics:
+      manual-inbound-events: ${app.websocket.broker-prefix}/inbound-events/manual
   kafka:
     password:
     topics:

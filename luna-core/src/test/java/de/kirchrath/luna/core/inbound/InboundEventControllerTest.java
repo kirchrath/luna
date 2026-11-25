@@ -280,4 +280,16 @@ class InboundEventControllerTest {
                 null,
                 null));
     }
+
+    @Test
+    void thatListingManualInputsWithATokenAsQueryParameterShouldResultIntoUnauthorized() throws Exception {
+        // given
+        var request = get("/inbound-events/manual").param("access_token", "some-token");
+
+        // when
+        var result = mockMvc.perform(request);
+
+        // then
+        result.andExpect(status().isUnauthorized());
+    }
 }

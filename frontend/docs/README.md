@@ -64,8 +64,13 @@ Verhalten, nicht das endgültige Aussehen: Farben, Schriften und Icons sind dort
 - Routen: `/`, `/tasks`, `/calendar`, `/shopping`, `/finance`, `/monitoring`.
 - Navigation ausgeklappt 256 px; Einträge in 14 px, damit lange Namen neben „bald“ passen.
 
+## Entschieden in Schritt 6c
+
+- Die Liste „Letzte Eingaben“ aktualisiert sich per **Push-Signal** von `luna-core` (STOMP über WebSocket, Topic
+  `/topic/inbound-events/manual`); sie zeigt die 10 neuesten Eingaben, „Mehr laden“ lädt je 10 weitere nach.
+- Zeitangaben relativ („vor 12 Min.“), das genaue Datum mit Uhrzeit als Tooltip.
+
 ## Offen (_TODO_)
 
 - Monitoring als ein Eintrag oder später mit Unterpunkten (Heimnetz & Server, Smart Home & Energie,
   Gesundheit & Gewohnheiten, Luna selbst).
-- Aktualisierung der Liste „Letzte Eingaben“ (z. B. Polling), festzulegen in Schritt 6c.
