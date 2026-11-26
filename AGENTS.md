@@ -334,7 +334,8 @@ record TaskDataDto(String title, String description) {}
 - **Pagination** von List-Anfragen über die Query-Parameter `page` (**ab 0**) und `size`.
   Der Controller nimmt ein Spring-`Pageable` entgegen (Standard/Obergrenze über `spring.data.web.pageable.*`,
   zu große Werte werden gekappt; `sort` ist in der OpenAPI ausgeblendet) und reicht es über den ApplicationService
-  an den DomainService weiter; die Sortierung legt der DomainService fest.
+  an den DomainService weiter; die Sortierung legt der DomainService fest – **typsicher per Methodenreferenz**
+  (`Sort.Order.asc(Task::dueDate)`, Spring Data 4), nicht über Property-Namen als String.
 
 #### API / OpenAPI
 
