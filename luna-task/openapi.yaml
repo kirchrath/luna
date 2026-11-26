@@ -1,0 +1,290 @@
+openapi: 3.1.0
+info:
+  title: Luna Task API
+  version: 0.0.1-SNAPSHOT
+servers:
+- url: /api/luna-task
+paths:
+  /tasks/{id}:
+    get:
+      tags:
+      - Tasks
+      operationId: getTask
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskDto"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+    put:
+      tags:
+      - Tasks
+      operationId: updateTask
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdateDto"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskDto"
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "409":
+          description: Conflict
+  /tasks/{id}/reopen:
+    post:
+      tags:
+      - Tasks
+      operationId: reopenTask
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskDto"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+  /tasks/{id}/complete:
+    post:
+      tags:
+      - Tasks
+      operationId: completeTask
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskDto"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+  /tasks:
+    get:
+      tags:
+      - Tasks
+      operationId: listTasks
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - OPEN
+          - DONE
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskListDto"
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+components:
+  schemas:
+    TaskUpdateDto:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 500
+          minLength: 0
+        description:
+          type: string
+          maxLength: 10000
+          minLength: 0
+        dueDate:
+          type: string
+          format: date-time
+        priority:
+          type: string
+          enum:
+          - LOW
+          - NORMAL
+          - HIGH
+        version:
+          type: integer
+          format: int64
+      required:
+      - priority
+      - title
+      - version
+    AuditDto:
+      type: object
+      properties:
+        createdDate:
+          type: string
+          format: date-time
+        lastModifiedDate:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+      required:
+      - createdDate
+      - lastModifiedDate
+      - version
+    TaskDataDto:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        priority:
+          type: string
+          enum:
+          - LOW
+          - NORMAL
+          - HIGH
+        status:
+          type: string
+          enum:
+          - OPEN
+          - DONE
+        completedDate:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum:
+          - CORE
+        sourceId:
+          type: string
+          format: uuid
+        edited:
+          type: boolean
+      required:
+      - edited
+      - priority
+      - source
+      - status
+      - title
+    TaskDto:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/TaskDataDto"
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+      required:
+      - audit
+      - data
+    TaskListDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskListItemDto"
+        totalPages:
+          type: integer
+          format: int32
+        totalCount:
+          type: integer
+          format: int64
+      required:
+      - items
+      - totalCount
+      - totalPages
+    TaskListItemDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        priority:
+          type: string
+          enum:
+          - LOW
+          - NORMAL
+          - HIGH
+        status:
+          type: string
+          enum:
+          - OPEN
+          - DONE
+      required:
+      - id
+      - priority
+      - status
+      - title
+    TaskChangedDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+      required:
+      - id
