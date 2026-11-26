@@ -19,12 +19,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import de.kirchrath.luna.core.config.ChatModelTestConfig;
 import de.kirchrath.luna.core.config.TestcontainersConfig;
 import de.kirchrath.luna.core.config.TopicProperties;
-import de.kirchrath.luna.core.config.WebSocketProperties;
 import de.kirchrath.luna.core.dto.AlertEventDto;
 import de.kirchrath.luna.core.dto.AppointmentEventDto;
 import de.kirchrath.luna.core.dto.ContractEventDto;
 import de.kirchrath.luna.core.dto.ElementEventDto;
-import de.kirchrath.luna.core.dto.InboundEventChangedDto;
 import de.kirchrath.luna.core.dto.InvoiceEventDto;
 import de.kirchrath.luna.core.dto.NoteEventDto;
 import de.kirchrath.luna.core.dto.TaskEventDto;
@@ -46,9 +44,6 @@ class GenerateOpenApiTest {
     @Autowired
     private TopicProperties topicProperties;
 
-    @Autowired
-    private WebSocketProperties webSocketProperties;
-
     @Value("${spring.application.version}")
     private String version;
 
@@ -63,18 +58,10 @@ class GenerateOpenApiTest {
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
-        // Push messages are not part of the REST paths; their schemas are added so that the frontend wrapper
-        // generates their types as well.
-        var openApi = Yaml31.mapper().readValue(apiDocs, OpenAPI.class);
-        ModelConverters.getInstance(true).readAll(InboundEventChangedDto.class).forEach(openApi.getComponents()::addSchemas);
-        openApi.getComponents().getSchemas().get(InboundEventChangedDto.class.getSimpleName())
-                .description("Push message via STOMP over WebSocket (endpoint " + webSocketProperties.endpoint()
-                        + ") on topic " + webSocketProperties.topics().manualInboundEvents()
-                        + " when an inbound event becomes ANALYZED or FAILED.");
-        Files.writeString(openApiFile, Yaml31.pretty(openApi));
+        Files.writeString(openApiFile, apiDocs);
 
         // then
-        assertThat(openApiFile).content().contains("listManualInboundEvents", "InboundEventChangedDto");
+        assertThat(openApiFile).hasContent(apiDocs);
     }
 
     @Test
