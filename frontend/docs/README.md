@@ -67,7 +67,7 @@ Verhalten, nicht das endgültige Aussehen: Farben, Schriften und Icons sind dort
 ## Entschieden in Schritt 6c
 
 - Die Liste „Letzte Eingaben“ aktualisiert sich per **Push-Signal** von `luna-core` (STOMP über WebSocket, Topic
-  `/topic/inbound-events/manual`); sie zeigt die 10 neuesten Eingaben, „Mehr laden“ lädt je 10 weitere nach.
+  `/topic/inbound-events`, bis Schritt 8 `/topic/inbound-events/manual`); sie zeigt die 10 neuesten Eingaben, „Mehr laden“ lädt je 10 weitere nach.
 - Zeitangaben relativ („vor 12 Min.“), das genaue Datum mit Uhrzeit als Tooltip.
 
 ## Aufgaben (Schritt 7a-3)
@@ -173,6 +173,13 @@ Visuelle Planung der Seiten für `luna-task`.
   letzter Tag (optional, nicht vor Beginn), Ort, Beschreibung; Speichern mit `version` (Konflikt-Hinweis mit
   „Neu laden“), Verwerfen, „Absagen“ bzw. „Wiederherstellen“. Karte „Herkunft“ mit Angelegt, Geändert und Abgesagt.
 - Beide Ansichten aktualisieren sich per Push (`/topic/appointments`).
+
+## E-Mails in „Letzte Eingaben“ (Schritt 8)
+
+- Die Liste zeigt Eingaben **aller Quellen** (`GET /inbound-events`), neueste zuerst.
+- Eine E-Mail erscheint mit Mail-Icon, **Betreff** (fett; ohne Betreff „(ohne Betreff)“) und darunter klein dem
+  **Absender**; Zeitpunkt, Status und entstandene Elemente wie bei manuellen Eingaben. Kein eigener Bereich für
+  E-Mails.
 
 ## Offen (_TODO_)
 
