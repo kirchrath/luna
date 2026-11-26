@@ -1,11 +1,21 @@
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-import { BASE_URL, CLIENT_ID, FRONTEND_IMAGE, KEYCLOAK_ADMIN, LUNA_CORE_IMAGE, REALM, TEST_USER } from './settings.ts';
+import {
+  BASE_URL,
+  CLIENT_ID,
+  FRONTEND_IMAGE,
+  KEYCLOAK_ADMIN,
+  LUNA_CORE_IMAGE,
+  LUNA_TASK_IMAGE,
+  REALM,
+  TEST_USER,
+} from './settings.ts';
 
 const E2E_DIR = fileURLToPath(new URL('..', import.meta.url));
 const FRONTEND_DIR = fileURLToPath(new URL('../../frontend', import.meta.url));
 const LUNA_CORE_DIR = fileURLToPath(new URL('../../luna-core', import.meta.url));
+const LUNA_TASK_DIR = fileURLToPath(new URL('../../luna-task', import.meta.url));
 const READY_TIMEOUT_MS = 5 * 60 * 1000;
 const POLL_INTERVAL_MS = 2000;
 
@@ -27,6 +37,11 @@ export function buildImages(): void {
     './mvnw',
     ['-B', '-q', 'package', 'jib:dockerBuild', '-DskipTests', `-Djib.to.image=${LUNA_CORE_IMAGE}`],
     LUNA_CORE_DIR,
+  );
+  run(
+    './mvnw',
+    ['-B', '-q', 'package', 'jib:dockerBuild', '-DskipTests', `-Djib.to.image=${LUNA_TASK_IMAGE}`],
+    LUNA_TASK_DIR,
   );
 }
 
@@ -51,6 +66,7 @@ export async function waitUntilReady(): Promise<void> {
   const checks = [
     () => isReady(`${BASE_URL}/auth/realms/${REALM}/.well-known/openid-configuration`),
     () => isReady(`${BASE_URL}/api/luna-core/actuator/health`, '"UP"'),
+    () => isReady(`${BASE_URL}/api/luna-task/actuator/health`, '"UP"'),
     () => isReady(`${BASE_URL}/`),
   ];
   const deadline = Date.now() + READY_TIMEOUT_MS;
