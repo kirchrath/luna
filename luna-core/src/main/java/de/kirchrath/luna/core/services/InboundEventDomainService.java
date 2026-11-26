@@ -26,8 +26,6 @@ import tools.jackson.databind.json.JsonMapper;
 @Transactional
 public class InboundEventDomainService {
 
-    private static final String CREATED_DATE = "createdDate";
-
     private final InboundEventRepository inboundEventRepository;
     private final OutboundEventRepository outboundEventRepository;
     private final InboundEventConverter inboundEventConverter;
@@ -60,7 +58,7 @@ public class InboundEventDomainService {
     @Transactional(readOnly = true)
     public ManualInboundEventListDto listManualInboundEvents(Pageable pageable) {
         var inboundEvents = inboundEventRepository.findBySource(EventSource.MANUAL, PageRequest.of(
-                pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, CREATED_DATE)));
+                pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Order.desc(InboundEvent::createdDate))));
         var outboundEvents = outboundEventRepository
                 .findByInboundEventIdIn(inboundEvents.map(InboundEvent::id).getContent())
                 .stream()
