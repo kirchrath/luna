@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { makeAutoObservable } from 'mobx';
 
 import type {
   LunaCoreClient,
@@ -17,15 +17,18 @@ const LIST_PATH = '/inbound-events/manual';
 export type ConnectionState = 'idle' | 'connected' | 'disconnected';
 export type SubmitError = 'invalid' | 'failed';
 
-/** Manual inputs of the user: submitting, the list of recent inputs and its live updates. */
+/**
+ * Manual inputs of the user: submitting, the list of recent inputs and its live updates.
+ * State lives in private `_` fields; every change goes through a setter, which MobX turns into an action.
+ */
 export class InboundEventStore {
-  items: ManualInboundEventListItemDto[] = [];
-  totalCount = 0;
-  loading = false;
-  loadError = false;
-  submitting = false;
-  submitError: SubmitError | null = null;
-  connection: ConnectionState = 'idle';
+  private _items: ManualInboundEventListItemDto[] = [];
+  private _totalCount = 0;
+  private _loading = false;
+  private _loadError = false;
+  private _submitting = false;
+  private _submitError: SubmitError | null = null;
+  private _connection: ConnectionState = 'idle';
 
   private readonly client: LunaCoreClient;
   private readonly connectPush: PushConnector;
@@ -41,6 +44,62 @@ export class InboundEventStore {
       pushConnection: false,
       wasConnected: false,
     });
+  }
+
+  get items(): ManualInboundEventListItemDto[] {
+    return this._items;
+  }
+
+  private set items(items: ManualInboundEventListItemDto[]) {
+    this._items = items;
+  }
+
+  get totalCount(): number {
+    return this._totalCount;
+  }
+
+  private set totalCount(totalCount: number) {
+    this._totalCount = totalCount;
+  }
+
+  get loading(): boolean {
+    return this._loading;
+  }
+
+  private set loading(loading: boolean) {
+    this._loading = loading;
+  }
+
+  get loadError(): boolean {
+    return this._loadError;
+  }
+
+  private set loadError(loadError: boolean) {
+    this._loadError = loadError;
+  }
+
+  get submitting(): boolean {
+    return this._submitting;
+  }
+
+  private set submitting(submitting: boolean) {
+    this._submitting = submitting;
+  }
+
+  get submitError(): SubmitError | null {
+    return this._submitError;
+  }
+
+  private set submitError(submitError: SubmitError | null) {
+    this._submitError = submitError;
+  }
+
+  get connection(): ConnectionState {
+    return this._connection;
+  }
+
+  private set connection(connection: ConnectionState) {
+    this._connection = connection;
   }
 
   get hasMore(): boolean {
@@ -69,20 +128,14 @@ export class InboundEventStore {
         body: typeHint === undefined ? { text } : { text, typeHint },
       });
       if (!response.ok) {
-        runInAction(() => {
-          this.submitError = response.status === HTTP_BAD_REQUEST ? 'invalid' : 'failed';
-        });
+        this.submitError = response.status === HTTP_BAD_REQUEST ? 'invalid' : 'failed';
         return false;
       }
     } catch {
-      runInAction(() => {
-        this.submitError = 'failed';
-      });
+      this.submitError = 'failed';
       return false;
     } finally {
-      runInAction(() => {
-        this.submitting = false;
-      });
+      this.submitting = false;
     }
     await this.refresh();
     return true;
@@ -94,14 +147,14 @@ export class InboundEventStore {
       onConnected: () => {
         const reconnected = this.wasConnected;
         this.wasConnected = true;
-        this.setConnection('connected');
+        this.connection = 'connected';
         // Signals sent while the connection was interrupted are lost, so the list is reloaded once.
         if (reconnected) {
           void this.refresh();
         }
       },
       onDisconnected: () => {
-        this.setConnection('disconnected');
+        this.connection = 'disconnected';
       },
     });
   }
@@ -110,35 +163,25 @@ export class InboundEventStore {
     const connection = this.pushConnection;
     this.pushConnection = null;
     this.wasConnected = false;
-    this.setConnection('idle');
+    this.connection = 'idle';
     await connection?.close();
-  }
-
-  private setConnection(connection: ConnectionState): void {
-    this.connection = connection;
   }
 
   private async load(page: number, size: number, mode: 'replace' | 'append'): Promise<void> {
     this.loading = true;
     try {
       const { data } = await this.client.GET(LIST_PATH, { params: { query: { page, size } } });
-      runInAction(() => {
-        if (data === undefined) {
-          this.loadError = true;
-          return;
-        }
-        this.loadError = false;
-        this.totalCount = data.totalCount;
-        this.items = mode === 'replace' ? data.items : this.appendNew(data.items);
-      });
-    } catch {
-      runInAction(() => {
+      if (data === undefined) {
         this.loadError = true;
-      });
+        return;
+      }
+      this.loadError = false;
+      this.totalCount = data.totalCount;
+      this.items = mode === 'replace' ? data.items : this.appendNew(data.items);
+    } catch {
+      this.loadError = true;
     } finally {
-      runInAction(() => {
-        this.loading = false;
-      });
+      this.loading = false;
     }
   }
 

@@ -23,6 +23,13 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
+          paths: [
+            {
+              name: 'mobx',
+              importNames: ['runInAction'],
+              message: 'Change store state only through setters of private _ fields; runInAction is easily forgotten.',
+            },
+          ],
           patterns: [
             {
               regex: String.raw`^\.{1,2}/(\.\./)*[^./][^/]*/(?!.*\.s?css$)`,
