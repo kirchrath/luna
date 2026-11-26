@@ -123,6 +123,30 @@ Visuelle Planung der Seiten für `luna-task`.
 - Stores `TaskListStore` und `TaskStore` (Details/Bearbeiten) im `RootStore`.
 - E2E: Schnelleingabe → Aufgabe erscheint per Push in der Liste → bearbeiten → erledigen.
 
+## Warnungen und Notizen (Schritt 7b)
+
+| Ansicht | Datei |
+|---|---|
+| Warnungen, Liste (Desktop / Smartphone) | [alerts-desktop.svg](alerts-desktop.svg), [alerts-mobile.svg](alerts-mobile.svg) |
+| Warnung, Details (Desktop) | [alert-detail-desktop.svg](alert-detail-desktop.svg) |
+| Notizen, Liste (Desktop / Smartphone) | [notes-desktop.svg](notes-desktop.svg), [notes-mobile.svg](notes-mobile.svg) |
+| Notiz, Details und Bearbeiten (Desktop) | [note-detail-desktop.svg](note-detail-desktop.svg) |
+
+- **Navigation:** Aufgaben, **Notizen** (`/notes`), Termine, Einkauf & Haushalt, Finanzen & Verträge, Monitoring,
+  **Warnungen** (`/alerts`).
+- **Warnungen – Liste:** Umschalter Aktiv (offen + bestätigt, Standard) / Offen / Bestätigt / Behoben / Alle (auf dem
+  Smartphone horizontal scrollbar); je Warnung Schwere, Titel, betroffenes System, Eingang (relativ), Status und bei
+  offenen Warnungen der Button **„Bestätigen“** direkt in der Zeile. Sortierung: schwerste zuerst, dann neueste.
+- **Schwere:** Kritisch in Orange (`#d9822b`), Warnung in Petrol (`#1f7a8c`), Info grau.
+- **Warnung – Details:** Inhalte nur lesen (keine Bearbeitung); Aktionen je Status: offen → „Bestätigen“ und
+  „Als behoben“, bestätigt → „Als behoben“ und „Wieder öffnen“, behoben → „Wieder öffnen“. Karte „Herkunft“ mit Eingang,
+  Bestätigt und Behoben.
+- **Notizen – Liste:** Umschalter Aktiv (Standard) / Archiviert / Alle; Titel, Zusammenfassung (zwei Zeilen),
+  Eingang und „bearbeitet“; neueste zuerst.
+- **Notiz – Details:** Formular mit Titel und Zusammenfassung (beide Pflicht), Speichern mit `version`
+  (Konflikt-Hinweis mit „Neu laden“), Verwerfen, „Archivieren“ bzw. „Wiederherstellen“.
+- Beide Listen aktualisieren sich per Push (`/topic/alerts`, `/topic/notes`).
+
 ## Offen (_TODO_)
 
 - Monitoring als ein Eintrag oder später mit Unterpunkten (Heimnetz & Server, Smart Home & Energie,
