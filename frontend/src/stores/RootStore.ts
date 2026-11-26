@@ -1,6 +1,8 @@
 import type {
   LunaAlertClient,
   LunaAlertPushConnector,
+  LunaAppointmentClient,
+  LunaAppointmentPushConnector,
   LunaCoreClient,
   LunaCorePushConnector,
   LunaNoteClient,
@@ -10,6 +12,9 @@ import type {
 } from '../api';
 import { AlertListStore } from './AlertListStore';
 import { AlertStore } from './AlertStore';
+import { AppointmentListStore } from './AppointmentListStore';
+import { AppointmentMonthStore } from './AppointmentMonthStore';
+import { AppointmentStore } from './AppointmentStore';
 import { InboundEventStore } from './InboundEventStore';
 import { NoteListStore } from './NoteListStore';
 import { NoteStore } from './NoteStore';
@@ -25,6 +30,8 @@ export interface RootStoreDependencies {
   connectLunaAlertPush: LunaAlertPushConnector;
   lunaNoteClient: LunaNoteClient;
   connectLunaNotePush: LunaNotePushConnector;
+  lunaAppointmentClient: LunaAppointmentClient;
+  connectLunaAppointmentPush: LunaAppointmentPushConnector;
 }
 
 /**
@@ -39,6 +46,9 @@ export class RootStore {
   readonly alertStore: AlertStore;
   readonly noteListStore: NoteListStore;
   readonly noteStore: NoteStore;
+  readonly appointmentListStore: AppointmentListStore;
+  readonly appointmentMonthStore: AppointmentMonthStore;
+  readonly appointmentStore: AppointmentStore;
 
   constructor({
     lunaCoreClient,
@@ -49,6 +59,8 @@ export class RootStore {
     connectLunaAlertPush,
     lunaNoteClient,
     connectLunaNotePush,
+    lunaAppointmentClient,
+    connectLunaAppointmentPush,
   }: RootStoreDependencies) {
     this.inboundEventStore = new InboundEventStore(lunaCoreClient, connectLunaCorePush);
     this.taskListStore = new TaskListStore(lunaTaskClient, connectLunaTaskPush);
@@ -57,5 +69,8 @@ export class RootStore {
     this.alertStore = new AlertStore(lunaAlertClient);
     this.noteListStore = new NoteListStore(lunaNoteClient, connectLunaNotePush);
     this.noteStore = new NoteStore(lunaNoteClient);
+    this.appointmentListStore = new AppointmentListStore(lunaAppointmentClient, connectLunaAppointmentPush);
+    this.appointmentMonthStore = new AppointmentMonthStore(lunaAppointmentClient, connectLunaAppointmentPush);
+    this.appointmentStore = new AppointmentStore(lunaAppointmentClient);
   }
 }

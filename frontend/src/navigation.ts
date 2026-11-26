@@ -35,6 +35,7 @@ export const ID_PARAMETER = 'id';
 export const TASK_PATH = `${PATHS.tasks}/:${ID_PARAMETER}`;
 export const NOTE_PATH = `${PATHS.notes}/:${ID_PARAMETER}`;
 export const ALERT_PATH = `${PATHS.alerts}/:${ID_PARAMETER}`;
+export const APPOINTMENT_PATH = `${PATHS.calendar}/:${ID_PARAMETER}`;
 
 function detailPath(area: string, id: string): string {
   return `${area}/${encodeURIComponent(id)}`;
@@ -48,6 +49,10 @@ export function notePath(id: string): string {
   return detailPath(PATHS.notes, id);
 }
 
+export function appointmentPath(id: string): string {
+  return detailPath(PATHS.calendar, id);
+}
+
 export function alertPath(id: string): string {
   return detailPath(PATHS.alerts, id);
 }
@@ -57,7 +62,7 @@ export const QUICK_INPUT_ICON = SquarePen;
 export const AREAS: readonly AreaDefinition[] = [
   { area: 'tasks', icon: SquareCheck, available: true },
   { area: 'notes', icon: StickyNote, available: true },
-  { area: 'calendar', icon: Calendar, available: false },
+  { area: 'calendar', icon: Calendar, available: true },
   { area: 'shopping', icon: ShoppingCart, available: false },
   { area: 'finance', icon: Wallet, available: false },
   { area: 'monitoring', icon: Activity, available: false },

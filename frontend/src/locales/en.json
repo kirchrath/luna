@@ -268,5 +268,82 @@
     "CONTRACT": "Contract",
     "ALERT": "Alert",
     "NOTE": "Note"
+  },
+  "appointments": {
+    "title": "Appointments",
+    "lead": "Your appointments – as a list or by month.",
+    "viewLabel": "View",
+    "view": {
+      "list": "List",
+      "month": "Month"
+    },
+    "today": "Today, {{day}}",
+    "tomorrow": "Tomorrow, {{day}}",
+    "allDay": "all day",
+    "from": "from {{time}}",
+    "until": "until {{time}}",
+    "cancelled": "cancelled",
+    "dayOf": "Day {{day}} of {{count}}",
+    "status": {
+      "SCHEDULED": "Scheduled",
+      "CANCELLED": "Cancelled"
+    },
+    "periodLabel": "Show appointments",
+    "period": {
+      "UPCOMING": "Upcoming",
+      "PAST": "Past",
+      "ALL": "All"
+    },
+    "empty": {
+      "UPCOMING": "No upcoming appointments.",
+      "PAST": "No past appointments.",
+      "ALL": "No appointments yet."
+    },
+    "loadMore": "Load more",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "todayButton": "Today",
+    "noAppointmentsOnDay": "There are no appointments on this day.",
+    "liveInterrupted": "Live updates interrupted – Luna is reconnecting.",
+    "loadError": "The appointments could not be loaded.",
+    "retry": "Try again"
+  },
+  "appointmentDetail": {
+    "back": "Appointments",
+    "cancel": "Cancel",
+    "restore": "Restore",
+    "statusFailed": "The status could not be changed. Please try again in a moment.",
+    "formLabel": "Edit appointment",
+    "titleLabel": "Title",
+    "titleMissing": "Please enter a title.",
+    "allDayLabel": "All day",
+    "startLabel": "Start",
+    "startTimeLabel": "Start time",
+    "endLabel": "End (optional)",
+    "lastDayLabel": "Last day (optional)",
+    "endTimeLabel": "End time",
+    "timesInvalid": "Please enter a start; the end must not be before the start.",
+    "locationLabel": "Location",
+    "descriptionLabel": "Description",
+    "save": "Save",
+    "discard": "Discard",
+    "conflict": "The appointment has changed in the meantime.",
+    "conflictText": "Your changes have not been saved.",
+    "reload": "Reload",
+    "invalid": "Luna could not accept the changes. Check your input and try again.",
+    "saveFailed": "Saving failed. Your input is kept – please try again in a moment.",
+    "notFound": "Appointment not found",
+    "notFoundText": "This appointment does not exist (anymore).",
+    "loadError": "The appointment could not be loaded.",
+    "retry": "Try again",
+    "origin": "Origin",
+    "source": {
+      "CORE": "Recognised from the quick input"
+    },
+    "editedHint": "Edited: new analysis results no longer overwrite your changes.",
+    "uneditedHint": "New analysis results update this appointment until you edit it.",
+    "created": "Created {{date}}",
+    "modified": "Modified {{date}}",
+    "cancelledOn": "Cancelled {{date}}"
   }
 }

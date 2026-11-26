@@ -268,5 +268,82 @@
     "CONTRACT": "Vertrag",
     "ALERT": "Warnung",
     "NOTE": "Notiz"
+  },
+  "appointments": {
+    "title": "Termine",
+    "lead": "Deine Termine – als Liste oder im Monat.",
+    "viewLabel": "Ansicht",
+    "view": {
+      "list": "Liste",
+      "month": "Monat"
+    },
+    "today": "Heute, {{day}}",
+    "tomorrow": "Morgen, {{day}}",
+    "allDay": "ganztägig",
+    "from": "ab {{time}}",
+    "until": "bis {{time}}",
+    "cancelled": "abgesagt",
+    "dayOf": "Tag {{day}} von {{count}}",
+    "status": {
+      "SCHEDULED": "Geplant",
+      "CANCELLED": "Abgesagt"
+    },
+    "periodLabel": "Termine anzeigen",
+    "period": {
+      "UPCOMING": "Kommend",
+      "PAST": "Vergangen",
+      "ALL": "Alle"
+    },
+    "empty": {
+      "UPCOMING": "Keine kommenden Termine.",
+      "PAST": "Keine vergangenen Termine.",
+      "ALL": "Noch keine Termine."
+    },
+    "loadMore": "Mehr laden",
+    "previousMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat",
+    "todayButton": "Heute",
+    "noAppointmentsOnDay": "An diesem Tag gibt es keine Termine.",
+    "liveInterrupted": "Live-Aktualisierung unterbrochen – Luna verbindet sich neu.",
+    "loadError": "Die Termine konnten nicht geladen werden.",
+    "retry": "Erneut versuchen"
+  },
+  "appointmentDetail": {
+    "back": "Termine",
+    "cancel": "Absagen",
+    "restore": "Wiederherstellen",
+    "statusFailed": "Der Status konnte nicht geändert werden. Versuche es gleich noch einmal.",
+    "formLabel": "Termin bearbeiten",
+    "titleLabel": "Titel",
+    "titleMissing": "Bitte gib einen Titel ein.",
+    "allDayLabel": "Ganztägig",
+    "startLabel": "Beginn",
+    "startTimeLabel": "Uhrzeit Beginn",
+    "endLabel": "Ende (optional)",
+    "lastDayLabel": "Letzter Tag (optional)",
+    "endTimeLabel": "Uhrzeit Ende",
+    "timesInvalid": "Bitte gib einen Beginn an; das Ende darf nicht vor dem Beginn liegen.",
+    "locationLabel": "Ort",
+    "descriptionLabel": "Beschreibung",
+    "save": "Speichern",
+    "discard": "Verwerfen",
+    "conflict": "Der Termin wurde inzwischen geändert.",
+    "conflictText": "Deine Eingaben sind nicht gespeichert.",
+    "reload": "Neu laden",
+    "invalid": "Luna konnte die Änderungen nicht annehmen. Prüfe die Eingaben und versuche es erneut.",
+    "saveFailed": "Speichern fehlgeschlagen. Deine Eingaben bleiben erhalten – versuche es gleich noch einmal.",
+    "notFound": "Termin nicht gefunden",
+    "notFoundText": "Diesen Termin gibt es nicht (mehr).",
+    "loadError": "Der Termin konnte nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "origin": "Herkunft",
+    "source": {
+      "CORE": "Aus der Schnelleingabe erkannt"
+    },
+    "editedHint": "Bearbeitet: Neue Analyse-Ergebnisse überschreiben deine Änderungen nicht mehr.",
+    "uneditedHint": "Neue Analyse-Ergebnisse aktualisieren diesen Termin, bis du ihn bearbeitest.",
+    "created": "Angelegt {{date}}",
+    "modified": "Geändert {{date}}",
+    "cancelledOn": "Abgesagt {{date}}"
   }
 }

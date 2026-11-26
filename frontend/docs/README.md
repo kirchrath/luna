@@ -147,6 +147,33 @@ Visuelle Planung der Seiten für `luna-task`.
   (Konflikt-Hinweis mit „Neu laden“), Verwerfen, „Archivieren“ bzw. „Wiederherstellen“.
 - Beide Listen aktualisieren sich per Push (`/topic/alerts`, `/topic/notes`).
 
+## Termine (Schritt 7c)
+
+| Ansicht | Datei |
+|---|---|
+| Termine, Liste (Desktop / Smartphone) | [appointments-desktop.svg](appointments-desktop.svg), [appointments-mobile.svg](appointments-mobile.svg) |
+| Termine, Monat (Desktop / Smartphone) | [appointments-month-desktop.svg](appointments-month-desktop.svg), [appointments-month-mobile.svg](appointments-month-mobile.svg) |
+| Termin, Details und Bearbeiten (Desktop) | [appointment-detail-desktop.svg](appointment-detail-desktop.svg) |
+
+- **Route:** `/calendar` (Navigation „Termine“), Details unter `/calendar/:id`.
+- **Zwei Ansichten:** Liste (Standard) und Monat; Umschalter rechts in der Werkzeugleiste, die Wahl wird im
+  `localStorage` gemerkt (`luna.appointments.view`).
+- **Liste:** Umschalter Kommend (Standard) / Vergangen / Alle; nach Tagen gruppiert mit Überschrift („Heute, …“,
+  „Morgen, …“, sonst Wochentag und Datum). Je Termin Zeit (`10:00–11:00`, nur Beginn, „ganztägig“), Titel, Ort.
+  Kommend früheste zuerst, Vergangen späteste zuerst; „Mehr laden“ wie in den anderen Listen.
+- **Kommend/Vergangen** entscheidet das **effektive Ende**: laufende Termine zählen als kommend.
+- **Mehrtägige Termine** erscheinen an jedem Tag („Tag 2 von 5“; erster Tag „ab 18:00“, letzter „bis 10:00“,
+  dazwischen „ganztägig“). In „Kommend“ beginnen laufende Termine erst bei heute.
+- **Ganztägige Termine:** Beginn 00:00 Ortszeit, `end` = letzter Tag (00:00).
+- **Abgesagte Termine** bleiben sichtbar: durchgestrichen und mit Tag „abgesagt“.
+- **Monat:** Woche beginnt am Montag; Monat vor/zurück und „Heute“; heute in Petrol hervorgehoben. Ein Termin im Raster
+  führt zu seinen Details; ein Klick auf die Tageszahl zeigt die Termine des Tages unterhalb des Rasters. Auf dem
+  Smartphone Punkte statt Titeln. Geladen wird über `GET /appointments/range` (alle Termine, die den Monat berühren).
+- **Termin – Details:** Formular mit Titel (Pflicht), „Ganztägig“, Beginn (Datum + Uhrzeit, Pflicht), Ende bzw.
+  letzter Tag (optional, nicht vor Beginn), Ort, Beschreibung; Speichern mit `version` (Konflikt-Hinweis mit
+  „Neu laden“), Verwerfen, „Absagen“ bzw. „Wiederherstellen“. Karte „Herkunft“ mit Angelegt, Geändert und Abgesagt.
+- Beide Ansichten aktualisieren sich per Push (`/topic/appointments`).
+
 ## Offen (_TODO_)
 
 - Monitoring als ein Eintrag oder später mit Unterpunkten (Heimnetz & Server, Smart Home & Energie,

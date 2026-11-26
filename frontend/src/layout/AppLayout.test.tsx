@@ -20,7 +20,7 @@ describe('AppLayout', () => {
     for (const area of ['Aufgaben', 'Termine', 'Einkauf & Haushalt', 'Finanzen & Verträge', 'Monitoring']) {
       expect(within(navigation).getByRole('link', { name: area })).toBeInTheDocument();
     }
-    expect(within(navigation).getAllByText('bald')).toHaveLength(4);
+    expect(within(navigation).getAllByText('bald')).toHaveLength(3);
     expect(within(within(navigation).getByRole('link', { name: 'Aufgaben' })).queryByText('bald')).toBeNull();
   });
 
@@ -30,11 +30,11 @@ describe('AppLayout', () => {
     const navigation = screen.getByRole('navigation', { name: 'Hauptnavigation' });
 
     // when
-    await userEvent.click(within(navigation).getByRole('link', { name: /Termine/ }));
+    await userEvent.click(within(navigation).getByRole('link', { name: /Einkauf & Haushalt/ }));
 
     // then
-    expect(router.state.location.pathname).toBe('/calendar');
-    expect(screen.getByRole('heading', { name: 'Termine' })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/shopping');
+    expect(screen.getByRole('heading', { name: 'Einkauf & Haushalt' })).toBeInTheDocument();
     expect(screen.getByText('Dieser Bereich kommt in einem späteren Schritt.')).toBeInTheDocument();
   });
 
