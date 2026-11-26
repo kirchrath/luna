@@ -275,7 +275,10 @@ components:
           enum:
           - OPEN
           - DONE
+        edited:
+          type: boolean
       required:
+      - edited
       - id
       - priority
       - status
