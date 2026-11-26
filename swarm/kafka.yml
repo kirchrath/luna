@@ -64,6 +64,7 @@ services:
       # Each service needs the secret kafka_<service with _ instead of ->_password (declared below).
       LUNA_KAFKA_SERVICES: |
         luna-core:
+        luna-task: luna_core_task, luna_task_task_retry, luna_task_dlt
     volumes:
       # Root certificate of step-ca to verify the Kafka certificate.
       - step-ca-data:/step:ro
@@ -75,6 +76,7 @@ services:
     secrets:
       - kafka_admin_password
       - kafka_luna_core_password
+      - kafka_luna_task_password
     networks:
       - luna
     deploy:
@@ -101,6 +103,8 @@ secrets:
   kafka_admin_password:
     external: true
   kafka_luna_core_password:
+    external: true
+  kafka_luna_task_password:
     external: true
   kafka_keystore:
     external: true
