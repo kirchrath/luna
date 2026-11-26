@@ -11,9 +11,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["listManualInboundEvents"];
+        get?: never;
         put?: never;
         post: operations["createManualInboundEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inbound-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listInboundEvents"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -39,19 +55,23 @@ export interface components {
             /** @enum {string} */
             type: "TASK" | "ALERT" | "APPOINTMENT" | "INVOICE" | "CONTRACT" | "NOTE";
         };
-        ManualInboundEventListDto: {
-            items: components["schemas"]["ManualInboundEventListItemDto"][];
+        InboundEventListDto: {
+            items: components["schemas"]["InboundEventListItemDto"][];
             /** Format: int32 */
             totalPages: number;
             /** Format: int64 */
             totalCount: number;
         };
-        ManualInboundEventListItemDto: {
+        InboundEventListItemDto: {
             /** Format: uuid */
             id: string;
-            text: string;
+            /** @enum {string} */
+            source: "MANUAL" | "MAIL";
+            text?: string;
             /** @enum {string} */
             typeHint?: "TASK" | "ALERT" | "APPOINTMENT" | "INVOICE" | "CONTRACT" | "NOTE";
+            subject?: string;
+            from?: string;
             /** @enum {string} */
             status: "RECEIVED" | "ANALYZED" | "FAILED";
             /** Format: date-time */
@@ -71,36 +91,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    listManualInboundEvents: {
-        parameters: {
-            query?: {
-                page?: number;
-                size?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ManualInboundEventListDto"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     createManualInboundEvent: {
         parameters: {
             query?: never;
@@ -129,6 +119,36 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listInboundEvents: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboundEventListDto"];
+                };
             };
             /** @description Unauthorized */
             401: {

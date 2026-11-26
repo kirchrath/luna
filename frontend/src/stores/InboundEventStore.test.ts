@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { LunaCoreClient, ManualInboundEventListItemDto } from '../api';
+import type { LunaCoreClient, InboundEventListItemDto } from '../api';
 import { fakeLunaCoreClient, fakePushConnector } from '../test';
 import { InboundEventStore } from './InboundEventStore';
 
-function item(id: string, status: ManualInboundEventListItemDto['status'] = 'RECEIVED'): ManualInboundEventListItemDto {
-  return { id, text: `Input ${id}`, status, createdDate: '2026-11-25T10:00:00+01:00', elements: [] };
+function item(id: string, status: InboundEventListItemDto['status'] = 'RECEIVED'): InboundEventListItemDto {
+  return { id, source: 'MANUAL', text: `Input ${id}`, status, createdDate: '2026-11-25T10:00:00+01:00', elements: [] };
 }
 
-function items(count: number, prefix = 'item'): ManualInboundEventListItemDto[] {
+function items(count: number, prefix = 'item'): InboundEventListItemDto[] {
   return Array.from({ length: count }, (_, index) => item(`${prefix}-${String(index)}`));
 }
 
@@ -16,11 +16,7 @@ function createStore(lunaCore = fakeLunaCoreClient(), push = fakePushConnector()
   return { store: new InboundEventStore(lunaCore.client, push.connect), lunaCore, push };
 }
 
-function respondWith(
-  lunaCore: ReturnType<typeof fakeLunaCoreClient>,
-  list: ManualInboundEventListItemDto[],
-  total: number,
-) {
+function respondWith(lunaCore: ReturnType<typeof fakeLunaCoreClient>, list: InboundEventListItemDto[], total: number) {
   lunaCore.GET.mockResolvedValueOnce({
     data: { items: list, totalPages: Math.ceil(total / 10), totalCount: total },
     error: undefined,
@@ -38,7 +34,7 @@ describe('InboundEventStore', () => {
     await store.loadInitial();
 
     // then
-    expect(lunaCore.GET).toHaveBeenCalledWith('/inbound-events/manual', { params: { query: { page: 0, size: 10 } } });
+    expect(lunaCore.GET).toHaveBeenCalledWith('/inbound-events', { params: { query: { page: 0, size: 10 } } });
     expect(store.items).toHaveLength(10);
     expect(store.totalCount).toBe(25);
     expect(store.hasMore).toBe(true);
@@ -56,7 +52,7 @@ describe('InboundEventStore', () => {
     await store.loadMore();
 
     // then
-    expect(lunaCore.GET).toHaveBeenLastCalledWith('/inbound-events/manual', {
+    expect(lunaCore.GET).toHaveBeenLastCalledWith('/inbound-events', {
       params: { query: { page: 1, size: 10 } },
     });
     expect(store.items).toHaveLength(20);
@@ -75,7 +71,7 @@ describe('InboundEventStore', () => {
     await store.refresh();
 
     // then
-    expect(lunaCore.GET).toHaveBeenLastCalledWith('/inbound-events/manual', {
+    expect(lunaCore.GET).toHaveBeenLastCalledWith('/inbound-events', {
       params: { query: { page: 0, size: 20 } },
     });
   });
@@ -88,7 +84,7 @@ describe('InboundEventStore', () => {
     await store.refresh();
 
     // then
-    expect(lunaCore.GET).toHaveBeenLastCalledWith('/inbound-events/manual', {
+    expect(lunaCore.GET).toHaveBeenLastCalledWith('/inbound-events', {
       params: { query: { page: 0, size: 10 } },
     });
   });
@@ -103,7 +99,7 @@ describe('InboundEventStore', () => {
     await store.refresh();
 
     // then
-    expect(lunaCore.GET).toHaveBeenLastCalledWith('/inbound-events/manual', {
+    expect(lunaCore.GET).toHaveBeenLastCalledWith('/inbound-events', {
       params: { query: { page: 0, size: 100 } },
     });
   });

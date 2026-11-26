@@ -2,15 +2,16 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
-import type { ManualInboundEventListDto } from '../api';
+import type { InboundEventListDto } from '../api';
 import { fakeRootStore, renderApp } from '../test';
 
-const LIST: ManualInboundEventListDto = {
+const LIST: InboundEventListDto = {
   totalPages: 2,
   totalCount: 12,
   items: [
     {
       id: 'appointment',
+      source: 'MANUAL',
       text: 'Dentist on 1 December at 10, then get the bonus booklet stamped',
       status: 'ANALYZED',
       createdDate: '2026-11-25T10:00:00+01:00',
@@ -21,6 +22,7 @@ const LIST: ManualInboundEventListDto = {
     },
     {
       id: 'pending',
+      source: 'MANUAL',
       text: 'Milk is empty',
       status: 'RECEIVED',
       createdDate: '2026-11-25T10:05:00+01:00',
@@ -28,15 +30,32 @@ const LIST: ManualInboundEventListDto = {
     },
     {
       id: 'failed',
+      source: 'MANUAL',
       text: 'Plant the balcony',
       status: 'FAILED',
       createdDate: '2026-11-24T18:42:00+01:00',
       elements: [],
     },
+    {
+      id: 'mail',
+      source: 'MAIL',
+      subject: 'Invoice 4711',
+      from: 'Power company <billing@power.test>',
+      status: 'ANALYZED',
+      createdDate: '2026-11-24T08:00:00+01:00',
+      elements: [{ id: 'e3', type: 'TASK' }],
+    },
+    {
+      id: 'mail-without-subject',
+      source: 'MAIL',
+      status: 'RECEIVED',
+      createdDate: '2026-11-24T07:00:00+01:00',
+      elements: [],
+    },
   ],
 };
 
-async function renderPage(list?: ManualInboundEventListDto) {
+async function renderPage(list?: InboundEventListDto) {
   const fakes = fakeRootStore(list);
   const result = await renderApp('/', { rootStore: fakes.rootStore });
   return { ...fakes, ...result, store: fakes.rootStore.inboundEventStore };
@@ -65,12 +84,16 @@ describe('QuickInputPage', () => {
     // then
     const listSection = await screen.findByRole('region', { name: 'Letzte Eingaben' });
     const entries = within(listSection).getAllByRole('listitem');
-    expect(entries).toHaveLength(3);
+    expect(entries).toHaveLength(5);
     expect(within(entry(entries, 0)).getByText('Analysiert')).toBeInTheDocument();
     expect(within(entry(entries, 0)).getByText('Termin')).toBeInTheDocument();
     expect(within(entry(entries, 0)).getByText('Aufgabe')).toBeInTheDocument();
     expect(within(entry(entries, 1)).getByText('Wird analysiert')).toBeInTheDocument();
     expect(within(entry(entries, 2)).getByText('Fehlgeschlagen')).toBeInTheDocument();
+    expect(within(entry(entries, 3)).getByLabelText('E-Mail')).toBeInTheDocument();
+    expect(within(entry(entries, 3)).getByText('Invoice 4711')).toHaveClass('has-text-weight-semibold');
+    expect(within(entry(entries, 3)).getByText('Power company <billing@power.test>')).toBeInTheDocument();
+    expect(within(entry(entries, 4)).getByText('(ohne Betreff)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Mehr laden' })).toBeInTheDocument();
     expect(push.connect).toHaveBeenCalledTimes(1);
   });

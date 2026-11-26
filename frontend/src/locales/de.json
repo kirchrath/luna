@@ -49,6 +49,10 @@
       "RECEIVED": "Wird analysiert",
       "ANALYZED": "Analysiert",
       "FAILED": "Fehlgeschlagen"
+    },
+    "noSubject": "(ohne Betreff)",
+    "source": {
+      "MAIL": "E-Mail"
     }
   },
   "tasks": {

@@ -49,6 +49,10 @@
       "RECEIVED": "Analysing",
       "ANALYZED": "Analysed",
       "FAILED": "Failed"
+    },
+    "noSubject": "(no subject)",
+    "source": {
+      "MAIL": "Email"
     }
   },
   "tasks": {
