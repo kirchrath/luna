@@ -1,0 +1,332 @@
+openapi: 3.1.0
+info:
+  title: Luna Appointment API
+  version: 0.0.1-SNAPSHOT
+servers:
+- url: /api/luna-appointment
+paths:
+  /appointments/{id}:
+    get:
+      tags:
+      - Appointments
+      operationId: getAppointment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentDto"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+    put:
+      tags:
+      - Appointments
+      operationId: updateAppointment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentUpdateDto"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentDto"
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "409":
+          description: Conflict
+  /appointments/{id}/restore:
+    post:
+      tags:
+      - Appointments
+      operationId: restoreAppointment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentDto"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+  /appointments/{id}/cancel:
+    post:
+      tags:
+      - Appointments
+      operationId: cancelAppointment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentDto"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+  /appointments:
+    get:
+      tags:
+      - Appointments
+      operationId: listAppointments
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+      - name: period
+        in: query
+        required: false
+        schema:
+          type: string
+          default: UPCOMING
+          enum:
+          - UPCOMING
+          - PAST
+          - ALL
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentListDto"
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+  /appointments/range:
+    get:
+      tags:
+      - Appointments
+      operationId: listAppointmentsInRange
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentListDto"
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+components:
+  schemas:
+    AppointmentUpdateDto:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 500
+          minLength: 0
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        allDay:
+          type: boolean
+        location:
+          type: string
+          maxLength: 500
+          minLength: 0
+        description:
+          type: string
+          maxLength: 10000
+          minLength: 0
+        version:
+          type: integer
+          format: int64
+      required:
+      - allDay
+      - start
+      - title
+      - version
+    AppointmentDataDto:
+      type: object
+      properties:
+        title:
+          type: string
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        allDay:
+          type: boolean
+        location:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+          - SCHEDULED
+          - CANCELLED
+        cancelledDate:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum:
+          - CORE
+        sourceId:
+          type: string
+          format: uuid
+        edited:
+          type: boolean
+      required:
+      - allDay
+      - edited
+      - source
+      - start
+      - status
+      - title
+    AppointmentDto:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AppointmentDataDto"
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+      required:
+      - audit
+      - data
+    AuditDto:
+      type: object
+      properties:
+        createdDate:
+          type: string
+          format: date-time
+        lastModifiedDate:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+      required:
+      - createdDate
+      - lastModifiedDate
+      - version
+    AppointmentListDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppointmentListItemDto"
+        totalPages:
+          type: integer
+          format: int32
+        totalCount:
+          type: integer
+          format: int64
+      required:
+      - items
+      - totalCount
+      - totalPages
+    AppointmentListItemDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        allDay:
+          type: boolean
+        location:
+          type: string
+        status:
+          type: string
+          enum:
+          - SCHEDULED
+          - CANCELLED
+        edited:
+          type: boolean
+      required:
+      - allDay
+      - edited
+      - id
+      - start
+      - status
+      - title
+    AppointmentChangedDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+      required:
+      - id

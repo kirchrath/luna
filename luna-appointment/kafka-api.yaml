@@ -1,0 +1,81 @@
+openapi: 3.1.0
+info:
+  title: Luna Appointment Kafka API
+  description: Events published by luna-appointment on Kafka. The key of each message
+    is the id of the event.
+  version: 0.0.1-SNAPSHOT
+components:
+  schemas:
+    AppointmentDataDto:
+      type: object
+      properties:
+        title:
+          type: string
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        allDay:
+          type: boolean
+        location:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+          - SCHEDULED
+          - CANCELLED
+        cancelledDate:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum:
+          - CORE
+        sourceId:
+          type: string
+          format: uuid
+        edited:
+          type: boolean
+      required:
+      - allDay
+      - edited
+      - source
+      - start
+      - status
+      - title
+    AppointmentEventDto:
+      type: object
+      description: Published on topic luna_appointment_appointment. The key of each
+        message is the id of the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+        data:
+          $ref: "#/components/schemas/AppointmentDataDto"
+      required:
+      - audit
+      - data
+      - id
+    AuditDto:
+      type: object
+      properties:
+        createdDate:
+          type: string
+          format: date-time
+        lastModifiedDate:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+      required:
+      - createdDate
+      - lastModifiedDate
+      - version
