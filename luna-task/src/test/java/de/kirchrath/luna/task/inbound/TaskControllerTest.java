@@ -2,7 +2,6 @@ package de.kirchrath.luna.task.inbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -67,6 +66,8 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.items[0].title").value("Sooner"))
                 .andExpect(jsonPath("$.items[0].priority").value("NORMAL"))
                 .andExpect(jsonPath("$.items[0].status").value("OPEN"))
+                .andExpect(jsonPath("$.items[0].edited").value(false))
+                .andExpect(jsonPath("$.items[2].dueDate").doesNotExist())
                 .andExpect(jsonPath("$.totalPages").value(1))
                 .andExpect(jsonPath("$.totalCount").value(3));
     }
@@ -133,8 +134,8 @@ class TaskControllerTest {
                         """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.title").value("Pay the gas bill"))
-                .andExpect(jsonPath("$.data.description").value(nullValue()))
-                .andExpect(jsonPath("$.data.dueDate").value(nullValue()))
+                .andExpect(jsonPath("$.data.description").doesNotExist())
+                .andExpect(jsonPath("$.data.dueDate").doesNotExist())
                 .andExpect(jsonPath("$.data.priority").value("HIGH"))
                 .andExpect(jsonPath("$.data.edited").value(true))
                 .andExpect(jsonPath("$.audit.version").value(1));
@@ -201,7 +202,7 @@ class TaskControllerTest {
         mockMvc.perform(post("/tasks/{id}/reopen", task.id()).with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("OPEN"))
-                .andExpect(jsonPath("$.data.completedDate").value(nullValue()))
+                .andExpect(jsonPath("$.data.completedDate").doesNotExist())
                 .andExpect(jsonPath("$.data.edited").value(true))
                 .andExpect(jsonPath("$.audit.version").value(1));
     }
