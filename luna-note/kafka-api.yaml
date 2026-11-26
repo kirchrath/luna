@@ -1,0 +1,70 @@
+openapi: 3.1.0
+info:
+  title: Luna Note Kafka API
+  description: Events published by luna-note on Kafka. The key of each message is
+    the id of the event.
+  version: 0.0.1-SNAPSHOT
+components:
+  schemas:
+    AuditDto:
+      type: object
+      properties:
+        createdDate:
+          type: string
+          format: date-time
+        lastModifiedDate:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+      required:
+      - createdDate
+      - lastModifiedDate
+      - version
+    NoteDataDto:
+      type: object
+      properties:
+        title:
+          type: string
+        summary:
+          type: string
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - ARCHIVED
+        archivedDate:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum:
+          - CORE
+        sourceId:
+          type: string
+          format: uuid
+        edited:
+          type: boolean
+      required:
+      - edited
+      - source
+      - status
+      - summary
+      - title
+    NoteEventDto:
+      type: object
+      description: Published on topic luna_note_note. The key of each message is the
+        id of the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+        data:
+          $ref: "#/components/schemas/NoteDataDto"
+      required:
+      - audit
+      - data
+      - id
