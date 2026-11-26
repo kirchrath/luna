@@ -7,9 +7,9 @@ Architektur, Tech-Stack und Konventionen stehen in [AGENTS.md](AGENTS.md).
 
 Die Infrastruktur-Services (Traefik, step-ca, PostgreSQL, Keycloak) stehen in
 [`swarm/infrastructure.yml`](swarm/infrastructure.yml), Kafka in [`swarm/kafka.yml`](swarm/kafka.yml),
-`luna-core` in [`swarm/luna-core.yml`](swarm/luna-core.yml), `luna-task`, `luna-alert` und `luna-note` in
-[`swarm/luna-task.yml`](swarm/luna-task.yml), [`swarm/luna-alert.yml`](swarm/luna-alert.yml) und
-[`swarm/luna-note.yml`](swarm/luna-note.yml)
+`luna-core` in [`swarm/luna-core.yml`](swarm/luna-core.yml), die Element-Services in
+[`swarm/luna-task.yml`](swarm/luna-task.yml), [`swarm/luna-alert.yml`](swarm/luna-alert.yml),
+[`swarm/luna-note.yml`](swarm/luna-note.yml) und [`swarm/luna-appointment.yml`](swarm/luna-appointment.yml)
 und das Frontend in
 [`swarm/frontend.yml`](swarm/frontend.yml). Alle werden im selben Stack `luna` deployt.
 
@@ -24,6 +24,7 @@ und das Frontend in
 | `luna-task` | `luna-task:${LUNA_TASK_VERSION}` (lokal gebaut) | – (über Traefik unter `/api/luna-task`) |
 | `luna-alert` | `luna-alert:${LUNA_ALERT_VERSION}` (lokal gebaut) | – (über Traefik unter `/api/luna-alert`) |
 | `luna-note` | `luna-note:${LUNA_NOTE_VERSION}` (lokal gebaut) | – (über Traefik unter `/api/luna-note`) |
+| `luna-appointment` | `luna-appointment:${LUNA_APPOINTMENT_VERSION}` (lokal gebaut) | – (über Traefik unter `/api/luna-appointment`) |
 | Frontend | `luna-frontend:${LUNA_FRONTEND_VERSION}` (lokal gebaut, nginx) | – (über Traefik unter `/`) |
 
 ### Schritt-für-Schritt: Infrastruktur starten
@@ -55,7 +56,7 @@ Beispiel mit zufälligen Passwörtern:
 ```bash
 for secret in step_ca_password postgres_password keycloak_db_password luna_db_password keycloak_admin_password \
               kafka_admin_password kafka_luna_core_password kafka_luna_task_password \
-              kafka_luna_alert_password kafka_luna_note_password; do
+              kafka_luna_alert_password kafka_luna_note_password kafka_luna_appointment_password; do
   openssl rand -base64 24 | tr -d '\n' | docker secret create "$secret" -
 done
 ```
@@ -102,9 +103,10 @@ export LUNA_CORE_VERSION=0.0.1-SNAPSHOT
 # luna-task: Version des lokal gebauten Images (siehe luna-task/pom.xml). Pflicht.
 export LUNA_TASK_VERSION=0.0.1-SNAPSHOT
 
-# luna-alert und luna-note: Versionen der lokal gebauten Images (siehe jeweilige pom.xml). Pflicht.
+# luna-alert, luna-note und luna-appointment: Versionen der lokal gebauten Images (siehe jeweilige pom.xml). Pflicht.
 export LUNA_ALERT_VERSION=0.0.1-SNAPSHOT
 export LUNA_NOTE_VERSION=0.0.1-SNAPSHOT
+export LUNA_APPOINTMENT_VERSION=0.0.1-SNAPSHOT
 
 # Frontend: Version des lokal gebauten Images (siehe frontend/package.json). Pflicht.
 export LUNA_FRONTEND_VERSION=0.0.1
@@ -172,12 +174,13 @@ Immer, wenn sich `luna-core` geändert hat (Java 25 nötig):
 (cd luna-core && ./mvnw package jib:dockerBuild)
 ```
 
-Ebenso für `luna-task`, `luna-alert` und `luna-note`, wenn sie sich geändert haben:
+Ebenso für die Element-Services, wenn sie sich geändert haben:
 
 ```bash
 (cd luna-task && ./mvnw package jib:dockerBuild)
 (cd luna-alert && ./mvnw package jib:dockerBuild)
 (cd luna-note && ./mvnw package jib:dockerBuild)
+(cd luna-appointment && ./mvnw package jib:dockerBuild)
 ```
 
 Immer, wenn sich das Frontend geändert hat (nur Docker nötig, Node läuft im Build-Container):
@@ -190,7 +193,7 @@ docker build --platform linux/amd64 -t "luna-frontend:$LUNA_FRONTEND_VERSION" fr
 
 ```bash
 docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/luna-task.yml \
-  -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/frontend.yml luna
+  -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/luna-appointment.yml -c swarm/frontend.yml luna
 ```
 
 Beim ersten Start von Kafka legt das Startskript ([`swarm/kafka/start.sh`](swarm/kafka/start.sh)) den Superuser
@@ -206,13 +209,14 @@ docker service logs luna_luna-core
 docker service logs luna_luna-task
 docker service logs luna_luna-alert
 docker service logs luna_luna-note
+docker service logs luna_luna-appointment
 docker service ps luna_frontend
 ```
 
 - Alle Services zeigen `1/1`. Ausnahme: `kafka-init` beendet sich nach getaner Arbeit und zeigt dann `0/1`.
 - Das Log von `kafka-init` endet mit `Kafka users and ACLs are up to date.`
 - Das Log von `luna-core` enthält `Started Application`; `https://luna.internal/api/luna-core/actuator/health`
-  meldet `UP`. Ebenso `luna-task`, `luna-alert` und `luna-note` unter
+  meldet `UP`. Ebenso `luna-task`, `luna-alert`, `luna-note` und `luna-appointment` unter
   `https://luna.internal/api/<service>/actuator/health`.
 - `https://luna.internal/` leitet zur Anmeldung bei Keycloak weiter und zeigt danach Luna.
 
@@ -247,17 +251,17 @@ Lokal: PostgreSQL unter `localhost:7432`, Keycloak unter `http://localhost:7080/
 export LUNA_KAFKA_CERT_VERSION=2
 swarm/kafka/create-certificate.sh "$LUNA_KAFKA_CERT_VERSION"
 docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/luna-task.yml \
-  -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/frontend.yml luna
+  -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/luna-appointment.yml -c swarm/frontend.yml luna
 ```
 
 Alte Versionen können danach mit `docker secret rm kafka_keystore_v1 kafka_keystore_password_v1` entfernt werden.
 
-**Bestehende Installation um einen Element-Service erweitern** (`luna-task`, `luna-alert`, `luna-note`): einmalig
+**Bestehende Installation um einen Element-Service erweitern** (`luna-task`, `luna-alert`, `luna-note`, `luna-appointment`): einmalig
 das Secret anlegen, die Versions-Variable setzen (Schritt 4), das Image bauen (Schritt 9) und neu deployen
 (Schritt 10), z. B.:
 
 ```bash
-for service in task alert note; do
+for service in task alert note appointment; do
   docker secret inspect "kafka_luna_${service}_password" > /dev/null 2>&1 ||
     openssl rand -base64 24 | tr -d '\n' | docker secret create "kafka_luna_${service}_password" -
 done

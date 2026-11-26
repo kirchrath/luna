@@ -1,0 +1,52 @@
+# luna-appointment backend.
+#
+# Build the image first (in luna-appointment/): ./mvnw package jib:dockerBuild
+# Deploy together with the other stack files:
+#   docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml \
+#     -c swarm/luna-task.yml -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/luna-appointment.yml \
+#     -c swarm/frontend.yml luna
+#
+# Required variables: LUNA_APPOINTMENT_VERSION (see README.md).
+# Messages of ${VAR:?message} must not contain '-': Docker reads it as default value operator.
+
+services:
+  luna-appointment:
+    image: luna-appointment:${LUNA_APPOINTMENT_VERSION:?set LUNA_APPOINTMENT_VERSION to the version of the luna appointment image}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      # Root certificate of step-ca to verify the Kafka certificate.
+      - step-ca-data:/step:ro
+      - /etc/localtime:/etc/localtime:ro
+    secrets:
+      # Read by Spring via configtree: the file name is the property name.
+      - source: luna_db_password
+        target: spring.datasource.password
+      - source: kafka_luna_appointment_password
+        target: app.kafka.password
+    networks:
+      - luna
+    deploy:
+      labels:
+        traefik.enable: "true"
+        traefik.http.routers.luna-appointment.rule: Host(`luna.internal`) && PathPrefix(`/api/luna-appointment`)
+        traefik.http.routers.luna-appointment.entrypoints: websecure
+        traefik.http.routers.luna-appointment.tls.certresolver: stepca
+        traefik.http.routers.luna-appointment.middlewares: luna-appointment-strip-prefix
+        traefik.http.middlewares.luna-appointment-strip-prefix.stripprefix.prefixes: /api/luna-appointment
+        traefik.http.services.luna-appointment.loadbalancer.server.port: "7085"
+
+networks:
+  luna:
+    name: luna
+    driver: overlay
+    attachable: true
+
+volumes:
+  step-ca-data:
+
+secrets:
+  luna_db_password:
+    external: true
+  kafka_luna_appointment_password:
+    external: true
