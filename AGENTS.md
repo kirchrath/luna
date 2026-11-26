@@ -49,7 +49,9 @@ Noch offen (bitte hier eintragen, sobald entschieden):
      - 6e E2E-Tests mit Playwright (erledigt)
   7. **Element-Services:** je Element-Art ein eigener Service, der die Events von `luna-core` verarbeitet
      (erste Verarbeitung: Speichern, siehe [Element-Services](#element-services)). Je Service ein eigener Schritt:
-     - 7a `luna-task` (Vorlage für die weiteren)
+     - 7a `luna-task` (Vorlage für die weiteren), aufgeteilt in:
+       - 7a-1 Service selbst: Consumer mit Retry/DLT, Projection, Aufgabe, Kafka-Event, Push, REST (erledigt)
+       - 7a-2 Stack-Datei, Kafka-Benutzer und ACLs, Secrets, Betriebs-README, E2E-Erweiterung
      - 7b–7f `luna-alert`, `luna-appointment`, `luna-invoice`, `luna-contract`, `luna-note` nach demselben Muster
        (Namen, Felder und Endpunkte je Service vor der Umsetzung klären)
   8. Danach weitere Quellen (z. B. E-Mail); `luna-core` ordnet nur ein und verteilt weiter.
@@ -65,7 +67,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | Backend | Zweck | Details |
 |---|---|---|
 | `luna-core` | **Event-Analyse:** empfängt Events aus unterschiedlichen Quellen, analysiert sie per **Spring AI** und entscheidet, welche neuen Elemente (z. B. Aufgabe, Alert) bzw. Events daraus entstehen. | [luna-core/README.md](luna-core/README.md) |
-| `luna-task` (geplant, Schritt 7a) | **Aufgaben:** verarbeitet die Aufgaben-Events von `luna-core` (`luna_core_task`), speichert sie als eigene Aufgaben, bietet List-, Detail- und Update-Endpunkte und veröffentlicht jede Änderung auf `luna_task_task`. | – |
+| `luna-task` | **Aufgaben:** verarbeitet die Aufgaben-Events von `luna-core` (`luna_core_task`), speichert sie als eigene Aufgaben, bietet List-, Detail- und Update-Endpunkte und veröffentlicht jede Änderung auf `luna_task_task`. | [luna-task/README.md](luna-task/README.md) |
 
 ## Grundprinzipien
 
@@ -490,7 +492,7 @@ Ports für Backends werden **ab 7080 fortlaufend** vergeben (7080 ist durch Keyc
 | Kafka | 7094 | – |
 | Keycloak | 7080 | `/auth` (Keycloak mit relativem Pfad `/auth` konfiguriert, **ohne** StripPrefix) |
 | `luna-core` | 7081 | `/api/luna-core` |
-| `luna-task` (geplant) | 7082 | `/api/luna-task` |
+| `luna-task` | 7082 | `/api/luna-task` |
 | _nächstes Backend_ | 7083 | `/api/<backend-name>` |
 
 ## Betrieb
