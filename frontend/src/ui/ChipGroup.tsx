@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 export interface ChipOption<V extends string> {
   value: V;
   label: string;
-  icon: ReactNode;
+  icon?: ReactNode;
 }
 
 interface ChipGroupProps<V extends string> {

@@ -7,3 +7,4 @@ export * from './StatusScreen';
 export * from './UserMenu';
 export * from './ChipGroup';
 export * from './RelativeTime';
+export * from './SegmentedControl';

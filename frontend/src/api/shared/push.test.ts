@@ -1,7 +1,9 @@
 import type { Client, IFrame, IMessage } from '@stomp/stompjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createPushConnector, MANUAL_INBOUND_EVENTS_TOPIC, pushUrl } from './push';
+import { createPushConnector, pushUrl } from './push';
+
+const TOPIC = '/topic/things';
 
 const { FakeClient, clients } = vi.hoisted(() => {
   const created: InstanceType<typeof Fake>[] = [];
@@ -84,7 +86,7 @@ describe('push', () => {
 
   it('that connecting should result into an activated client that reads the current token before connecting', async () => {
     // given
-    const connect = createPushConnector('http://localhost:7081', {
+    const connect = createPushConnector<{ id: string }>('http://localhost:7081', TOPIC, {
       getUser: () => Promise.resolve({ access_token: 'token-123' }),
     });
 
@@ -101,7 +103,9 @@ describe('push', () => {
 
   it('that connecting without signed in user should result into an empty token', async () => {
     // given
-    const connect = createPushConnector('http://localhost:7081', { getUser: () => Promise.resolve(null) });
+    const connect = createPushConnector<{ id: string }>('http://localhost:7081', TOPIC, {
+      getUser: () => Promise.resolve(null),
+    });
 
     // when
     connect(handlers());
@@ -115,7 +119,9 @@ describe('push', () => {
   it('that a received message should result into a signal', () => {
     // given
     const pushHandlers = handlers();
-    createPushConnector('http://localhost:7081', { getUser: () => Promise.resolve(null) })(pushHandlers);
+    createPushConnector<{ id: string }>('http://localhost:7081', TOPIC, { getUser: () => Promise.resolve(null) })(
+      pushHandlers,
+    );
     const client = lastClient();
     client.onConnect({} as IFrame);
     const [subscription] = client.subscriptions;
@@ -125,14 +131,16 @@ describe('push', () => {
 
     // then
     expect(pushHandlers.onConnected).toHaveBeenCalledTimes(1);
-    expect(subscription?.destination).toBe(MANUAL_INBOUND_EVENTS_TOPIC);
+    expect(subscription?.destination).toBe(TOPIC);
     expect(pushHandlers.onSignal).toHaveBeenCalledWith({ id: 'event-1' });
   });
 
   it('that a closed websocket should result into a disconnected state', () => {
     // given
     const pushHandlers = handlers();
-    createPushConnector('http://localhost:7081', { getUser: () => Promise.resolve(null) })(pushHandlers);
+    createPushConnector<{ id: string }>('http://localhost:7081', TOPIC, { getUser: () => Promise.resolve(null) })(
+      pushHandlers,
+    );
 
     // when
     lastClient().onWebSocketClose({} as CloseEvent);
@@ -143,9 +151,9 @@ describe('push', () => {
 
   it('that closing the connection should result into a deactivated client', async () => {
     // given
-    const connection = createPushConnector('http://localhost:7081', { getUser: () => Promise.resolve(null) })(
-      handlers(),
-    );
+    const connection = createPushConnector<{ id: string }>('http://localhost:7081', TOPIC, {
+      getUser: () => Promise.resolve(null),
+    })(handlers());
 
     // when
     await connection.close();
