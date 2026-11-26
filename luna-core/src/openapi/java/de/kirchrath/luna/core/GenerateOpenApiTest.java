@@ -44,7 +44,8 @@ class GenerateOpenApiTest {
             List.of(
                     Path.of("../luna-task/src/main/resources/kafka-api/luna-core.yaml"),
                     Path.of("../luna-alert/src/main/resources/kafka-api/luna-core.yaml"),
-                    Path.of("../luna-note/src/main/resources/kafka-api/luna-core.yaml"));
+                    Path.of("../luna-note/src/main/resources/kafka-api/luna-core.yaml"),
+                    Path.of("../luna-appointment/src/main/resources/kafka-api/luna-core.yaml"));
 
     @Autowired
     private MockMvc mockMvc;
