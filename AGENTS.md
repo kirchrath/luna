@@ -27,7 +27,7 @@ solange sie nicht ausdrücklich beauftragt sind.
 
 Bisher existieren die Dokumentation, die Infrastruktur (`swarm/`), `luna-core` (manuelle Eingabe, Analyse per
 Spring AI, Veröffentlichung der Elemente auf Kafka, Liste der letzten Eingaben mit Push-Signal), `luna-task`
-(Verarbeitung der Aufgaben-Events, REST-Endpunkte; noch nicht im Stack), das Frontend (Layout, Anmeldung,
+(Verarbeitung der Aufgaben-Events, REST-Endpunkte), das Frontend (Layout, Anmeldung,
 Schnelleingabe; weitere Bereiche als Platzhalter) und die E2E-Tests (`e2e/`).
 
 Noch offen (bitte hier eintragen, sobald entschieden):
@@ -53,7 +53,8 @@ Noch offen (bitte hier eintragen, sobald entschieden):
      (erste Verarbeitung: Speichern, siehe [Element-Services](#element-services)). Je Service ein eigener Schritt:
      - 7a `luna-task` (Vorlage für die weiteren), aufgeteilt in:
        - 7a-1 Service selbst: Consumer mit Retry/DLT, Projection, Aufgabe, Kafka-Event, Push, REST (erledigt)
-       - 7a-2 Stack-Datei, Kafka-Benutzer und ACLs, Secrets, Betriebs-README, E2E-Erweiterung
+       - 7a-2 Stack-Datei, Kafka-Benutzer und ACLs, Secrets, Betriebs-README, E2E-Umgebung (erledigt; fachliche
+         E2E-Tests folgen mit der Frontend-Seite „Aufgaben“)
      - 7b–7f `luna-alert`, `luna-appointment`, `luna-invoice`, `luna-contract`, `luna-note` nach demselben Muster
        (Namen, Felder und Endpunkte je Service vor der Umsetzung klären)
   8. Danach weitere Quellen (z. B. E-Mail); `luna-core` ordnet nur ein und verteilt weiter.
@@ -477,7 +478,7 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
   `@playwright/test` exakt gepinnt, ESLint/Prettier, Testnamen und given/when/then wie überall).
 - Getestet wird gegen eine **eigene Test-Umgebung** (`e2e/docker-compose.yml`, Projekt `luna-e2e`,
   `http://localhost:7180`): Traefik mit demselben Routing wie im Stack (ohne TLS), Frontend-Image (`MODE=e2e`,
-  `frontend/.env.e2e`), `luna-core`-Image, Keycloak mit Realm-Import, PostgreSQL, Kafka ohne TLS und ein
+  `frontend/.env.e2e`), `luna-core`- und `luna-task`-Image, Keycloak mit Realm-Import, PostgreSQL, Kafka ohne TLS und ein
   **OpenAI-kompatibler KI-Stub** mit festen Antworten (deterministisch).
 - `npm test` baut die Images, startet die Umgebung, bereitet Keycloak vor (Weiterleitung auf Port 7180 und
   Testbenutzer per Admin-API – der Realm im Repo bleibt unverändert), testet und räumt auf.
@@ -519,9 +520,9 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
 
 - **Stack-Dateien** liegen unter `swarm/`. Ein Stack `luna`, mehrere Dateien:
   `swarm/infrastructure.yml` (Traefik, step-ca, PostgreSQL, Keycloak), `swarm/kafka.yml` (Kafka und `kafka-init`),
-  `swarm/luna-core.yml` (Backend `luna-core`), `swarm/frontend.yml` (Frontend), später weitere Backends (je Backend
-  eine Datei `swarm/<backend>.yml`).
-  Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/frontend.yml [-c …] luna`
+  `swarm/luna-core.yml` (Backend `luna-core`), `swarm/luna-task.yml` (Backend `luna-task`), `swarm/frontend.yml`
+  (Frontend), weitere Backends je eine Datei `swarm/<backend>.yml`.
+  Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/luna-task.yml -c swarm/frontend.yml [-c …] luna`
   (Pflichtvariablen siehe README).
   Kafka steht in einer eigenen Datei, weil sein Zertifikat erst erzeugt werden kann, wenn step-ca läuft.
 - **Image-Versionen** sind **exakt gepinnt** (aktuell Traefik `v3.7.19`, step-ca `0.30.2`, PostgreSQL `18.7`,
@@ -547,8 +548,12 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
   - **Ein Kafka-Benutzer je Service** (Name = Service-Name, Passwort-Secret `kafka_<service mit _>_password`),
     Superuser `admin` (`kafka_admin_password`).
   - **ACLs je Service:** schreiben (inkl. automatischer Topic-Anlage beim ersten Schreiben) nur auf Topics mit dem
-    eigenen Präfix `luna_<service ohne luna->_`; lesen nur **ausdrücklich freigegebene** Topics;
-    Consumer-Gruppe = Service-Name.
+    eigenen Präfix `luna_<service ohne luna->_`; lesen nur **ausdrücklich freigegebene** Topics (inkl. eigenem
+    Retry-Topic und DLT, deren Listener ebenfalls lesen); Consumer-Gruppe = Service-Name.
+  - Fremde Topics darf ein Leser nicht anlegen. Damit ein Consumer auch vor dem ersten Event des Erzeugers startet,
+    legt **`kafka-init` alle lesbaren Topics** an (`--if-not-exists`). Consumer setzen zusätzlich
+    `spring.kafka.listener.auth-exception-retry-interval` (z. B. `10s`), damit sie bei fehlenden Rechten oder Topics
+    (z. B. während `kafka-init` noch läuft) nicht endgültig stoppen.
   - Benutzer und ACLs pflegt der Init-Service **`kafka-init`** idempotent bei jedem Deploy aus `LUNA_KAFKA_SERVICES`
     in `swarm/kafka.yml`.
   - Kafka-Tests (Testcontainers) laufen **ohne** TLS/SASL.
