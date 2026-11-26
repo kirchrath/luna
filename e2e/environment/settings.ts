@@ -6,3 +6,4 @@ export const KEYCLOAK_ADMIN = { username: 'admin', password: 'admin-e2e' } as co
 export const TEST_USER = { username: 'e2e', password: 'e2e-password', firstName: 'Erika', lastName: 'Test' } as const;
 export const FRONTEND_IMAGE = 'luna-frontend:e2e';
 export const LUNA_CORE_IMAGE = 'luna-core:e2e';
+export const LUNA_TASK_IMAGE = 'luna-task:e2e';
