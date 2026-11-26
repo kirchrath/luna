@@ -126,9 +126,17 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
     Das Interface trägt den Discriminator **`type`** (Werte = Namen des zugehörigen DTO-Enums, als Konstanten in
     `<Enum>.Constants`) per `@JsonTypeInfo`/`@JsonSubTypes` sowie `@Schema(oneOf, discriminatorProperty,
     discriminatorMapping)`, damit Typ und Untertypen in `kafka-api.yaml` veröffentlicht werden.
+    **Ausnahme:** Veröffentlicht ein Service nur **eine Event-Art je Topic** (z. B. `luna-task` mit `TaskEventDto` auf
+    `luna_task_task`), entfallen sealed Interface und `type`; gesendet wird dann `KafkaTemplate<UUID, <Event>Dto>`.
   - **Kafka-API:** Jeder Service, der per Kafka veröffentlicht, erzeugt im `GenerateOpenApiTest` zusätzlich
     **`<backend>/kafka-api.yaml`** (OpenAPI) mit allen veröffentlichten DTOs und dem Topic je Event (eingecheckt).
     Jedes Feld dieser DTOs trägt `@Schema(requiredMode = …)` (`REQUIRED` bzw. `NOT_REQUIRED`).
+  - **Events anderer Services konsumieren:** Die DTOs werden **nicht von Hand geschrieben**, sondern aus der
+    `kafka-api.yaml` des erzeugenden Services generiert. Dessen `GenerateOpenApiTest` kopiert die Datei zusätzlich
+    nach **`<konsument>/src/main/resources/kafka-api/<erzeuger>.yaml`** (eingecheckt; Liste der Kopien im Test).
+    Der Konsument generiert daraus beim Build per **openapi-generator-maven-plugin** (Generator `spring`, nur Modelle,
+    nur die benötigten per `modelsToGenerate`) Klassen im Package **`dto.<erzeuger ohne luna->`**
+    (z. B. `de.kirchrath.luna.task.dto.core`). Ändert sich ein Event, im selben Commit Spec und Kopien erneuern.
 - **Push an das Frontend:** Backends melden Änderungen per **STOMP über WebSocket** (Spring
   `@EnableWebSocketMessageBroker`, einfacher Broker, Endpunkt `/ws`, Topics unter `/topic/…`; Pfade aus der
   `application.yml`). Nachrichten sind **Signale** (DTO mit ID), die Daten lädt der Client per REST.
@@ -223,6 +231,11 @@ in diesen Sub-Packages:
   wiederholt. Anzahl der Wiederholungen je Topic konfigurierbar, **Standard 10**. Danach landet das Event auf einem
   **Dead-Letter-Topic** – je Ursprungstopic konfigurierbar, Standard ist ein gemeinsames DLT je Service
   (Namen siehe Topic-Namen). Umsetzung mit dem ersten Kafka-Consumer eines Services.
+  - Umgesetzt über die **nicht blockierenden Retry-Topics** von Spring Kafka (`RetryTopicConfiguration` aus
+    `app.kafka.retry.retries` und `app.kafka.retry.delay`, feste Wartezeit, **ein** Retry-Topic). Die Topic-Namen
+    kommen per eigener `RetryTopicNamesProviderFactory` aus `app.kafka.topics` statt aus Springs Suffixen
+    (Vorlage: `luna-task`, `config/KafkaConfig`).
+  - Nicht lesbare Events (`ErrorHandlingDeserializer`) gehen **ohne Wiederholung direkt** ins DLT.
 - **Scheduler:** Fehler spiegeln sich im **Status der verarbeiteten Entität** wider (z. B. `attempts`, `FAILED`).
 - **REST:** Ist der Client für den Fehler verantwortlich, antwortet der Service mit einem passenden
   **Client-Error (4xx)**; Server-Errors helfen dem Anwender nicht weiter und sind zu vermeiden.
@@ -551,6 +564,7 @@ Monorepo mit mehreren Backends (je ein Top-Level-Ordner) und einem Frontend:
 ├── LICENSE          # MIT-Lizenz
 ├── swarm/           # Docker-Stack-Dateien (infrastructure.yml, kafka.yml, <backend>.yml) und Configs/Skripte
 ├── luna-core/       # Erstes Backend: Event-Analyse (Spring Boot, Maven, Jib), Port 7081
+├── luna-task/       # Aufgaben: verarbeitet Aufgaben-Events von luna-core, Port 7082
 ├── <backend-name>/  # Weitere Backends nach demselben Muster
 ├── e2e/             # E2E-Tests (Playwright) mit eigener Test-Umgebung (Docker Compose)
 └── frontend/        # React-Frontend (Vite, npm, nginx-Image: Dockerfile, nginx/)
