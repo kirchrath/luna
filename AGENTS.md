@@ -26,9 +26,9 @@ Geplante Bereiche:
 solange sie nicht ausdrücklich beauftragt sind.
 
 Bisher existieren die Dokumentation, die Infrastruktur (`swarm/`), `luna-core` (manuelle Eingabe, Analyse per
-Spring AI, Veröffentlichung der Elemente auf Kafka, Liste der letzten Eingaben mit Push-Signal), `luna-task`
-(Verarbeitung der Aufgaben-Events, REST-Endpunkte), das Frontend (Layout, Anmeldung,
-Schnelleingabe; weitere Bereiche als Platzhalter) und die E2E-Tests (`e2e/`).
+Spring AI, Veröffentlichung der Elemente auf Kafka, Liste der letzten Eingaben mit Push-Signal), die Element-Services
+`luna-task`, `luna-alert` und `luna-note` (Verarbeitung der Core-Events, REST-Endpunkte), das Frontend (Layout,
+Anmeldung, Schnelleingabe, Aufgaben, Notizen, Warnungen; weitere Bereiche als Platzhalter) und die E2E-Tests (`e2e/`).
 
 Noch offen (bitte hier eintragen, sobald entschieden):
 
@@ -56,7 +56,9 @@ Noch offen (bitte hier eintragen, sobald entschieden):
        - 7a-2 Stack-Datei, Kafka-Benutzer und ACLs, Secrets, Betriebs-README, E2E-Umgebung (erledigt)
        - 7a-3 Frontend: Seiten „Aufgaben“ (Liste) und Details/Bearbeiten, fachliche E2E-Tests (erledigt;
          Planung in [frontend/docs](frontend/docs/README.md#aufgaben-schritt-7a-3))
-     - 7b–7f `luna-alert`, `luna-appointment`, `luna-invoice`, `luna-contract`, `luna-note` nach demselben Muster
+     - 7b `luna-alert` und `luna-note` mit Stack, Frontend-Bereichen „Warnungen“ und „Notizen“ und E2E-Tests
+       (erledigt; Planung in [frontend/docs](frontend/docs/README.md#warnungen-und-notizen-schritt-7b))
+     - 7c ff. `luna-appointment`, `luna-invoice`, `luna-contract` nach demselben Muster
        (Namen, Felder und Endpunkte je Service vor der Umsetzung klären)
   8. Danach weitere Quellen (z. B. E-Mail); `luna-core` ordnet nur ein und verteilt weiter.
 
@@ -72,6 +74,8 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 |---|---|---|
 | `luna-core` | **Event-Analyse:** empfängt Events aus unterschiedlichen Quellen, analysiert sie per **Spring AI** und entscheidet, welche neuen Elemente (z. B. Aufgabe, Alert) bzw. Events daraus entstehen. | [luna-core/README.md](luna-core/README.md) |
 | `luna-task` | **Aufgaben:** verarbeitet die Aufgaben-Events von `luna-core` (`luna_core_task`), speichert sie als eigene Aufgaben, bietet List-, Detail- und Update-Endpunkte und veröffentlicht jede Änderung auf `luna_task_task`. | [luna-task/README.md](luna-task/README.md) |
+| `luna-alert` | **Warnungen:** verarbeitet die Alert-Events von `luna-core` (`luna_core_alert`); Status offen/bestätigt/behoben, Inhalte nicht bearbeitbar; veröffentlicht jede Änderung auf `luna_alert_alert`. | [luna-alert/README.md](luna-alert/README.md) |
+| `luna-note` | **Notizen:** verarbeitet die Notiz-Events von `luna-core` (`luna_core_note`); bearbeiten, archivieren, wiederherstellen; veröffentlicht jede Änderung auf `luna_note_note`. | [luna-note/README.md](luna-note/README.md) |
 
 ## Grundprinzipien
 
@@ -168,6 +172,12 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
     Optimistic Locking über `version` → `409` bei Konflikt, `POST /tasks/{id}/complete` und `/reopen`).
   - **`luna-task`:** `Task` mit `title`, `description`, `dueDate`, `priority` (wie im Core-Event), `status`
     (`OPEN`, `DONE`), `completedDate`, `source`, `sourceId` und `edited`.
+  - **`luna-alert`:** `Alert` mit `title`, `message`, `severity`, `affectedSystem`, `status` (`OPEN`, `ACKNOWLEDGED`,
+    `RESOLVED`), `acknowledgedDate`, `resolvedDate`, `source`, `sourceId`. **Ausnahme:** Inhalte sind nicht
+    bearbeitbar, daher **kein `edited`**; neuere Core-Versionen überschreiben den Inhalt immer, der Status bleibt.
+    Sortierung nach Schwere über eine zusätzliche Spalte `severity_rank` (Enums sind als Text gespeichert).
+  - **`luna-note`:** `Note` mit `title`, `summary`, `status` (`ACTIVE`, `ARCHIVED`), `archivedDate`, `source`,
+    `sourceId` und `edited`.
 - **Push an das Frontend:** Backends melden Änderungen per **STOMP über WebSocket** (Spring
   `@EnableWebSocketMessageBroker`, einfacher Broker, Endpunkt `/ws`, Topics unter `/topic/…`; Pfade aus der
   `application.yml`). Nachrichten sind **Signale** (DTO mit ID), die Daten lädt der Client per REST.
@@ -180,7 +190,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   `@Operation`, kein `description` in `@ApiResponse` (springdoc setzt dort den Standardtext des Status-Codes).
   **Optionale Felder** fehlen in REST-Antworten, statt `null` zu sein (`spring.jackson.default-property-inclusion:
   non_null`), so wie die Spec sie beschreibt; sonst wird im Frontend z. B. aus `dueDate: null` der 01.01.1970.
-  Umgesetzt in `luna-task`; `luna-core` (`typeHint`) _TODO_.
+  Umgesetzt in `luna-task`, `luna-alert` und `luna-note`; `luna-core` (`typeHint`) _TODO_.
 - **Docker-Image:** Jedes Backend stellt **immer** ein Docker-Image bereit, gebaut mit Jib.
   - Kein eigenes `Dockerfile` für Backends; die Image-Konfiguration liegt in der `pom.xml`.
   - Images werden **lokal** in den Docker-Daemon gebaut (`jib:dockerBuild`), nur für `linux/amd64`.
@@ -409,7 +419,7 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
 | Codequalität | **ESLint** (typescript-eslint `strictTypeChecked`, React-Hooks) und **Prettier** (`npm run lint`) |
 | Icons | **lucide-react**; Logo als eigene Komponente |
 | Schriften | **Inter** und **Space Grotesk** (Überschriften), lokal über `@fontsource-variable` |
-| Design | Ruhige, graue Oberfläche: Hintergrund **`#f3f4f6`** (Bulma `--bulma-background`), Primärfarbe **`#4a5260`** (Bulma `$primary`); kräftige Farbe nur für Highlights: Petrol **`#1f7a8c`** (Bulma `$link`), für Überfälliges Orange **`#d9822b`** (`$luna-overdue`); dunkler Modus automatisch nach Geräteeinstellung |
+| Design | Ruhige, graue Oberfläche: Hintergrund **`#f3f4f6`** (Bulma `--bulma-background`), Primärfarbe **`#4a5260`** (Bulma `$primary`); kräftige Farbe nur für Highlights: Petrol **`#1f7a8c`** (Bulma `$link`), für Überfälliges und kritische Warnungen Orange **`#d9822b`** (`$luna-overdue`); dunkler Modus automatisch nach Geräteeinstellung |
 | Install-Skripte | npm 11 führt Install-Skripte von Abhängigkeiten nur nach Freigabe aus (`allowScripts` in `package.json`). Jedes neue Skript **prüfen** und bewusst freigeben (`true`) oder ablehnen (`false`); abgelehnt sind `@parcel/watcher` und `fsevents` (bringen fertige Binaries mit, die Skripte würden nur nativ kompilieren) |
 | Versionen | in `package.json` **exakt gepinnt** (`.npmrc`: `save-exact`), `package-lock.json` eingecheckt; TypeScript **5.9.x** (neuere Versionen werden von typescript-eslint und openapi-typescript noch nicht unterstützt) |
 
@@ -443,7 +453,7 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
     Push-DTOs nimmt der springdoc-`OpenApiCustomizer` des Backends (`config/OpenApiConfig`) als Schemas in die
     OpenAPI-Definition auf, damit auch ihre Typen generiert werden.
   - Basis-URL je Backend in `.env.development`/`.env.production`/`.env.e2e` (`VITE_LUNA_CORE_URL`,
-    `VITE_LUNA_TASK_URL`).
+    `VITE_LUNA_TASK_URL`, `VITE_LUNA_ALERT_URL`, `VITE_LUNA_NOTE_URL`).
   - Generierter Code wird **eingecheckt** und nie von Hand geändert (auch nicht von Prettier: `schema.d.ts` steht in
     `.prettierignore`). Bei API-Änderungen: Backend anpassen,
     Spec erzeugen, Wrapper neu generieren und im selben Commit mit einchecken.
@@ -474,7 +484,8 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
     bewusste Ausnahme von der Regel „keine `.env`-Dateien committen“; Secrets gehören nie hinein.
   - Router und Stores entstehen erst nach der Anmeldung (`App`), damit der Router die wiederhergestellte Adresse liest.
   - In Tests ersetzt `fakeAuth()` (`src/test`) den `AuthContext`; `react-oidc-context` wird nicht gemockt.
-- **Routen** sind englisch (`/`, `/tasks`, `/calendar`, `/shopping`, `/finance`, `/monitoring`) und stehen in
+- **Routen** sind englisch (`/`, `/tasks`, `/notes`, `/calendar`, `/shopping`, `/finance`, `/monitoring`, `/alerts`;
+  Details unter `/<bereich>/:id`) und stehen in
   `src/navigation.ts`.
 - **Sprache:** Start auf Deutsch; die Wahl im DE/EN-Umschalter wird im `localStorage` gemerkt.
 - **Tests** folgen denselben Konventionen wie im Backend: Namen `that … should result into …`, Abschnitte
@@ -486,7 +497,7 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
   `@playwright/test` exakt gepinnt, ESLint/Prettier, Testnamen und given/when/then wie überall).
 - Getestet wird gegen eine **eigene Test-Umgebung** (`e2e/docker-compose.yml`, Projekt `luna-e2e`,
   `http://localhost:7180`): Traefik mit demselben Routing wie im Stack (ohne TLS), Frontend-Image (`MODE=e2e`,
-  `frontend/.env.e2e`), `luna-core`- und `luna-task`-Image, Keycloak mit Realm-Import, PostgreSQL, Kafka ohne TLS und ein
+  `frontend/.env.e2e`), die Images von `luna-core`, `luna-task`, `luna-alert` und `luna-note`, Keycloak mit Realm-Import, PostgreSQL, Kafka ohne TLS und ein
   **OpenAI-kompatibler KI-Stub** mit festen Antworten (deterministisch).
 - `npm test` baut die Images, startet die Umgebung, bereitet Keycloak vor (Weiterleitung auf Port 7180 und
   Testbenutzer per Admin-API – der Realm im Repo bleibt unverändert), testet und räumt auf.
@@ -506,7 +517,9 @@ Ports für Backends werden **ab 7080 fortlaufend** vergeben (7080 ist durch Keyc
 | Keycloak | 7080 | `/auth` (Keycloak mit relativem Pfad `/auth` konfiguriert, **ohne** StripPrefix) |
 | `luna-core` | 7081 | `/api/luna-core` |
 | `luna-task` | 7082 | `/api/luna-task` |
-| _nächstes Backend_ | 7083 | `/api/<backend-name>` |
+| `luna-alert` | 7083 | `/api/luna-alert` |
+| `luna-note` | 7084 | `/api/luna-note` |
+| _nächstes Backend_ | 7085 | `/api/<backend-name>` |
 
 ## Betrieb
 
@@ -528,9 +541,9 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
 
 - **Stack-Dateien** liegen unter `swarm/`. Ein Stack `luna`, mehrere Dateien:
   `swarm/infrastructure.yml` (Traefik, step-ca, PostgreSQL, Keycloak), `swarm/kafka.yml` (Kafka und `kafka-init`),
-  `swarm/luna-core.yml` (Backend `luna-core`), `swarm/luna-task.yml` (Backend `luna-task`), `swarm/frontend.yml`
-  (Frontend), weitere Backends je eine Datei `swarm/<backend>.yml`.
-  Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/luna-task.yml -c swarm/frontend.yml [-c …] luna`
+  `swarm/luna-core.yml` (Backend `luna-core`), `swarm/luna-task.yml`, `swarm/luna-alert.yml`, `swarm/luna-note.yml`
+  (Element-Services), `swarm/frontend.yml` (Frontend), weitere Backends je eine Datei `swarm/<backend>.yml`.
+  Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/luna-task.yml -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/frontend.yml [-c …] luna`
   (Pflichtvariablen siehe README).
   Kafka steht in einer eigenen Datei, weil sein Zertifikat erst erzeugt werden kann, wenn step-ca läuft.
 - **Image-Versionen** sind **exakt gepinnt** (aktuell Traefik `v3.7.19`, step-ca `0.30.2`, PostgreSQL `18.7`,
@@ -609,6 +622,8 @@ Monorepo mit mehreren Backends (je ein Top-Level-Ordner) und einem Frontend:
 ├── swarm/           # Docker-Stack-Dateien (infrastructure.yml, kafka.yml, <backend>.yml) und Configs/Skripte
 ├── luna-core/       # Erstes Backend: Event-Analyse (Spring Boot, Maven, Jib), Port 7081
 ├── luna-task/       # Aufgaben: verarbeitet Aufgaben-Events von luna-core, Port 7082
+├── luna-alert/      # Warnungen: verarbeitet Alert-Events von luna-core, Port 7083
+├── luna-note/       # Notizen: verarbeitet Notiz-Events von luna-core, Port 7084
 ├── <backend-name>/  # Weitere Backends nach demselben Muster
 ├── e2e/             # E2E-Tests (Playwright) mit eigener Test-Umgebung (Docker Compose)
 └── frontend/        # React-Frontend (Vite, npm, nginx-Image: Dockerfile, nginx/)
