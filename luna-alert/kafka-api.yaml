@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: Luna Alert Kafka API
+  description: Events published by luna-alert on Kafka. The key of each message is
+    the id of the event.
+  version: 0.0.1-SNAPSHOT
+components:
+  schemas:
+    AlertDataDto:
+      type: object
+      properties:
+        title:
+          type: string
+        message:
+          type: string
+        severity:
+          type: string
+          enum:
+          - INFO
+          - WARNING
+          - CRITICAL
+        affectedSystem:
+          type: string
+        status:
+          type: string
+          enum:
+          - OPEN
+          - ACKNOWLEDGED
+          - RESOLVED
+        acknowledgedDate:
+          type: string
+          format: date-time
+        resolvedDate:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum:
+          - CORE
+        sourceId:
+          type: string
+          format: uuid
+      required:
+      - message
+      - severity
+      - source
+      - status
+      - title
+    AlertEventDto:
+      type: object
+      description: Published on topic luna_alert_alert. The key of each message is
+        the id of the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+        data:
+          $ref: "#/components/schemas/AlertDataDto"
+      required:
+      - audit
+      - data
+      - id
+    AuditDto:
+      type: object
+      properties:
+        createdDate:
+          type: string
+          format: date-time
+        lastModifiedDate:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+      required:
+      - createdDate
+      - lastModifiedDate
+      - version
