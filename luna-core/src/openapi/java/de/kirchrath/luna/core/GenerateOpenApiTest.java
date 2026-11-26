@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,10 @@ import io.swagger.v3.oas.models.info.Info;
 @AutoConfigureMockMvc
 @Import({TestcontainersConfig.class, ChatModelTestConfig.class})
 class GenerateOpenApiTest {
+
+    /** Services that consume events of luna-core and generate their Java types from a copy of kafka-api.yaml. */
+    private static final List<Path> KAFKA_API_CONSUMER_COPIES =
+            List.of(Path.of("../luna-task/src/main/resources/kafka-api/luna-core.yaml"));
 
     @Autowired
     private MockMvc mockMvc;
@@ -90,10 +95,16 @@ class GenerateOpenApiTest {
             kafkaApi.getComponents().getSchemas().get(type.getSimpleName())
                     .description("Published on topic " + topic + ". The key of each message is the id of the event.");
         });
-        Files.writeString(kafkaApiFile, Yaml31.pretty(kafkaApi));
+        var kafkaApiContent = Yaml31.pretty(kafkaApi);
+        Files.writeString(kafkaApiFile, kafkaApiContent);
+        for (var copy : KAFKA_API_CONSUMER_COPIES) {
+            Files.createDirectories(copy.getParent());
+            Files.writeString(copy, kafkaApiContent);
+        }
 
         // then
         assertThat(kafkaApiFile).content()
                 .contains("ElementEventDto", "discriminator", "TaskEventDto", "NoteEventDto", "Published on topic " + topicProperties.task());
+        assertThat(KAFKA_API_CONSUMER_COPIES).allSatisfy(copy -> assertThat(copy).hasContent(kafkaApiContent));
     }
 }
