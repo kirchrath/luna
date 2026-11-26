@@ -136,7 +136,9 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   Das JWT wird nur am WebSocket-Endpunkt auch als Query-Parameter `access_token` akzeptiert.
 - **OpenAPI (Code-first):** Die Spezifikation wird mit springdoc aus den Controllern erzeugt.
   Controller und DTOs sauber annotieren, damit die Spec vollständig und präzise ist
-  (Operation-IDs, Schemas, Response-Codes) – sie ist der Vertrag für den Frontend-Wrapper.
+  (Operation-IDs, Schemas, Response-Codes, `requiredMode`) – sie ist der Vertrag für den Frontend-Wrapper.
+  **Keine Beschreibungstexte:** kein `description` in `@Schema`, `@Parameter` und `@Tag`, kein `summary` in
+  `@Operation`, kein `description` in `@ApiResponse` (springdoc setzt dort den Standardtext des Status-Codes).
 - **Docker-Image:** Jedes Backend stellt **immer** ein Docker-Image bereit, gebaut mit Jib.
   - Kein eigenes `Dockerfile` für Backends; die Image-Konfiguration liegt in der `pom.xml`.
   - Images werden **lokal** in den Docker-Daemon gebaut (`jib:dockerBuild`), nur für `linux/amd64`.
@@ -390,7 +392,8 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
     (`@stomp/stompjs`) und Typ-Aliase. Push-DTOs nimmt der springdoc-`OpenApiCustomizer` in
     `luna-core` (`config/OpenApiConfig`) als Schemas in die OpenAPI-Definition auf, damit auch ihre Typen generiert werden.
   - Basis-URL je Backend in `.env.development`/`.env.production` (`VITE_LUNA_CORE_URL`).
-  - Generierter Code wird **eingecheckt** und nie von Hand geändert. Bei API-Änderungen: Backend anpassen,
+  - Generierter Code wird **eingecheckt** und nie von Hand geändert (auch nicht von Prettier: `schema.d.ts` steht in
+    `.prettierignore`). Bei API-Änderungen: Backend anpassen,
     Spec erzeugen, Wrapper neu generieren und im selben Commit mit einchecken.
 - **Docker-Image:** Das Frontend wird als eigenes **nginx-Image** ausgeliefert (Dockerfile im Frontend-Projekt,
   nur `linux/amd64`, lokal gebaut). nginx liefert ausschließlich die statischen Dateien aus;

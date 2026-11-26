@@ -137,8 +137,6 @@ components:
       - data
       - id
     ElementEventDto:
-      description: Element published by luna-core; the property type determines the
-        kind of element
       discriminator:
         propertyName: type
         mapping:
