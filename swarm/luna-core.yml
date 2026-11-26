@@ -5,10 +5,11 @@
 #   docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml luna
 #
 # Required variables: LUNA_CORE_VERSION, SPRING_AI_MODEL_CHAT, LUNA_AI_API_KEY_PROPERTY (see README.md).
+# Messages of ${VAR:?message} must not contain '-': Docker reads it as default value operator.
 
 services:
   luna-core:
-    image: luna-core:${LUNA_CORE_VERSION:?set LUNA_CORE_VERSION to the luna-core image version}
+    image: luna-core:${LUNA_CORE_VERSION:?set LUNA_CORE_VERSION to the version of the luna core image}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - SPRING_AI_MODEL_CHAT=${SPRING_AI_MODEL_CHAT:?set SPRING_AI_MODEL_CHAT to ollama, anthropic or openai}
@@ -29,7 +30,7 @@ services:
       - source: kafka_luna_core_password
         target: app.kafka.password
       - source: luna_core_ai_api_key
-        target: ${LUNA_AI_API_KEY_PROPERTY:?set LUNA_AI_API_KEY_PROPERTY, e.g. spring.ai.anthropic.api-key}
+        target: ${LUNA_AI_API_KEY_PROPERTY:?set LUNA_AI_API_KEY_PROPERTY to the property of the AI API key, see README}
     networks:
       - luna
     deploy:
