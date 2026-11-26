@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 
 import type { TaskDto, TaskPriorityDto } from '../api';
-import { PATHS, TASK_ID_PARAMETER } from '../navigation';
+import { PATHS, ID_PARAMETER } from '../navigation';
 import { useStores } from '../stores';
 import { ChipGroup, RelativeTime } from '../ui';
 import { formatDateTime, fromDueDateInput, toDueDateInput } from './taskDates';
@@ -26,7 +26,7 @@ export const TaskDetailPage = observer(function TaskDetailPage() {
   const { t } = useTranslation();
   const { taskStore: store } = useStores();
   // The route always contains the parameter.
-  const id = String(useParams()[TASK_ID_PARAMETER]);
+  const id = String(useParams()[ID_PARAMETER]);
 
   useEffect(() => {
     void store.load(id);

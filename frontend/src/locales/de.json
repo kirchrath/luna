@@ -12,10 +12,12 @@
     "expand": "Ausklappen",
     "quickInput": "Schnelleingabe",
     "tasks": "Aufgaben",
+    "notes": "Notizen",
     "calendar": "Termine",
     "shopping": "Einkauf & Haushalt",
     "finance": "Finanzen & Verträge",
-    "monitoring": "Monitoring"
+    "monitoring": "Monitoring",
+    "alerts": "Warnungen"
   },
   "language": {
     "label": "Sprache",
@@ -123,6 +125,131 @@
     "created": "Angelegt {{date}}",
     "modified": "Geändert {{date}}",
     "completed": "Erledigt {{date}}"
+  },
+  "notes": {
+    "title": "Notizen",
+    "lead": "Zusammenfassungen deiner Eingaben – zum Nachlesen und Bearbeiten.",
+    "filterLabel": "Notizen anzeigen",
+    "filter": {
+      "ACTIVE": "Aktiv",
+      "ARCHIVED": "Archiviert",
+      "ALL": "Alle"
+    },
+    "count": {
+      "ACTIVE": "{{count}} aktiv",
+      "ARCHIVED": "{{count}} archiviert",
+      "ALL": "{{count}} insgesamt"
+    },
+    "empty": {
+      "ACTIVE": "Keine Notizen. Neue Notizen entstehen aus der Schnelleingabe.",
+      "ARCHIVED": "Keine archivierten Notizen.",
+      "ALL": "Noch keine Notizen. Neue Notizen entstehen aus der Schnelleingabe."
+    },
+    "edited": "bearbeitet",
+    "loadMore": "Mehr laden",
+    "loadError": "Die Notizen konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "liveInterrupted": "Live-Aktualisierung unterbrochen – Luna verbindet sich neu.",
+    "status": {
+      "ACTIVE": "Aktiv",
+      "ARCHIVED": "Archiviert"
+    }
+  },
+  "noteDetail": {
+    "back": "Notizen",
+    "archive": "Archivieren",
+    "restore": "Wiederherstellen",
+    "statusFailed": "Der Status konnte nicht geändert werden. Versuche es gleich noch einmal.",
+    "formLabel": "Notiz bearbeiten",
+    "titleLabel": "Titel",
+    "titleMissing": "Bitte gib einen Titel ein.",
+    "summaryLabel": "Zusammenfassung",
+    "summaryMissing": "Bitte gib eine Zusammenfassung ein.",
+    "save": "Speichern",
+    "discard": "Verwerfen",
+    "conflict": "Die Notiz wurde inzwischen geändert.",
+    "conflictText": "Deine Eingaben sind nicht gespeichert.",
+    "reload": "Neu laden",
+    "invalid": "Luna konnte die Änderungen nicht annehmen. Prüfe die Eingaben und versuche es erneut.",
+    "saveFailed": "Speichern fehlgeschlagen. Deine Eingaben bleiben erhalten – versuche es gleich noch einmal.",
+    "notFound": "Notiz nicht gefunden",
+    "notFoundText": "Diese Notiz gibt es nicht (mehr).",
+    "loadError": "Die Notiz konnte nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "origin": "Herkunft",
+    "source": {
+      "CORE": "Aus der Schnelleingabe erkannt"
+    },
+    "editedHint": "Bearbeitet: Neue Analyse-Ergebnisse überschreiben deine Änderungen nicht mehr.",
+    "uneditedHint": "Neue Analyse-Ergebnisse aktualisieren diese Notiz, bis du sie bearbeitest.",
+    "created": "Angelegt {{date}}",
+    "modified": "Geändert {{date}}",
+    "archived": "Archiviert {{date}}"
+  },
+  "alerts": {
+    "title": "Warnungen",
+    "lead": "Hinweise deiner Systeme – bestätige sie oder markiere sie als behoben.",
+    "filterLabel": "Warnungen anzeigen",
+    "filter": {
+      "ACTIVE": "Aktiv",
+      "OPEN": "Offen",
+      "ACKNOWLEDGED": "Bestätigt",
+      "RESOLVED": "Behoben",
+      "ALL": "Alle"
+    },
+    "count": {
+      "ACTIVE": "{{count}} aktiv",
+      "OPEN": "{{count}} offen",
+      "ACKNOWLEDGED": "{{count}} bestätigt",
+      "RESOLVED": "{{count}} behoben",
+      "ALL": "{{count}} insgesamt"
+    },
+    "empty": {
+      "ACTIVE": "Keine aktiven Warnungen.",
+      "OPEN": "Keine offenen Warnungen.",
+      "ACKNOWLEDGED": "Keine bestätigten Warnungen.",
+      "RESOLVED": "Noch keine behobenen Warnungen.",
+      "ALL": "Noch keine Warnungen."
+    },
+    "acknowledge": "Bestätigen",
+    "acknowledgeItem": "{{title}} bestätigen",
+    "loadMore": "Mehr laden",
+    "loadError": "Die Warnungen konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "actionFailed": "Die Warnung konnte nicht geändert werden. Versuche es gleich noch einmal.",
+    "liveInterrupted": "Live-Aktualisierung unterbrochen – Luna verbindet sich neu.",
+    "severity": {
+      "INFO": "Info",
+      "WARNING": "Warnung",
+      "CRITICAL": "Kritisch"
+    },
+    "status": {
+      "OPEN": "Offen",
+      "ACKNOWLEDGED": "Bestätigt",
+      "RESOLVED": "Behoben"
+    }
+  },
+  "alertDetail": {
+    "back": "Warnungen",
+    "received": "eingegangen",
+    "acknowledge": "Bestätigen",
+    "resolve": "Als behoben",
+    "reopen": "Wieder öffnen",
+    "statusFailed": "Der Status konnte nicht geändert werden. Lade die Seite neu und versuche es erneut.",
+    "message": "Meldung",
+    "affectedSystem": "Betroffenes System",
+    "notFound": "Warnung nicht gefunden",
+    "notFoundText": "Diese Warnung gibt es nicht (mehr).",
+    "loadError": "Die Warnung konnte nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "loading": "Warnung wird geladen",
+    "origin": "Herkunft",
+    "source": {
+      "CORE": "Aus der Schnelleingabe erkannt"
+    },
+    "created": "Eingegangen {{date}}",
+    "acknowledged": "Bestätigt {{date}}",
+    "resolved": "Behoben {{date}}"
   },
   "comingSoon": {
     "text": "Dieser Bereich kommt in einem späteren Schritt."

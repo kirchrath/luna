@@ -12,10 +12,12 @@
     "expand": "Expand",
     "quickInput": "Quick input",
     "tasks": "Tasks",
+    "notes": "Notes",
     "calendar": "Calendar",
     "shopping": "Shopping & household",
     "finance": "Finances & contracts",
-    "monitoring": "Monitoring"
+    "monitoring": "Monitoring",
+    "alerts": "Alerts"
   },
   "language": {
     "label": "Language",
@@ -123,6 +125,131 @@
     "created": "Created {{date}}",
     "modified": "Changed {{date}}",
     "completed": "Completed {{date}}"
+  },
+  "notes": {
+    "title": "Notes",
+    "lead": "Summaries of your input – to read up on and edit.",
+    "filterLabel": "Show notes",
+    "filter": {
+      "ACTIVE": "Active",
+      "ARCHIVED": "Archived",
+      "ALL": "All"
+    },
+    "count": {
+      "ACTIVE": "{{count}} active",
+      "ARCHIVED": "{{count}} archived",
+      "ALL": "{{count}} in total"
+    },
+    "empty": {
+      "ACTIVE": "No notes. New notes come from the quick input.",
+      "ARCHIVED": "No archived notes.",
+      "ALL": "No notes yet. New notes come from the quick input."
+    },
+    "edited": "edited",
+    "loadMore": "Load more",
+    "loadError": "The notes could not be loaded.",
+    "retry": "Try again",
+    "liveInterrupted": "Live updates interrupted – Luna is reconnecting.",
+    "status": {
+      "ACTIVE": "Active",
+      "ARCHIVED": "Archived"
+    }
+  },
+  "noteDetail": {
+    "back": "Notes",
+    "archive": "Archive",
+    "restore": "Restore",
+    "statusFailed": "The status could not be changed. Please try again in a moment.",
+    "formLabel": "Edit note",
+    "titleLabel": "Title",
+    "titleMissing": "Please enter a title.",
+    "summaryLabel": "Summary",
+    "summaryMissing": "Please enter a summary.",
+    "save": "Save",
+    "discard": "Discard",
+    "conflict": "The note has been changed in the meantime.",
+    "conflictText": "Your changes have not been saved.",
+    "reload": "Reload",
+    "invalid": "Luna could not accept the changes. Check your input and try again.",
+    "saveFailed": "Saving failed. Your input is kept – please try again in a moment.",
+    "notFound": "Note not found",
+    "notFoundText": "This note does not exist (any more).",
+    "loadError": "The note could not be loaded.",
+    "retry": "Try again",
+    "origin": "Origin",
+    "source": {
+      "CORE": "Recognised from the quick input"
+    },
+    "editedHint": "Edited: new analysis results no longer overwrite your changes.",
+    "uneditedHint": "New analysis results update this note until you edit it.",
+    "created": "Created {{date}}",
+    "modified": "Changed {{date}}",
+    "archived": "Archived {{date}}"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "lead": "Notices from your systems – acknowledge them or mark them as resolved.",
+    "filterLabel": "Show alerts",
+    "filter": {
+      "ACTIVE": "Active",
+      "OPEN": "Open",
+      "ACKNOWLEDGED": "Acknowledged",
+      "RESOLVED": "Resolved",
+      "ALL": "All"
+    },
+    "count": {
+      "ACTIVE": "{{count}} active",
+      "OPEN": "{{count}} open",
+      "ACKNOWLEDGED": "{{count}} acknowledged",
+      "RESOLVED": "{{count}} resolved",
+      "ALL": "{{count}} in total"
+    },
+    "empty": {
+      "ACTIVE": "No active alerts.",
+      "OPEN": "No open alerts.",
+      "ACKNOWLEDGED": "No acknowledged alerts.",
+      "RESOLVED": "No resolved alerts yet.",
+      "ALL": "No alerts yet."
+    },
+    "acknowledge": "Acknowledge",
+    "acknowledgeItem": "Acknowledge {{title}}",
+    "loadMore": "Load more",
+    "loadError": "The alerts could not be loaded.",
+    "retry": "Try again",
+    "actionFailed": "The alert could not be changed. Please try again in a moment.",
+    "liveInterrupted": "Live updates interrupted – Luna is reconnecting.",
+    "severity": {
+      "INFO": "Info",
+      "WARNING": "Warning",
+      "CRITICAL": "Critical"
+    },
+    "status": {
+      "OPEN": "Open",
+      "ACKNOWLEDGED": "Acknowledged",
+      "RESOLVED": "Resolved"
+    }
+  },
+  "alertDetail": {
+    "back": "Alerts",
+    "received": "received",
+    "acknowledge": "Acknowledge",
+    "resolve": "Mark as resolved",
+    "reopen": "Reopen",
+    "statusFailed": "The status could not be changed. Reload the page and try again.",
+    "message": "Message",
+    "affectedSystem": "Affected system",
+    "notFound": "Alert not found",
+    "notFoundText": "This alert does not exist (any more).",
+    "loadError": "The alert could not be loaded.",
+    "retry": "Try again",
+    "loading": "Loading alert",
+    "origin": "Origin",
+    "source": {
+      "CORE": "Recognised from the quick input"
+    },
+    "created": "Received {{date}}",
+    "acknowledged": "Acknowledged {{date}}",
+    "resolved": "Resolved {{date}}"
   },
   "comingSoon": {
     "text": "This area comes in a later step."
