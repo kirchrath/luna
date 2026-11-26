@@ -2,10 +2,13 @@ package de.kirchrath.luna.note.inbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -96,6 +99,7 @@ class NoteControllerTest {
                 .andExpect(jsonPath("$.data.summary").value("Roof will be renovated in May"))
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.archivedDate").doesNotExist())
+                .andExpect(content().string(not(containsString(":null"))))
                 .andExpect(jsonPath("$.data.source").value("CORE"))
                 .andExpect(jsonPath("$.data.sourceId").value(note.sourceId().toString()))
                 .andExpect(jsonPath("$.data.edited").value(false))
