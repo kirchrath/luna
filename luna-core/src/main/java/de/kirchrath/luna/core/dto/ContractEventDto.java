@@ -4,7 +4,6 @@ import java.util.UUID;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Contract element published by luna-core")
 public record ContractEventDto(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) AuditDto audit,

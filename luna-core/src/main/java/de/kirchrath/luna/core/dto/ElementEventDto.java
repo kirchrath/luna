@@ -18,7 +18,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
         @JsonSubTypes.Type(name = LunaElementTypeDto.Constants.NOTE, value = NoteEventDto.class),
 })
 @Schema(
-        description = "Element published by luna-core; the property type determines the kind of element",
         oneOf = {
                 TaskEventDto.class,
                 AlertEventDto.class,

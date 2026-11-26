@@ -25,7 +25,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/inbound-events")
-@Tag(name = "Inbound events", description = "Events that luna-core receives and analyses")
+@Tag(name = "Inbound events")
 public class InboundEventController {
 
     private static final String MANUAL = "/manual";
@@ -39,18 +39,14 @@ public class InboundEventController {
     @GetMapping(path = MANUAL, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             operationId = "listManualInboundEvents",
-            summary = "List manual inputs with their processing status, newest first",
             parameters = {
-                @Parameter(name = "page", in = ParameterIn.QUERY, description = "Page number, starting at 0",
+                @Parameter(name = "page", in = ParameterIn.QUERY,
                         schema = @Schema(type = "integer", minimum = "0", defaultValue = "0")),
-                @Parameter(name = "size", in = ParameterIn.QUERY,
-                        description = "Page size; default and maximum are configured in luna-core, "
-                                + "larger values are limited to the maximum",
-                        schema = @Schema(type = "integer", minimum = "1"))
+                @Parameter(name = "size", in = ParameterIn.QUERY, schema = @Schema(type = "integer", minimum = "1"))
             },
             responses = {
-                @ApiResponse(responseCode = "200", description = "Page of manual inputs"),
-                @ApiResponse(responseCode = "401", description = "Missing or invalid access token", content = @Content)
+                @ApiResponse(responseCode = "200"),
+                @ApiResponse(responseCode = "401", content = @Content)
             })
     public ManualInboundEventListDto listManualInboundEvents(@Parameter(hidden = true) Pageable pageable) {
         return inboundEventApplicationService.listManualInboundEvents(pageable);
@@ -63,11 +59,10 @@ public class InboundEventController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     @Operation(
             operationId = "createManualInboundEvent",
-            summary = "Submit a manual input as inbound event",
             responses = {
-                @ApiResponse(responseCode = "202", description = "Input accepted and stored for analysis"),
-                @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content),
-                @ApiResponse(responseCode = "401", description = "Missing or invalid access token", content = @Content)
+                @ApiResponse(responseCode = "202"),
+                @ApiResponse(responseCode = "400", content = @Content),
+                @ApiResponse(responseCode = "401", content = @Content)
             })
     public ResourceReferenceDto createManualInboundEvent(@Valid @RequestBody ManualInputDataDto input) {
         return inboundEventApplicationService.createManualInboundEvent(input);
