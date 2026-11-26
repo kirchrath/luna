@@ -36,6 +36,9 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
       properties:
         "[spring.json.add.type.headers]": false
+  jackson:
+    # Optional fields are left out instead of sent as null, as the OpenAPI specification describes them.
+    default-property-inclusion: non_null
   data:
     web:
       pageable:

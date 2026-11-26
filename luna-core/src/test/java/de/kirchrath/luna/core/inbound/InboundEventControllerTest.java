@@ -1,12 +1,15 @@
 package de.kirchrath.luna.core.inbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -215,6 +218,8 @@ class InboundEventControllerTest {
                 .andExpect(jsonPath("$.items.length()").value(2))
                 .andExpect(jsonPath("$.items[0].id").value(newestId.toString()))
                 .andExpect(jsonPath("$.items[0].text").value("Milk is empty"))
+                .andExpect(jsonPath("$.items[0].typeHint").doesNotExist())
+                .andExpect(content().string(not(containsString(":null"))))
                 .andExpect(jsonPath("$.items[0].status").value("RECEIVED"))
                 .andExpect(jsonPath("$.items[0].elements").isEmpty())
                 .andExpect(jsonPath("$.items[1].id").value(middleId.toString()))
