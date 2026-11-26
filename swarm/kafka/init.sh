@@ -1,5 +1,6 @@
 #!/bin/bash
-# Creates or updates the SCRAM users and ACLs of all services listed in LUNA_KAFKA_SERVICES.
+# Creates or updates the SCRAM users and ACLs of all services listed in LUNA_KAFKA_SERVICES
+# and creates the topics they may read if they do not exist yet.
 # Runs on every deploy that changes the kafka-init service and is idempotent.
 # Removed services or topics are not cleaned up automatically.
 set -euo pipefail
@@ -49,6 +50,9 @@ while IFS=: read -r service read_topics; do
     topic="$(echo "$topic" | xargs)"
     [[ -z "$topic" ]] && continue
     echo "  may read ${topic}"
+    # Readers must not create foreign topics, so a consumer starting before the producer would find none.
+    "$kafka_bin/kafka-topics.sh" --bootstrap-server "$bootstrap" --command-config "$client_config" \
+      --create --if-not-exists --topic "$topic" > /dev/null
     acl --allow-principal "User:${service}" --operation Read --operation Describe --topic "$topic"
   done
 done <<< "$LUNA_KAFKA_SERVICES"
