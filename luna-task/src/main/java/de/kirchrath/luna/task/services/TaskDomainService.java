@@ -24,10 +24,9 @@ import de.kirchrath.luna.task.exception.TaskVersionConflictException;
 @Transactional
 public class TaskDomainService {
 
-    private static final String DUE_DATE = "dueDate";
-    private static final String CREATED_DATE = "createdDate";
     /** Due tasks first (tasks without due date last), then in the order they arrived. */
-    private static final Sort LIST_ORDER = Sort.by(Sort.Order.asc(DUE_DATE).nullsLast(), Sort.Order.asc(CREATED_DATE));
+    private static final Sort LIST_ORDER =
+            Sort.by(Sort.Order.asc(Task::dueDate).nullsLast(), Sort.Order.asc(Task::createdDate));
 
     private final TaskRepository taskRepository;
     private final TaskConverter taskConverter;
