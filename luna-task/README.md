@@ -73,6 +73,16 @@ Spezifikation: [openapi.yaml](openapi.yaml). Veröffentlichte Events: [kafka-api
 
 Datenbank-Schema `luna_task`; Kafka-Benutzer und Consumer-Gruppe `luna-task`.
 
+## Betrieb
+
+- **Stack:** [`swarm/luna-task.yml`](../swarm/luna-task.yml), Image `luna-task:${LUNA_TASK_VERSION}`
+  (`./mvnw package jib:dockerBuild`), Traefik leitet `/api/luna-task` (ohne Präfix) an Port 7082 weiter.
+  Schritte siehe [README](../README.md).
+- **Secrets:** `luna_db_password` (`spring.datasource.password`) und `kafka_luna_task_password` (`app.kafka.password`).
+- **Kafka:** Benutzer `luna-task`; liest `luna_core_task`, `luna_task_task_retry` und `luna_task_dlt`, schreibt
+  `luna_task_*`. `kafka-init` legt die lesbaren Topics an, falls sie fehlen. Fehlen Rechte oder Topics beim Start,
+  versucht der Consumer es alle 10 s erneut (`spring.kafka.listener.auth-exception-retry-interval`).
+
 ## Entwicklung
 
 ```bash
@@ -84,7 +94,7 @@ cd luna-task
 
 ## Offen (_TODO_)
 
-- Stack-Datei `swarm/luna-task.yml`, Kafka-Benutzer und ACLs, Secrets und E2E-Erweiterung (Schritt 7a-2).
+- Fachliche E2E-Tests (mit der Frontend-Seite „Aufgaben“).
 - Frontend-Seite „Aufgaben“.
 - Events werden nach dem Commit direkt gesendet: Ist Kafka in diesem Moment nicht erreichbar, geht das Event verloren
   (kein Outbox-Muster).

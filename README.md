@@ -7,7 +7,8 @@ Architektur, Tech-Stack und Konventionen stehen in [AGENTS.md](AGENTS.md).
 
 Die Infrastruktur-Services (Traefik, step-ca, PostgreSQL, Keycloak) stehen in
 [`swarm/infrastructure.yml`](swarm/infrastructure.yml), Kafka in [`swarm/kafka.yml`](swarm/kafka.yml),
-`luna-core` in [`swarm/luna-core.yml`](swarm/luna-core.yml) und das Frontend in
+`luna-core` in [`swarm/luna-core.yml`](swarm/luna-core.yml), `luna-task` in [`swarm/luna-task.yml`](swarm/luna-task.yml)
+und das Frontend in
 [`swarm/frontend.yml`](swarm/frontend.yml). Alle werden im selben Stack `luna` deployt.
 
 | Service | Image | Ports (veröffentlicht) |
@@ -18,6 +19,7 @@ Die Infrastruktur-Services (Traefik, step-ca, PostgreSQL, Keycloak) stehen in
 | Keycloak | `quay.io/keycloak/keycloak:26.8.2` | 7080 (unter `/auth`) |
 | Kafka | `apache/kafka:4.4.0` | 7094 |
 | `luna-core` | `luna-core:${LUNA_CORE_VERSION}` (lokal gebaut) | – (über Traefik unter `/api/luna-core`) |
+| `luna-task` | `luna-task:${LUNA_TASK_VERSION}` (lokal gebaut) | – (über Traefik unter `/api/luna-task`) |
 | Frontend | `luna-frontend:${LUNA_FRONTEND_VERSION}` (lokal gebaut, nginx) | – (über Traefik unter `/`) |
 
 ### Schritt-für-Schritt: Infrastruktur starten
@@ -48,7 +50,7 @@ Beispiel mit zufälligen Passwörtern:
 
 ```bash
 for secret in step_ca_password postgres_password keycloak_db_password luna_db_password keycloak_admin_password \
-              kafka_admin_password kafka_luna_core_password; do
+              kafka_admin_password kafka_luna_core_password kafka_luna_task_password; do
   openssl rand -base64 24 | tr -d '\n' | docker secret create "$secret" -
 done
 ```
@@ -91,6 +93,9 @@ export LUNA_KEYCLOAK_URL=http://localhost:7080/auth
 
 # luna-core: Version des lokal gebauten Images (siehe luna-core/pom.xml). Pflicht.
 export LUNA_CORE_VERSION=0.0.1-SNAPSHOT
+
+# luna-task: Version des lokal gebauten Images (siehe luna-task/pom.xml). Pflicht.
+export LUNA_TASK_VERSION=0.0.1-SNAPSHOT
 
 # Frontend: Version des lokal gebauten Images (siehe frontend/package.json). Pflicht.
 export LUNA_FRONTEND_VERSION=0.0.1
@@ -150,12 +155,18 @@ swarm/kafka/create-certificate.sh "$LUNA_KAFKA_CERT_VERSION"
 Das Skript legt beim ersten Aufruf den step-ca-Provisioner `kafka` (max. 1 Jahr) an, startet step-ca neu und
 erzeugt die Secrets `kafka_keystore_v<n>` und `kafka_keystore_password_v<n>`.
 
-#### 9. Images von luna-core und Frontend bauen
+#### 9. Images der Backends und des Frontends bauen
 
 Immer, wenn sich `luna-core` geändert hat (Java 25 nötig):
 
 ```bash
 (cd luna-core && ./mvnw package jib:dockerBuild)
+```
+
+Ebenso für `luna-task`, wenn es sich geändert hat:
+
+```bash
+(cd luna-task && ./mvnw package jib:dockerBuild)
 ```
 
 Immer, wenn sich das Frontend geändert hat (nur Docker nötig, Node läuft im Build-Container):
@@ -167,7 +178,8 @@ docker build --platform linux/amd64 -t "luna-frontend:$LUNA_FRONTEND_VERSION" fr
 #### 10. Gesamten Stack deployen
 
 ```bash
-docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/frontend.yml luna
+docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/luna-task.yml \
+  -c swarm/frontend.yml luna
 ```
 
 Beim ersten Start von Kafka legt das Startskript ([`swarm/kafka/start.sh`](swarm/kafka/start.sh)) den Superuser
@@ -180,13 +192,14 @@ Konfiguration die Benutzer und ACLs aller Services aus `LUNA_KAFKA_SERVICES` in 
 docker service ls
 docker service logs luna_kafka-init
 docker service logs luna_luna-core
+docker service logs luna_luna-task
 docker service ps luna_frontend
 ```
 
 - Alle Services zeigen `1/1`. Ausnahme: `kafka-init` beendet sich nach getaner Arbeit und zeigt dann `0/1`.
 - Das Log von `kafka-init` endet mit `Kafka users and ACLs are up to date.`
 - Das Log von `luna-core` enthält `Started Application`; `https://luna.internal/api/luna-core/actuator/health`
-  meldet `UP`.
+  meldet `UP`. Ebenso `luna-task` unter `https://luna.internal/api/luna-task/actuator/health`.
 - `https://luna.internal/` leitet zur Anmeldung bei Keycloak weiter und zeigt danach Luna.
 
 #### 12. Geräte einrichten (First start only)
@@ -219,16 +232,26 @@ Lokal: PostgreSQL unter `localhost:7432`, Keycloak unter `http://localhost:7080/
 ```bash
 export LUNA_KAFKA_CERT_VERSION=2
 swarm/kafka/create-certificate.sh "$LUNA_KAFKA_CERT_VERSION"
-docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/frontend.yml luna
+docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/luna-task.yml \
+  -c swarm/frontend.yml luna
 ```
 
 Alte Versionen können danach mit `docker secret rm kafka_keystore_v1 kafka_keystore_password_v1` entfernt werden.
+
+**Bestehende Installation um `luna-task` erweitern:** einmalig das Secret anlegen, `LUNA_TASK_VERSION` setzen
+(Schritt 4), das Image bauen (Schritt 9) und neu deployen (Schritt 10):
+
+```bash
+openssl rand -base64 24 | tr -d '\n' | docker secret create kafka_luna_task_password -
+```
 
 **Neuen Service an Kafka anbinden:**
 
 1. Secret `kafka_<service>_password` anlegen (Bindestriche als `_`, z. B. `kafka_luna_mail_password`).
 2. In `swarm/kafka.yml` beim Service `kafka-init` eine Zeile in `LUNA_KAFKA_SERVICES` ergänzen
    (`<service>: <Topics, die er lesen darf>`) und das Secret unter `secrets` eintragen (Service und Datei-Ende).
+   Zu den lesbaren Topics gehören auch das eigene Retry-Topic und DLT (z. B. `luna_task_task_retry`,
+   `luna_task_dlt`); `kafka-init` legt alle lesbaren Topics an, falls sie noch fehlen.
 3. Neu deployen (Schritt 10) – `kafka-init` läuft bei jeder Änderung seiner Konfiguration erneut.
    Ohne Änderung erneut ausführen: `docker service update --force luna_kafka-init`.
 
