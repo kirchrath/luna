@@ -27,8 +27,8 @@ solange sie nicht ausdrücklich beauftragt sind.
 
 Bisher existieren die Dokumentation, die Infrastruktur (`swarm/`), `luna-core` (manuelle Eingabe, Analyse per
 Spring AI, Veröffentlichung der Elemente auf Kafka, Liste der letzten Eingaben mit Push-Signal), die Element-Services
-`luna-task`, `luna-alert` und `luna-note` (Verarbeitung der Core-Events, REST-Endpunkte), das Frontend (Layout,
-Anmeldung, Schnelleingabe, Aufgaben, Notizen, Warnungen; weitere Bereiche als Platzhalter) und die E2E-Tests (`e2e/`).
+`luna-task`, `luna-alert`, `luna-note` und `luna-appointment` (Verarbeitung der Core-Events, REST-Endpunkte), das
+Frontend (Layout, Anmeldung, Schnelleingabe, Aufgaben, Notizen, Warnungen, Termine; weitere Bereiche als Platzhalter) und die E2E-Tests (`e2e/`).
 
 Noch offen (bitte hier eintragen, sobald entschieden):
 
@@ -58,9 +58,11 @@ Noch offen (bitte hier eintragen, sobald entschieden):
          Planung in [frontend/docs](frontend/docs/README.md#aufgaben-schritt-7a-3))
      - 7b `luna-alert` und `luna-note` mit Stack, Frontend-Bereichen „Warnungen“ und „Notizen“ und E2E-Tests
        (erledigt; Planung in [frontend/docs](frontend/docs/README.md#warnungen-und-notizen-schritt-7b))
-     - 7c ff. `luna-appointment`, `luna-invoice`, `luna-contract` nach demselben Muster
-       (Namen, Felder und Endpunkte je Service vor der Umsetzung klären)
+     - 7c `luna-appointment` mit Stack, Frontend-Bereich „Termine“ (Liste und Monat) und E2E-Tests (erledigt;
+       Planung in [frontend/docs](frontend/docs/README.md#termine-schritt-7c))
   8. Danach weitere Quellen (z. B. E-Mail); `luna-core` ordnet nur ein und verteilt weiter.
+  9. **Zurückgestellt bis zum Schluss:** `luna-invoice` und `luna-contract` nach demselben Muster
+     (Namen, Felder und Endpunkte je Service vor der Umsetzung klären).
 
   Keiner dieser Schritte ist ohne ausdrücklichen Auftrag umzusetzen.
 
@@ -76,6 +78,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | `luna-task` | **Aufgaben:** verarbeitet die Aufgaben-Events von `luna-core` (`luna_core_task`), speichert sie als eigene Aufgaben, bietet List-, Detail- und Update-Endpunkte und veröffentlicht jede Änderung auf `luna_task_task`. | [luna-task/README.md](luna-task/README.md) |
 | `luna-alert` | **Warnungen:** verarbeitet die Alert-Events von `luna-core` (`luna_core_alert`); Status offen/bestätigt/behoben, Inhalte nicht bearbeitbar; veröffentlicht jede Änderung auf `luna_alert_alert`. | [luna-alert/README.md](luna-alert/README.md) |
 | `luna-note` | **Notizen:** verarbeitet die Notiz-Events von `luna-core` (`luna_core_note`); bearbeiten, archivieren, wiederherstellen; veröffentlicht jede Änderung auf `luna_note_note`. | [luna-note/README.md](luna-note/README.md) |
+| `luna-appointment` | **Termine:** verarbeitet die Termin-Events von `luna-core` (`luna_core_appointment`); bearbeiten, absagen, wiederherstellen; Listen nach Zeitraum und Monat; veröffentlicht jede Änderung auf `luna_appointment_appointment`. | [luna-appointment/README.md](luna-appointment/README.md) |
 
 ## Grundprinzipien
 
@@ -178,6 +181,11 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
     Sortierung nach Schwere über eine zusätzliche Spalte `severity_rank` (Enums sind als Text gespeichert).
   - **`luna-note`:** `Note` mit `title`, `summary`, `status` (`ACTIVE`, `ARCHIVED`), `archivedDate`, `source`,
     `sourceId` und `edited`.
+  - **`luna-appointment`:** `Appointment` mit `title`, `start`, `end` (optional, nicht vor `start`), `allDay`,
+    `location`, `description`, `status` (`SCHEDULED`, `CANCELLED`), `cancelledDate`, `source`, `sourceId` und `edited`.
+    Ganztägige Termine beginnen um 00:00 Ortszeit, `end` ist der letzte Tag. Eine zusätzliche Spalte `effective_end`
+    (Ende, ohne Ende der Beginn, ganztägig das Ende des letzten Tages) trennt kommende von vergangenen Terminen
+    (laufende zählen als kommend) und dient der Abfrage eines Zeitraums (`GET /appointments/range`).
 - **Push an das Frontend:** Backends melden Änderungen per **STOMP über WebSocket** (Spring
   `@EnableWebSocketMessageBroker`, einfacher Broker, Endpunkt `/ws`, Topics unter `/topic/…`; Pfade aus der
   `application.yml`). Nachrichten sind **Signale** (DTO mit ID), die Daten lädt der Client per REST.
@@ -190,7 +198,8 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   `@Operation`, kein `description` in `@ApiResponse` (springdoc setzt dort den Standardtext des Status-Codes).
   **Optionale Felder** fehlen in REST-Antworten, statt `null` zu sein (`spring.jackson.default-property-inclusion:
   non_null`), so wie die Spec sie beschreibt; sonst wird im Frontend z. B. aus `dueDate: null` der 01.01.1970.
-  Umgesetzt in `luna-task`, `luna-alert` und `luna-note`; `luna-core` (`typeHint`) _TODO_.
+  Umgesetzt in allen Backends; Controller-Tests prüfen das mit `content().string(not(containsString(":null")))`
+  (`jsonPath(…).doesNotExist()` ist auch bei `null` erfüllt).
 - **Docker-Image:** Jedes Backend stellt **immer** ein Docker-Image bereit, gebaut mit Jib.
   - Kein eigenes `Dockerfile` für Backends; die Image-Konfiguration liegt in der `pom.xml`.
   - Images werden **lokal** in den Docker-Daemon gebaut (`jib:dockerBuild`), nur für `linux/amd64`.
@@ -453,7 +462,7 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
     Push-DTOs nimmt der springdoc-`OpenApiCustomizer` des Backends (`config/OpenApiConfig`) als Schemas in die
     OpenAPI-Definition auf, damit auch ihre Typen generiert werden.
   - Basis-URL je Backend in `.env.development`/`.env.production`/`.env.e2e` (`VITE_LUNA_CORE_URL`,
-    `VITE_LUNA_TASK_URL`, `VITE_LUNA_ALERT_URL`, `VITE_LUNA_NOTE_URL`).
+    `VITE_LUNA_TASK_URL`, `VITE_LUNA_ALERT_URL`, `VITE_LUNA_NOTE_URL`, `VITE_LUNA_APPOINTMENT_URL`).
   - Generierter Code wird **eingecheckt** und nie von Hand geändert (auch nicht von Prettier: `schema.d.ts` steht in
     `.prettierignore`). Bei API-Änderungen: Backend anpassen,
     Spec erzeugen, Wrapper neu generieren und im selben Commit mit einchecken.
@@ -497,7 +506,7 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
   `@playwright/test` exakt gepinnt, ESLint/Prettier, Testnamen und given/when/then wie überall).
 - Getestet wird gegen eine **eigene Test-Umgebung** (`e2e/docker-compose.yml`, Projekt `luna-e2e`,
   `http://localhost:7180`): Traefik mit demselben Routing wie im Stack (ohne TLS), Frontend-Image (`MODE=e2e`,
-  `frontend/.env.e2e`), die Images von `luna-core`, `luna-task`, `luna-alert` und `luna-note`, Keycloak mit Realm-Import, PostgreSQL, Kafka ohne TLS und ein
+  `frontend/.env.e2e`), die Images von `luna-core`, `luna-task`, `luna-alert`, `luna-note` und `luna-appointment`, Keycloak mit Realm-Import, PostgreSQL, Kafka ohne TLS und ein
   **OpenAI-kompatibler KI-Stub** mit festen Antworten (deterministisch).
 - `npm test` baut die Images, startet die Umgebung, bereitet Keycloak vor (Weiterleitung auf Port 7180 und
   Testbenutzer per Admin-API – der Realm im Repo bleibt unverändert), testet und räumt auf.
@@ -519,7 +528,8 @@ Ports für Backends werden **ab 7080 fortlaufend** vergeben (7080 ist durch Keyc
 | `luna-task` | 7082 | `/api/luna-task` |
 | `luna-alert` | 7083 | `/api/luna-alert` |
 | `luna-note` | 7084 | `/api/luna-note` |
-| _nächstes Backend_ | 7085 | `/api/<backend-name>` |
+| `luna-appointment` | 7085 | `/api/luna-appointment` |
+| _nächstes Backend_ | 7086 | `/api/<backend-name>` |
 
 ## Betrieb
 
@@ -541,9 +551,10 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
 
 - **Stack-Dateien** liegen unter `swarm/`. Ein Stack `luna`, mehrere Dateien:
   `swarm/infrastructure.yml` (Traefik, step-ca, PostgreSQL, Keycloak), `swarm/kafka.yml` (Kafka und `kafka-init`),
-  `swarm/luna-core.yml` (Backend `luna-core`), `swarm/luna-task.yml`, `swarm/luna-alert.yml`, `swarm/luna-note.yml`
+  `swarm/luna-core.yml` (Backend `luna-core`), `swarm/luna-task.yml`, `swarm/luna-alert.yml`, `swarm/luna-note.yml`,
+  `swarm/luna-appointment.yml`
   (Element-Services), `swarm/frontend.yml` (Frontend), weitere Backends je eine Datei `swarm/<backend>.yml`.
-  Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/luna-task.yml -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/frontend.yml [-c …] luna`
+  Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/luna-task.yml -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/luna-appointment.yml -c swarm/frontend.yml [-c …] luna`
   (Pflichtvariablen siehe README).
   Kafka steht in einer eigenen Datei, weil sein Zertifikat erst erzeugt werden kann, wenn step-ca läuft.
 - **Image-Versionen** sind **exakt gepinnt** (aktuell Traefik `v3.7.19`, step-ca `0.30.2`, PostgreSQL `18.7`,
@@ -624,6 +635,7 @@ Monorepo mit mehreren Backends (je ein Top-Level-Ordner) und einem Frontend:
 ├── luna-task/       # Aufgaben: verarbeitet Aufgaben-Events von luna-core, Port 7082
 ├── luna-alert/      # Warnungen: verarbeitet Alert-Events von luna-core, Port 7083
 ├── luna-note/       # Notizen: verarbeitet Notiz-Events von luna-core, Port 7084
+├── luna-appointment/ # Termine: verarbeitet Termin-Events von luna-core, Port 7085
 ├── <backend-name>/  # Weitere Backends nach demselben Muster
 ├── e2e/             # E2E-Tests (Playwright) mit eigener Test-Umgebung (Docker Compose)
 └── frontend/        # React-Frontend (Vite, npm, nginx-Image: Dockerfile, nginx/)
