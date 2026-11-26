@@ -1,9 +1,12 @@
 package de.kirchrath.luna.alert.inbound;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -190,6 +193,7 @@ class AlertControllerTest {
                 .andExpect(jsonPath("$.data.status").value("OPEN"))
                 .andExpect(jsonPath("$.data.acknowledgedDate").doesNotExist())
                 .andExpect(jsonPath("$.data.resolvedDate").doesNotExist())
+                .andExpect(content().string(not(containsString(":null"))))
                 .andExpect(jsonPath("$.audit.version").value(2));
     }
 

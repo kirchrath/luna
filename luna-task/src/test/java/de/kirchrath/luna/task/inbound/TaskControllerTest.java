@@ -2,10 +2,13 @@ package de.kirchrath.luna.task.inbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -136,6 +139,7 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.data.title").value("Pay the gas bill"))
                 .andExpect(jsonPath("$.data.description").doesNotExist())
                 .andExpect(jsonPath("$.data.dueDate").doesNotExist())
+                .andExpect(content().string(not(containsString(":null"))))
                 .andExpect(jsonPath("$.data.priority").value("HIGH"))
                 .andExpect(jsonPath("$.data.edited").value(true))
                 .andExpect(jsonPath("$.audit.version").value(1));
