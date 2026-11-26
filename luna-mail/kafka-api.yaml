@@ -1,0 +1,91 @@
+openapi: 3.1.0
+info:
+  title: Luna Mail Kafka API
+  description: Events published by luna-mail on Kafka. The key of each message is
+    the id of the event.
+  version: 0.0.1-SNAPSHOT
+components:
+  schemas:
+    AuditDto:
+      type: object
+      properties:
+        createdDate:
+          type: string
+          format: date-time
+        lastModifiedDate:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+      required:
+      - createdDate
+      - lastModifiedDate
+      - version
+    EmailAttachmentDto:
+      type: object
+      properties:
+        name:
+          type: string
+        contentType:
+          type: string
+        size:
+          type: integer
+          format: int64
+      required:
+      - contentType
+    EmailEventDataDto:
+      type: object
+      properties:
+        account:
+          type: string
+        address:
+          type: string
+        messageId:
+          type: string
+        from:
+          type: string
+        to:
+          type: array
+          items:
+            type: string
+        subject:
+          type: string
+        sentDate:
+          type: string
+          format: date-time
+        receivedDate:
+          type: string
+          format: date-time
+        text:
+          type: string
+        textTruncated:
+          type: boolean
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAttachmentDto"
+      required:
+      - account
+      - address
+      - attachments
+      - receivedDate
+      - text
+      - textTruncated
+      - to
+    EmailEventDto:
+      type: object
+      description: Published on topic luna_mail_email. The key of each message is
+        the id of the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+        data:
+          $ref: "#/components/schemas/EmailEventDataDto"
+      required:
+      - audit
+      - data
+      - id

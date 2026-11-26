@@ -1,0 +1,14 @@
+spring:
+  config:
+    # Accounts for local development, e.g. app.mail.accounts.private.username and .password; not checked in.
+    import: optional:file:./mail-accounts.yml
+  datasource:
+    url: jdbc:postgresql://localhost:7432/luna?currentSchema=luna_mail
+    username: luna
+  kafka:
+    bootstrap-servers: localhost:7094
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:7080/auth/realms/luna
