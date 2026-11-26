@@ -70,6 +70,59 @@ Verhalten, nicht das endgültige Aussehen: Farben, Schriften und Icons sind dort
   `/topic/inbound-events/manual`); sie zeigt die 10 neuesten Eingaben, „Mehr laden“ lädt je 10 weitere nach.
 - Zeitangaben relativ („vor 12 Min.“), das genaue Datum mit Uhrzeit als Tooltip.
 
+## Aufgaben (Schritt 7a-3)
+
+Visuelle Planung der Seiten für `luna-task`.
+
+| Ansicht | Datei |
+|---|---|
+| Liste (Desktop) | [tasks-desktop.svg](tasks-desktop.svg) |
+| Details und Bearbeiten (Desktop, mit Konflikt-Hinweis) | [task-detail-desktop.svg](task-detail-desktop.svg) |
+| Liste (Smartphone) | [tasks-mobile.svg](tasks-mobile.svg) |
+| Details und Bearbeiten (Smartphone) | [task-detail-mobile.svg](task-detail-mobile.svg) |
+
+![Aufgaben, Liste](tasks-desktop.svg)
+
+### Liste (`/tasks`)
+
+- Navigation: „Aufgaben“ verliert die Markierung „bald“.
+- Überschrift „Aufgaben“ mit kurzer Erklärung, darunter der Umschalter **Offen** (Standard) / **Erledigt** / **Alle**
+  und rechts die Anzahl.
+- Je Aufgabe: **Checkbox** zum Erledigen bzw. Wieder öffnen direkt in der Liste, Titel, Fälligkeit
+  („fällig 01.12., 10:00“, „ohne Fälligkeit“), Priorität als Markierung und ein Pfeil zur Detailseite (ganze Zeile
+  klickbar).
+- Sortierung wie im Backend: Fälligkeit aufsteigend, ohne Fälligkeit zuletzt.
+- Je 20 Einträge, **„Mehr laden“** lädt weitere.
+- Aktualisierung per **Push-Signal** von `luna-task` (`/topic/tasks`), z. B. wenn eine neue Aufgabe aus der
+  Schnelleingabe entsteht.
+
+### Details und Bearbeiten (`/tasks/:id`)
+
+- Zurück-Link „Aufgaben“, Titel als Überschrift, Status (Offen/Erledigt) und Version/letzte Änderung.
+- Button **„Erledigen“** bzw. **„Wieder öffnen“** rechts neben der Überschrift (Smartphone: darunter).
+- Formular: **Titel** (Pflicht, max. 500), **Beschreibung** (max. 10.000), **Fälligkeit**, **Priorität**
+  (Niedrig/Normal/Hoch als Chips). **„Speichern“** sendet `PUT /tasks/{id}` mit der geladenen `version`,
+  **„Verwerfen“** setzt das Formular zurück.
+- **Konflikt (409):** Hinweis über dem Formular „Die Aufgabe wurde inzwischen geändert. Deine Eingaben sind nicht
+  gespeichert.“ mit **„Neu laden“**.
+- Karte **Herkunft**: „Aus der Schnelleingabe erkannt“, bei bearbeiteten Aufgaben der Hinweis, dass neue
+  Analyse-Ergebnisse sie nicht mehr überschreiben, sowie Anlage- und Änderungszeitpunkt.
+
+### Entschieden
+
+- **Fälligkeit:** Datum und optionale Uhrzeit. Ohne Uhrzeit wird 00:00 Ortszeit gespeichert und in der Anzeige
+  weggelassen („fällig 05.12.“).
+- **Überfällig** (Fälligkeit vor heute bzw. vor jetzt bei gesetzter Uhrzeit, nur offene Aufgaben): Text und Icon in
+  **Orange `#d9822b`**, fett.
+- Priorität **„Hoch“** als Petrol-Markierung (`#1f7a8c`), „Normal“ und „Niedrig“ grau.
+
+### Technik
+
+- Eigener API-Wrapper `src/api/luna-task/` aus `luna-task/openapi.yaml`, Basis-URL `VITE_LUNA_TASK_URL`
+  (lokal `http://localhost:7082`, sonst `/api/luna-task`).
+- Stores `TaskListStore` und `TaskStore` (Details/Bearbeiten) im `RootStore`.
+- E2E: Schnelleingabe → Aufgabe erscheint per Push in der Liste → bearbeiten → erledigen.
+
 ## Offen (_TODO_)
 
 - Monitoring als ein Eintrag oder später mit Unterpunkten (Heimnetz & Server, Smart Home & Energie,
