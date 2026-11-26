@@ -242,8 +242,9 @@ mit PostgreSQL und Kafka per Testcontainers (ohne TLS/SASL), gemocktes `ChatMode
 - **Ablauf:** `ClassificationDomainService` veröffentlicht in der Transaktion ein `InboundEventStatusChangedEvent`;
   der `InboundEventNotifier` (`outbound`) sendet erst **nach dem Commit** (`@TransactionalEventListener`), damit
   zurückgerollte Änderungen kein Signal auslösen.
-- STOMP-Nachrichten haben keinen Pfad in der `openapi.yaml`; `GenerateOpenApiTest` nimmt ihre DTOs aber als Schemas
-  unter `components` auf (mit Endpunkt und Topic in der Beschreibung), damit der Frontend-Wrapper ihre Typen erzeugt.
+- STOMP-Nachrichten haben keinen Pfad in der OpenAPI-Definition; ein springdoc-`OpenApiCustomizer`
+  (`config/OpenApiConfig`) nimmt ihre DTOs aber als Schemas unter `components` auf (mit Endpunkt und Topic in der
+  Beschreibung), damit der Frontend-Wrapper ihre Typen erzeugt.
 
 ### Konfiguration von Topics und Prompts
 
