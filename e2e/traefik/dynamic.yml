@@ -17,6 +17,11 @@ http:
       entryPoints: [web]
       middlewares: [luna-note-strip-prefix]
       service: luna-note
+    luna-appointment:
+      rule: PathPrefix(`/api/luna-appointment`)
+      entryPoints: [web]
+      middlewares: [luna-appointment-strip-prefix]
+      service: luna-appointment
     luna-alert:
       rule: PathPrefix(`/api/luna-alert`)
       entryPoints: [web]
@@ -40,6 +45,9 @@ http:
     luna-note-strip-prefix:
       stripPrefix:
         prefixes: [/api/luna-note]
+    luna-appointment-strip-prefix:
+      stripPrefix:
+        prefixes: [/api/luna-appointment]
     luna-alert-strip-prefix:
       stripPrefix:
         prefixes: [/api/luna-alert]
@@ -53,6 +61,9 @@ http:
     luna-note:
       loadBalancer:
         servers: [{ url: http://luna-note:7084 }]
+    luna-appointment:
+      loadBalancer:
+        servers: [{ url: http://luna-appointment:7085 }]
     luna-alert:
       loadBalancer:
         servers: [{ url: http://luna-alert:7083 }]

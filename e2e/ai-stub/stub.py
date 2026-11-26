@@ -1,17 +1,19 @@
 """OpenAI-compatible chat endpoint with fixed answers for the end-to-end tests.
 
 The classification prompt asks for element types, the qualification prompts for items. Every input becomes one
-task, so the tests can rely on a predictable result; a marker like [e2e-alert-123] or [e2e-note-123] makes it an
-alert or a note instead. The marker is copied into the title, so that a test finds its own element among those of
+task, so the tests can rely on a predictable result; a marker like [e2e-alert-123], [e2e-note-123] or
+[e2e-appointment-123] makes it an alert, a note or an appointment (tomorrow 10:00-11:00 UTC) instead. The marker is copied into the title, so that a test finds its own element among those of
 other tests.
 """
 import json
 import re
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 CLASSIFICATION_MARKER = "Element types"
 ALERT_PROMPT = "You extract all alerts"
 NOTE_PROMPT = "You summarize"
+APPOINTMENT_PROMPT = "You extract all appointments"
 TEST_MARKER = re.compile(r"\[e2e-[\w-]+\]")
 
 
@@ -20,6 +22,8 @@ def classification(body):
         return {"types": ["ALERT"]}
     if "[e2e-note-" in body:
         return {"types": ["NOTE"]}
+    if "[e2e-appointment-" in body:
+        return {"types": ["APPOINTMENT"]}
     return {"types": ["TASK"]}
 
 
@@ -32,6 +36,11 @@ def qualification(body):
     if ALERT_PROMPT in body:
         return {"items": [{"title": title("E2E alert", body), "message": "Disk almost full",
                            "severity": "CRITICAL", "affectedSystem": "nas01"}]}
+    if APPOINTMENT_PROMPT in body:
+        start = (datetime.now(timezone.utc) + timedelta(days=1)).replace(hour=10, minute=0, second=0, microsecond=0)
+        return {"items": [{"title": title("E2E appointment", body), "start": start.isoformat(),
+                           "end": (start + timedelta(hours=1)).isoformat(), "allDay": False,
+                           "location": "Practice at the market"}]}
     if NOTE_PROMPT in body:
         return {"items": [{"title": title("E2E note", body), "summary": "Roof will be renovated in May"}]}
     return {"items": [{"title": title("E2E task", body), "priority": "NORMAL"}]}

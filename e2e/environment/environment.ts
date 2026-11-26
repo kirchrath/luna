@@ -8,6 +8,7 @@ import {
   KEYCLOAK_ADMIN,
   LUNA_CORE_IMAGE,
   LUNA_ALERT_IMAGE,
+  LUNA_APPOINTMENT_IMAGE,
   LUNA_NOTE_IMAGE,
   LUNA_TASK_IMAGE,
   REALM,
@@ -21,6 +22,7 @@ const BACKENDS = [
   { dir: fileURLToPath(new URL('../../luna-task', import.meta.url)), image: LUNA_TASK_IMAGE },
   { dir: fileURLToPath(new URL('../../luna-alert', import.meta.url)), image: LUNA_ALERT_IMAGE },
   { dir: fileURLToPath(new URL('../../luna-note', import.meta.url)), image: LUNA_NOTE_IMAGE },
+  { dir: fileURLToPath(new URL('../../luna-appointment', import.meta.url)), image: LUNA_APPOINTMENT_IMAGE },
 ];
 const READY_TIMEOUT_MS = 5 * 60 * 1000;
 const POLL_INTERVAL_MS = 2000;
@@ -73,6 +75,7 @@ export async function waitUntilReady(): Promise<void> {
     () => isReady(`${BASE_URL}/api/luna-task/actuator/health`, '"UP"'),
     () => isReady(`${BASE_URL}/api/luna-alert/actuator/health`, '"UP"'),
     () => isReady(`${BASE_URL}/api/luna-note/actuator/health`, '"UP"'),
+    () => isReady(`${BASE_URL}/api/luna-appointment/actuator/health`, '"UP"'),
     () => isReady(`${BASE_URL}/`),
   ];
   const deadline = Date.now() + READY_TIMEOUT_MS;

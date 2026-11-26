@@ -1,7 +1,7 @@
 # Luna E2E-Tests
 
 Ende-zu-Ende-Tests mit Playwright gegen eine eigene Test-Umgebung (Docker Compose), die alle Teile von Luna so
-verbindet wie der Stack: Traefik, Frontend (nginx-Image), `luna-core`, `luna-task`, `luna-alert` und `luna-note` (Jib-Images), Keycloak, PostgreSQL
+verbindet wie der Stack: Traefik, Frontend (nginx-Image), `luna-core`, `luna-task`, `luna-alert`, `luna-note` und `luna-appointment` (Jib-Images), Keycloak, PostgreSQL
 und Kafka.
 Statt eines KI-Anbieters antwortet ein Stub mit festen Antworten (jede Eingabe wird zu einer Aufgabe).
 
@@ -34,18 +34,18 @@ starten. Der HTML-Report liegt danach in `playwright-report/`.
 
 ## Aufbau
 
-| Pfad                  | Inhalt                                                                                                                                                  |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docker-compose.yml`  | Test-Umgebung (Projekt `luna-e2e`, erreichbar unter `http://localhost:7180`)                                                                            |
-| `traefik/dynamic.yml` | Routing wie im Stack, ohne TLS: `/api/<backend>` (mit StripPrefix), `/auth`, Rest ans Frontend                                                          |
-| `ai-stub/stub.py`     | OpenAI-kompatibler Stub für `luna-core`                                                                                                                 |
-| `environment/`        | Bauen, Starten, Warten und Vorbereiten von Keycloak (Weiterleitung auf Port 7180, Testbenutzer)                                                         |
-| `tests/`              | Szenarien: Anmelden/Abmelden, Schnelleingabe mit Push-Signal, Aufgaben, Notizen und Warnungen (Push, Bearbeiten, Statuswechsel), Navigation und Sprache |
+| Pfad                  | Inhalt                                                                                                                                                                  |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docker-compose.yml`  | Test-Umgebung (Projekt `luna-e2e`, erreichbar unter `http://localhost:7180`)                                                                                            |
+| `traefik/dynamic.yml` | Routing wie im Stack, ohne TLS: `/api/<backend>` (mit StripPrefix), `/auth`, Rest ans Frontend                                                                          |
+| `ai-stub/stub.py`     | OpenAI-kompatibler Stub für `luna-core`                                                                                                                                 |
+| `environment/`        | Bauen, Starten, Warten und Vorbereiten von Keycloak (Weiterleitung auf Port 7180, Testbenutzer)                                                                         |
+| `tests/`              | Szenarien: Anmelden/Abmelden, Schnelleingabe mit Push-Signal, Aufgaben, Notizen, Warnungen und Termine (Push, Bearbeiten, Statuswechsel, Monat), Navigation und Sprache |
 
 - Das Frontend-Image wird mit `--build-arg MODE=e2e` gebaut und nutzt `frontend/.env.e2e`.
 - Alle Backends laufen mit und müssen bereit sein (`/api/<backend>/actuator/health`).
-- Der KI-Stub macht aus jeder Eingabe eine Aufgabe, mit `[e2e-alert-…]` bzw. `[e2e-note-…]` eine Warnung bzw.
-  Notiz; die Markierung landet im Titel, damit jeder Test sein eigenes Element findet.
+- Der KI-Stub macht aus jeder Eingabe eine Aufgabe, mit `[e2e-alert-…]`, `[e2e-note-…]` bzw.
+  `[e2e-appointment-…]` eine Warnung, Notiz bzw. einen Termin (morgen 10:00 UTC); die Markierung landet im Titel, damit jeder Test sein eigenes Element findet.
 - Keycloak importiert den Realm aus `swarm/keycloak/luna-realm.json`; die zusätzliche Weiterleitung auf
   `http://localhost:7180/*` setzt nur die Test-Umgebung über die Admin-API, der Realm im Repo bleibt unverändert.
 - Alle Werte (Passwörter, Testbenutzer `e2e`) sind Testwerte ohne Bedeutung außerhalb dieser Umgebung.
