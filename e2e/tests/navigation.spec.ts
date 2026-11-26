@@ -8,11 +8,14 @@ test('that choosing an area should result into its placeholder page', async ({ p
   await openNavigation(page, isMobile);
 
   // when
-  await page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('link', { name: 'Aufgaben' }).click();
+  await page
+    .getByRole('navigation', { name: 'Hauptnavigation' })
+    .getByRole('link', { name: /Termine/ })
+    .click();
 
   // then
-  await expect(page).toHaveURL('/tasks');
-  await expect(page.getByRole('heading', { name: 'Aufgaben' })).toBeVisible();
+  await expect(page).toHaveURL('/calendar');
+  await expect(page.getByRole('heading', { name: 'Termine' })).toBeVisible();
   await expect(page.getByText('Dieser Bereich kommt in einem späteren Schritt.')).toBeVisible();
 });
 
