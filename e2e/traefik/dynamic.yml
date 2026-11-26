@@ -1,0 +1,31 @@
+# Same routing as in the stack (swarm/), without TLS: /api/luna-core and /auth go to their services,
+# everything else to the frontend.
+http:
+  routers:
+    luna-core:
+      rule: PathPrefix(`/api/luna-core`)
+      entryPoints: [web]
+      middlewares: [luna-core-strip-prefix]
+      service: luna-core
+    keycloak:
+      rule: PathPrefix(`/auth`)
+      entryPoints: [web]
+      service: keycloak
+    frontend:
+      rule: PathPrefix(`/`)
+      entryPoints: [web]
+      service: frontend
+  middlewares:
+    luna-core-strip-prefix:
+      stripPrefix:
+        prefixes: [/api/luna-core]
+  services:
+    luna-core:
+      loadBalancer:
+        servers: [{ url: http://luna-core:7081 }]
+    keycloak:
+      loadBalancer:
+        servers: [{ url: http://keycloak:8080 }]
+    frontend:
+      loadBalancer:
+        servers: [{ url: http://frontend:8080 }]

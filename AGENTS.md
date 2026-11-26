@@ -46,7 +46,7 @@ Noch offen (bitte hier eintragen, sobald entschieden):
        - 6c-1 Push-Signal in `luna-core` per STOMP/WebSocket bei Statuswechsel einer Eingabe (erledigt)
        - 6c-2 Frontend: generierter API-Wrapper, MobX-Store, Seite und STOMP-Abonnement (erledigt)
      - 6d nginx-Image und `swarm/frontend.yml` (erledigt)
-     - 6e E2E-Tests mit Playwright
+     - 6e E2E-Tests mit Playwright (erledigt)
   7. Danach weitere Quellen (z. B. E-Mail)
 
   Keiner dieser Schritte ist ohne ausdrücklichen Auftrag umzusetzen.
@@ -417,8 +417,8 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
   - Die ganze App ist geschützt: Ohne Anmeldung leitet `AuthGate` sofort zu Keycloak weiter und kehrt danach zur
     angeforderten Seite zurück (Pfad im OIDC-`state`). Abmelden beendet auch die Keycloak-Sitzung.
   - Tokens im **sessionStorage**, Erneuerung automatisch per Refresh-Token.
-  - Konfiguration über `VITE_OIDC_AUTHORITY` und `VITE_OIDC_CLIENT_ID` in **`.env.development`** und
-    **`.env.production`**. Diese beiden Dateien sind **eingecheckt** und enthalten **nur öffentliche Werte** – eine
+  - Konfiguration über `VITE_OIDC_AUTHORITY` und `VITE_OIDC_CLIENT_ID` in **`.env.development`**,
+    **`.env.production`** und **`.env.e2e`** (Modus der E2E-Tests, Image-Build mit `--build-arg MODE=e2e`). Diese beiden Dateien sind **eingecheckt** und enthalten **nur öffentliche Werte** – eine
     bewusste Ausnahme von der Regel „keine `.env`-Dateien committen“; Secrets gehören nie hinein.
   - Router und Stores entstehen erst nach der Anmeldung (`App`), damit der Router die wiederhergestellte Adresse liest.
   - In Tests ersetzt `fakeAuth()` (`src/test`) den `AuthContext`; `react-oidc-context` wird nicht gemockt.
@@ -430,7 +430,16 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
 
 ### Ende-zu-Ende
 
-- **Playwright** für E2E-Tests über Frontend und Backend hinweg.
+- **Playwright** für E2E-Tests über Frontend und Backend hinweg, im eigenen npm-Projekt **`e2e/`** (Node 24,
+  `@playwright/test` exakt gepinnt, ESLint/Prettier, Testnamen und given/when/then wie überall).
+- Getestet wird gegen eine **eigene Test-Umgebung** (`e2e/docker-compose.yml`, Projekt `luna-e2e`,
+  `http://localhost:7180`): Traefik mit demselben Routing wie im Stack (ohne TLS), Frontend-Image (`MODE=e2e`,
+  `frontend/.env.e2e`), `luna-core`-Image, Keycloak mit Realm-Import, PostgreSQL, Kafka ohne TLS und ein
+  **OpenAI-kompatibler KI-Stub** mit festen Antworten (deterministisch).
+- `npm test` baut die Images, startet die Umgebung, bereitet Keycloak vor (Weiterleitung auf Port 7180 und
+  Testbenutzer per Admin-API – der Realm im Repo bleibt unverändert), testet und räumt auf.
+- Browser: **Chromium Desktop und Smartphone (Pixel 7)**; Unterschiede (Overlay-Navigation) im Test über `isMobile`.
+- Push-Signale werden echt geprüft: Die Liste wird nie gepollt, ein Statuswechsel im Test beweist das Signal.
 
 ## Services & Ports
 
@@ -543,6 +552,7 @@ Monorepo mit mehreren Backends (je ein Top-Level-Ordner) und einem Frontend:
 ├── swarm/           # Docker-Stack-Dateien (infrastructure.yml, kafka.yml, <backend>.yml) und Configs/Skripte
 ├── luna-core/       # Erstes Backend: Event-Analyse (Spring Boot, Maven, Jib), Port 7081
 ├── <backend-name>/  # Weitere Backends nach demselben Muster
+├── e2e/             # E2E-Tests (Playwright) mit eigener Test-Umgebung (Docker Compose)
 └── frontend/        # React-Frontend (Vite, npm, nginx-Image: Dockerfile, nginx/)
     ├── docs/        # Visuelle Planung: Wireframes (SVG) und Festlegungen zum Aufbau der Anwendung
     └── src/
@@ -589,12 +599,10 @@ API-Wrapper von `luna-core` aus `luna-core/openapi.yaml` neu generieren (schreib
 cd frontend && npm run generate:api
 ```
 
-Noch nicht angelegt:
+E2E-Tests (benötigen Docker, Java 25 und Node 24; Details in `e2e/README.md`):
 
 ```bash
-
-# E2E-Tests (Playwright)
-# <befehl>
+cd e2e && npm ci && npx playwright install chromium && npm test
 ```
 
 Vor jedem Commit müssen Build, Tests und Linter (sofern vorhanden) grün sein.
@@ -638,7 +646,8 @@ Vor jedem Commit müssen Build, Tests und Linter (sofern vorhanden) grün sein.
 ## Sicherheit
 
 - Keine Secrets (API-Keys, Tokens, Passwörter, Client-Secrets, `.env`-Dateien) committen.
-  Ausnahme: `frontend/.env.development` und `frontend/.env.production` mit ausschließlich öffentlichen Werten.
+  Ausnahme: `frontend/.env.development`, `frontend/.env.production` und `frontend/.env.e2e` mit ausschließlich
+  öffentlichen Werten; Testwerte der E2E-Umgebung (`e2e/`) sind keine Secrets.
 - Neue Abhängigkeiten nur mit Begründung hinzufügen und auf Pflege/Lizenz prüfen.
 - Externe Eingaben immer validieren.
 
