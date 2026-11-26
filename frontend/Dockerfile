@@ -1,12 +1,14 @@
 # Image of the Luna frontend: build with Node, serve the static files with nginx (without root).
 # Build on the server: docker build --platform linux/amd64 -t luna-frontend:<version> frontend
+# MODE selects the Vite environment file (.env.<MODE>); e2e/ builds with MODE=e2e.
 
 FROM node:24.22.3-alpine AS build
+ARG MODE=production
 WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
 RUN npm ci --no-audit --no-fund
 COPY . .
-RUN npm run build
+RUN npm run build -- --mode "$MODE"
 
 FROM nginxinc/nginx-unprivileged:1.30.6-alpine
 COPY nginx/default.conf nginx/security-headers.inc /etc/nginx/conf.d/
