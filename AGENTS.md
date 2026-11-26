@@ -25,8 +25,10 @@ Geplante Bereiche:
 **Phase: Konzeption.** Das erste Feature ist festgelegt (siehe unten). Keine Fachfunktionen implementieren,
 solange sie nicht ausdrücklich beauftragt sind.
 
-Bisher existieren die Dokumentation, die Infrastruktur (`swarm/`) und das Grundgerüst von `luna-core`
-(ohne Fachfunktionen).
+Bisher existieren die Dokumentation, die Infrastruktur (`swarm/`), `luna-core` (manuelle Eingabe, Analyse per
+Spring AI, Veröffentlichung der Elemente auf Kafka, Liste der letzten Eingaben mit Push-Signal), `luna-task`
+(Verarbeitung der Aufgaben-Events, REST-Endpunkte; noch nicht im Stack), das Frontend (Layout, Anmeldung,
+Schnelleingabe; weitere Bereiche als Platzhalter) und die E2E-Tests (`e2e/`).
 
 Noch offen (bitte hier eintragen, sobald entschieden):
 
