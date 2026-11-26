@@ -7,3 +7,5 @@ export const TEST_USER = { username: 'e2e', password: 'e2e-password', firstName:
 export const FRONTEND_IMAGE = 'luna-frontend:e2e';
 export const LUNA_CORE_IMAGE = 'luna-core:e2e';
 export const LUNA_TASK_IMAGE = 'luna-task:e2e';
+export const LUNA_ALERT_IMAGE = 'luna-alert:e2e';
+export const LUNA_NOTE_IMAGE = 'luna-note:e2e';
