@@ -60,6 +60,12 @@ Spezifikation: [openapi.yaml](openapi.yaml). Veröffentlichte Events: [kafka-api
 | `POST /tasks/{id}/complete` | Erledigen (bereits erledigt: unverändert) |
 | `POST /tasks/{id}/reopen` | Wieder öffnen (bereits offen: unverändert) |
 
+Optionale Felder (`description`, `dueDate`, `completedDate`, `sourceId`) fehlen in den Antworten, wenn sie leer
+sind (`spring.jackson.default-property-inclusion: non_null`).
+
+**Frontend:** Seiten „Aufgaben“ (`/tasks`) und Details/Bearbeiten (`/tasks/:id`), siehe
+[frontend/docs](../frontend/docs/README.md#aufgaben-schritt-7a-3).
+
 ## Konfiguration
 
 | Property | Bedeutung |
@@ -94,7 +100,5 @@ cd luna-task
 
 ## Offen (_TODO_)
 
-- Fachliche E2E-Tests (mit der Frontend-Seite „Aufgaben“).
-- Frontend-Seite „Aufgaben“.
 - Events werden nach dem Commit direkt gesendet: Ist Kafka in diesem Moment nicht erreichbar, geht das Event verloren
   (kein Outbox-Muster).
