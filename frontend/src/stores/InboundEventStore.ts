@@ -2,10 +2,10 @@ import { makeAutoObservable } from 'mobx';
 
 import type {
   LunaCoreClient,
+  LunaCorePushConnector,
   LunaElementTypeDto,
   ManualInboundEventListItemDto,
   PushConnection,
-  PushConnector,
 } from '../api';
 
 export const PAGE_SIZE = 10;
@@ -31,11 +31,11 @@ export class InboundEventStore {
   private _connection: ConnectionState = 'idle';
 
   private readonly client: LunaCoreClient;
-  private readonly connectPush: PushConnector;
+  private readonly connectPush: LunaCorePushConnector;
   private pushConnection: PushConnection | null = null;
   private wasConnected = false;
 
-  constructor(client: LunaCoreClient, connectPush: PushConnector) {
+  constructor(client: LunaCoreClient, connectPush: LunaCorePushConnector) {
     this.client = client;
     this.connectPush = connectPush;
     makeAutoObservable<InboundEventStore, 'client' | 'connectPush' | 'pushConnection' | 'wasConnected'>(this, {

@@ -1,18 +1,16 @@
 import { Client } from '@stomp/stompjs';
 
-import type { InboundEventChangedDto } from './types';
 import type { TokenSource } from './tokenSource';
 
-/** Endpoint and topic of the push messages of luna-core (see luna-core/README.md). */
+/** Endpoint of the push messages of all backends (STOMP over WebSocket, see AGENTS.md). */
 export const PUSH_ENDPOINT = '/ws';
-export const MANUAL_INBOUND_EVENTS_TOPIC = '/topic/inbound-events/manual';
 const ACCESS_TOKEN_PARAMETER = 'access_token';
 const RECONNECT_DELAY_MS = 5000;
 const HTTP_SCHEME = /^http/;
 const WEB_SOCKET_SCHEME = 'ws';
 
-export interface PushHandlers {
-  onSignal: (signal: InboundEventChangedDto) => void;
+export interface PushHandlers<Signal> {
+  onSignal: (signal: Signal) => void;
   onConnected: () => void;
   onDisconnected: () => void;
 }
@@ -21,7 +19,7 @@ export interface PushConnection {
   close: () => Promise<void>;
 }
 
-export type PushConnector = (handlers: PushHandlers) => PushConnection;
+export type PushConnector<Signal> = (handlers: PushHandlers<Signal>) => PushConnection;
 
 export function pushUrl(baseUrl: string, token: string): string {
   const url = new URL(`${baseUrl}${PUSH_ENDPOINT}`, window.location.href);
@@ -31,7 +29,12 @@ export function pushUrl(baseUrl: string, token: string): string {
   return url.toString();
 }
 
-export function createPushConnector(baseUrl: string, tokenSource: TokenSource): PushConnector {
+/** Connects to the push endpoint of a backend and passes the signals of one topic on. */
+export function createPushConnector<Signal>(
+  baseUrl: string,
+  topic: string,
+  tokenSource: TokenSource,
+): PushConnector<Signal> {
   return ({ onSignal, onConnected, onDisconnected }) => {
     const client = new Client();
     client.reconnectDelay = RECONNECT_DELAY_MS;
@@ -41,8 +44,8 @@ export function createPushConnector(baseUrl: string, tokenSource: TokenSource): 
       stompClient.brokerURL = pushUrl(baseUrl, user?.access_token ?? '');
     };
     client.onConnect = () => {
-      client.subscribe(MANUAL_INBOUND_EVENTS_TOPIC, (message) => {
-        onSignal(JSON.parse(message.body) as InboundEventChangedDto);
+      client.subscribe(topic, (message) => {
+        onSignal(JSON.parse(message.body) as Signal);
       });
       onConnected();
     };

@@ -67,11 +67,11 @@ export function AppLayout() {
         },
         {
           title: t('navigation.areas'),
-          items: AREAS.map(({ area, icon: Icon }) => ({
+          items: AREAS.map(({ area, icon: Icon, available }) => ({
             to: PATHS[area],
             label: t(`navigation.${area}`),
             icon: <Icon size={ICON_SIZE} aria-hidden="true" />,
-            tag: t('navigation.soon'),
+            ...(available ? {} : { tag: t('navigation.soon') }),
           })),
         },
       ]}

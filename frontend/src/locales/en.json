@@ -49,6 +49,81 @@
       "FAILED": "Failed"
     }
   },
+  "tasks": {
+    "title": "Tasks",
+    "lead": "Recognised from your input – complete and edit them here.",
+    "filterLabel": "Show tasks",
+    "filter": {
+      "OPEN": "Open",
+      "DONE": "Done",
+      "ALL": "All"
+    },
+    "count": {
+      "OPEN": "{{count}} open",
+      "DONE": "{{count}} done",
+      "ALL": "{{count}} in total"
+    },
+    "empty": {
+      "OPEN": "No open tasks. New tasks come from the quick input.",
+      "DONE": "No completed tasks yet.",
+      "ALL": "No tasks yet. New tasks come from the quick input."
+    },
+    "complete": "Complete {{title}}",
+    "reopen": "Reopen {{title}}",
+    "due": "due {{date}}",
+    "overdue": "overdue · {{date}}",
+    "noDue": "no due date",
+    "edited": "edited",
+    "loadMore": "Load more",
+    "loadError": "The tasks could not be loaded.",
+    "retry": "Try again",
+    "actionFailed": "The task could not be changed. Please try again in a moment.",
+    "liveInterrupted": "Live updates interrupted – Luna is reconnecting.",
+    "priority": {
+      "LOW": "Low",
+      "NORMAL": "Normal",
+      "HIGH": "High"
+    },
+    "status": {
+      "OPEN": "Open",
+      "DONE": "Done"
+    }
+  },
+  "taskDetail": {
+    "back": "Tasks",
+    "version": "Version {{version}}",
+    "changed": "last changed",
+    "complete": "Complete",
+    "reopen": "Reopen",
+    "statusFailed": "The status could not be changed. Please try again in a moment.",
+    "formLabel": "Edit task",
+    "titleLabel": "Title",
+    "titleMissing": "Please enter a title.",
+    "descriptionLabel": "Description",
+    "dueDateLabel": "Due on",
+    "dueTimeLabel": "Time (optional)",
+    "priorityLabel": "Priority",
+    "save": "Save",
+    "discard": "Discard",
+    "conflict": "The task has been changed in the meantime.",
+    "conflictText": "Your changes have not been saved.",
+    "reload": "Reload",
+    "invalid": "Luna could not accept the changes. Check your input and try again.",
+    "saveFailed": "Saving failed. Your input is kept – please try again in a moment.",
+    "notFound": "Task not found",
+    "notFoundText": "This task does not exist (any more).",
+    "loadError": "The task could not be loaded.",
+    "retry": "Try again",
+    "origin": "Origin",
+    "source": {
+      "CORE": "Recognised from the quick input"
+    },
+    "editedHint": "Edited: new analysis results no longer overwrite your changes.",
+    "uneditedHint": "New analysis results update this task until you edit it.",
+    "created": "Created {{date}}",
+    "modified": "Changed {{date}}",
+    "completed": "Completed {{date}}"
+  },
   "comingSoon": {
     "text": "This area comes in a later step."
   },

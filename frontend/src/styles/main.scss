@@ -2,6 +2,8 @@
 // Calm grey surface as in the wireframes; the strong petrol colour is reserved for highlights (Bulma $link).
 $luna-primary: #4a5260;
 $luna-highlight: #1f7a8c;
+// Overdue tasks: an orange that complements the petrol highlight.
+$luna-overdue: #d9822b;
 $luna-font-body:
   'Inter Variable',
   system-ui,
@@ -343,6 +345,160 @@ html {
   }
 }
 
+.task-list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  .buttons {
+    margin-bottom: 0;
+  }
+}
+
+.segmented-control.buttons .button {
+  margin-bottom: 0;
+}
+
+.tasks {
+  margin-bottom: 1rem;
+}
+
+.task {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--bulma-border-weak);
+
+  &:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  &.is-done .task-title {
+    text-decoration: line-through;
+    color: var(--bulma-text-weak);
+  }
+}
+
+.task-check {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border: 1px solid var(--bulma-border);
+  border-radius: 6px;
+  background: var(--bulma-scheme-main);
+  color: var(--bulma-primary-invert);
+  cursor: pointer;
+
+  &[aria-checked='true'] {
+    background: var(--bulma-primary);
+    border-color: var(--bulma-primary);
+  }
+
+  &.is-loading {
+    opacity: 0.5;
+    cursor: progress;
+  }
+}
+
+.task-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--bulma-text);
+
+  &:hover .task-title {
+    text-decoration: underline;
+  }
+
+  .tag {
+    gap: 0.25rem;
+  }
+}
+
+.task-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.task-title {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-due {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+
+  &.is-overdue {
+    color: $luna-overdue;
+    font-weight: 600;
+  }
+}
+
+.task-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.task-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+
+  .title {
+    margin-bottom: 0.5rem;
+    overflow-wrap: anywhere;
+  }
+
+  .button {
+    flex: none;
+    gap: 0.375rem;
+  }
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.task-conflict {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.task-origin {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .placeholder {
   padding: 3rem 1rem;
 
@@ -358,6 +514,27 @@ html {
 }
 
 @media screen and (max-width: $mobile) {
+  .task-heading {
+    flex-direction: column;
+  }
+
+  // As in the wireframe: the priority moves below the due date on small screens.
+  .task-link {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.25rem 0.75rem;
+
+    .tag {
+      grid-row: 2;
+      justify-self: start;
+    }
+
+    svg:last-child {
+      grid-row: 1 / span 2;
+      grid-column: 2;
+    }
+  }
+
   .app-burger {
     display: inline-flex;
   }

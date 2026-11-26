@@ -49,6 +49,81 @@
       "FAILED": "Fehlgeschlagen"
     }
   },
+  "tasks": {
+    "title": "Aufgaben",
+    "lead": "Aus deinen Eingaben erkannt – hier erledigst und bearbeitest du sie.",
+    "filterLabel": "Aufgaben anzeigen",
+    "filter": {
+      "OPEN": "Offen",
+      "DONE": "Erledigt",
+      "ALL": "Alle"
+    },
+    "count": {
+      "OPEN": "{{count}} offen",
+      "DONE": "{{count}} erledigt",
+      "ALL": "{{count}} insgesamt"
+    },
+    "empty": {
+      "OPEN": "Keine offenen Aufgaben. Neue Aufgaben entstehen aus der Schnelleingabe.",
+      "DONE": "Noch keine erledigten Aufgaben.",
+      "ALL": "Noch keine Aufgaben. Neue Aufgaben entstehen aus der Schnelleingabe."
+    },
+    "complete": "{{title}} erledigen",
+    "reopen": "{{title}} wieder öffnen",
+    "due": "fällig {{date}}",
+    "overdue": "überfällig · {{date}}",
+    "noDue": "ohne Fälligkeit",
+    "edited": "bearbeitet",
+    "loadMore": "Mehr laden",
+    "loadError": "Die Aufgaben konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "actionFailed": "Die Aufgabe konnte nicht geändert werden. Versuche es gleich noch einmal.",
+    "liveInterrupted": "Live-Aktualisierung unterbrochen – Luna verbindet sich neu.",
+    "priority": {
+      "LOW": "Niedrig",
+      "NORMAL": "Normal",
+      "HIGH": "Hoch"
+    },
+    "status": {
+      "OPEN": "Offen",
+      "DONE": "Erledigt"
+    }
+  },
+  "taskDetail": {
+    "back": "Aufgaben",
+    "version": "Version {{version}}",
+    "changed": "zuletzt geändert",
+    "complete": "Erledigen",
+    "reopen": "Wieder öffnen",
+    "statusFailed": "Der Status konnte nicht geändert werden. Versuche es gleich noch einmal.",
+    "formLabel": "Aufgabe bearbeiten",
+    "titleLabel": "Titel",
+    "titleMissing": "Bitte gib einen Titel ein.",
+    "descriptionLabel": "Beschreibung",
+    "dueDateLabel": "Fällig am",
+    "dueTimeLabel": "Uhrzeit (optional)",
+    "priorityLabel": "Priorität",
+    "save": "Speichern",
+    "discard": "Verwerfen",
+    "conflict": "Die Aufgabe wurde inzwischen geändert.",
+    "conflictText": "Deine Eingaben sind nicht gespeichert.",
+    "reload": "Neu laden",
+    "invalid": "Luna konnte die Änderungen nicht annehmen. Prüfe die Eingaben und versuche es erneut.",
+    "saveFailed": "Speichern fehlgeschlagen. Deine Eingaben bleiben erhalten – versuche es gleich noch einmal.",
+    "notFound": "Aufgabe nicht gefunden",
+    "notFoundText": "Diese Aufgabe gibt es nicht (mehr).",
+    "loadError": "Die Aufgabe konnte nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "origin": "Herkunft",
+    "source": {
+      "CORE": "Aus der Schnelleingabe erkannt"
+    },
+    "editedHint": "Bearbeitet: Neue Analyse-Ergebnisse überschreiben deine Änderungen nicht mehr.",
+    "uneditedHint": "Neue Analyse-Ergebnisse aktualisieren diese Aufgabe, bis du sie bearbeitest.",
+    "created": "Angelegt {{date}}",
+    "modified": "Geändert {{date}}",
+    "completed": "Erledigt {{date}}"
+  },
   "comingSoon": {
     "text": "Dieser Bereich kommt in einem späteren Schritt."
   },
