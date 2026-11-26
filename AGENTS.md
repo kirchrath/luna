@@ -45,7 +45,7 @@ Noch offen (bitte hier eintragen, sobald entschieden):
      - 6c Schnelleingabe mit Liste der letzten Eingaben, aufgeteilt in:
        - 6c-1 Push-Signal in `luna-core` per STOMP/WebSocket bei Statuswechsel einer Eingabe (erledigt)
        - 6c-2 Frontend: generierter API-Wrapper, MobX-Store, Seite und STOMP-Abonnement (erledigt)
-     - 6d nginx-Image und `swarm/frontend.yml`
+     - 6d nginx-Image und `swarm/frontend.yml` (erledigt)
      - 6e E2E-Tests mit Playwright
   7. Danach weitere Quellen (z. B. E-Mail)
 
@@ -398,6 +398,15 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
 - **Docker-Image:** Das Frontend wird als eigenes **nginx-Image** ausgeliefert (Dockerfile im Frontend-Projekt,
   nur `linux/amd64`, lokal gebaut). nginx liefert ausschließlich die statischen Dateien aus;
   API-Aufrufe routet **Traefik direkt an das jeweilige Backend**.
+  - Image **`luna-frontend:<version>`** (Version aus `frontend/package.json`), gebaut per
+    `docker build --platform linux/amd64 -t luna-frontend:<version> frontend`.
+  - **Multi-Stage:** `node:24.22.3-alpine` baut (`npm ci`, `npm run build`), ausgeliefert wird
+    **`nginxinc/nginx-unprivileged:1.30.6-alpine`** (ohne Root, Port **8080**). Die Plattform kommt vom Build-Befehl,
+    nicht aus den `FROM`-Zeilen.
+  - `frontend/nginx/`: SPA-Fallback auf `index.html`, `index.html` mit `no-cache`, `/assets/` ein Jahr `immutable`,
+    Sicherheits-Header (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`) und eine
+    **Content-Security-Policy nur für die eigene Origin** (`'self'`; App, API, Keycloak und WebSocket laufen alle unter
+    `luna.internal`). Neue externe Quellen erfordern eine Anpassung der CSP. `/healthz` für den Healthcheck.
 - **Texte:** Keine fest codierten UI-Texte; alle Texte über react-i18next. Neue Schlüssel immer in
   **Deutsch und Englisch** anlegen.
 - **Barrel-Dateien:** Jeder Ordner unter `src/` hat ein `index.ts`, das alle Dateien und Unterordner exportiert.
@@ -457,9 +466,9 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
 
 - **Stack-Dateien** liegen unter `swarm/`. Ein Stack `luna`, mehrere Dateien:
   `swarm/infrastructure.yml` (Traefik, step-ca, PostgreSQL, Keycloak), `swarm/kafka.yml` (Kafka und `kafka-init`),
-  `swarm/luna-core.yml` (Backend `luna-core`), später weitere für Frontend und Backends (je Backend eine Datei
-  `swarm/<backend>.yml`).
-  Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml [-c …] luna`
+  `swarm/luna-core.yml` (Backend `luna-core`), `swarm/frontend.yml` (Frontend), später weitere Backends (je Backend
+  eine Datei `swarm/<backend>.yml`).
+  Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/frontend.yml [-c …] luna`
   (Pflichtvariablen siehe README).
   Kafka steht in einer eigenen Datei, weil sein Zertifikat erst erzeugt werden kann, wenn step-ca läuft.
 - **Image-Versionen** sind **exakt gepinnt** (aktuell Traefik `v3.7.19`, step-ca `0.30.2`, PostgreSQL `18.7`,
@@ -467,8 +476,10 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
 - **Secrets** sind **externe Docker Secrets** (`docker secret create` auf dem Server).
   Backends lesen sie per **`spring.config.import=optional:configtree:/run/secrets/`** (Profil `prod`); das Secret
   wird dazu mit dem **Property-Namen als Ziel** eingebunden (z. B. `target: spring.datasource.password`).
-- **Backend-Images** werden im Stack über eine Versions-Variable referenziert (z. B. `luna-core:${LUNA_CORE_VERSION}`),
-  nie über `latest`.
+- **Eigene Images** (Backends und Frontend) werden im Stack über eine Versions-Variable referenziert
+  (z. B. `luna-core:${LUNA_CORE_VERSION}`, `luna-frontend:${LUNA_FRONTEND_VERSION}`), nie über `latest`.
+  Pflichtvariablen als `${VAR:?Meldung}` – die Meldung **ohne Bindestrich**, sonst liest Docker ihn als
+  Standardwert-Operator. Mit `docker stack config -c …` prüfen.
 - Die Infrastruktur-Datei dient **auch der lokalen Entwicklung**; PostgreSQL (7432) und Keycloak (7080) sind
   daher auch auf dem Server veröffentlicht. Die Keycloak-URL (Issuer) ist über `LUNA_KEYCLOAK_URL` umschaltbar.
 - **Kafka** (`apache/kafka`, KRaft-Modus, ein Knoten) läuft in `swarm/kafka.yml`, ist wie PostgreSQL und
@@ -532,7 +543,7 @@ Monorepo mit mehreren Backends (je ein Top-Level-Ordner) und einem Frontend:
 ├── swarm/           # Docker-Stack-Dateien (infrastructure.yml, kafka.yml, <backend>.yml) und Configs/Skripte
 ├── luna-core/       # Erstes Backend: Event-Analyse (Spring Boot, Maven, Jib), Port 7081
 ├── <backend-name>/  # Weitere Backends nach demselben Muster
-└── frontend/        # React-Frontend (Vite, npm, nginx-Image)
+└── frontend/        # React-Frontend (Vite, npm, nginx-Image: Dockerfile, nginx/)
     ├── docs/        # Visuelle Planung: Wireframes (SVG) und Festlegungen zum Aufbau der Anwendung
     └── src/
         ├── api/     # Generierte Wrapper, ein Unterordner pro Backend (eingecheckt, nicht manuell bearbeiten)
