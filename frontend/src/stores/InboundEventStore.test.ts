@@ -115,7 +115,7 @@ describe('InboundEventStore', () => {
       data: undefined,
       error: undefined,
       response: new Response(null, { status: 500 }),
-    } as unknown as Awaited<ReturnType<typeof lunaCore.GET>>);
+    });
 
     // when
     await store.loadInitial();
