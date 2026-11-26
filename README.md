@@ -6,8 +6,9 @@ Architektur, Tech-Stack und Konventionen stehen in [AGENTS.md](AGENTS.md).
 ## Infrastruktur im Docker Swarm starten
 
 Die Infrastruktur-Services (Traefik, step-ca, PostgreSQL, Keycloak) stehen in
-[`swarm/infrastructure.yml`](swarm/infrastructure.yml), Kafka in [`swarm/kafka.yml`](swarm/kafka.yml).
-Weitere Stack-Dateien (Frontend, Backends) kommen später dazu; alle werden im selben Stack `luna` deployt.
+[`swarm/infrastructure.yml`](swarm/infrastructure.yml), Kafka in [`swarm/kafka.yml`](swarm/kafka.yml),
+`luna-core` in [`swarm/luna-core.yml`](swarm/luna-core.yml) und das Frontend in
+[`swarm/frontend.yml`](swarm/frontend.yml). Alle werden im selben Stack `luna` deployt.
 
 | Service | Image | Ports (veröffentlicht) |
 |---|---|---|
@@ -16,6 +17,8 @@ Weitere Stack-Dateien (Frontend, Backends) kommen später dazu; alle werden im s
 | PostgreSQL | `postgres:18.7` | 7432 |
 | Keycloak | `quay.io/keycloak/keycloak:26.8.2` | 7080 (unter `/auth`) |
 | Kafka | `apache/kafka:4.4.0` | 7094 |
+| `luna-core` | `luna-core:${LUNA_CORE_VERSION}` (lokal gebaut) | – (über Traefik unter `/api/luna-core`) |
+| Frontend | `luna-frontend:${LUNA_FRONTEND_VERSION}` (lokal gebaut, nginx) | – (über Traefik unter `/`) |
 
 ### Schritt-für-Schritt: Infrastruktur starten
 
@@ -89,6 +92,9 @@ export LUNA_KEYCLOAK_URL=http://localhost:7080/auth
 # luna-core: Version des lokal gebauten Images (siehe luna-core/pom.xml). Pflicht.
 export LUNA_CORE_VERSION=0.0.1-SNAPSHOT
 
+# Frontend: Version des lokal gebauten Images (siehe frontend/package.json). Pflicht.
+export LUNA_FRONTEND_VERSION=0.0.1
+
 # luna-core: KI-Anbieter (ollama, anthropic oder openai) und Property, unter der das Secret
 # luna_core_ai_api_key eingebunden wird. Beides Pflicht.
 export SPRING_AI_MODEL_CHAT=anthropic
@@ -144,7 +150,7 @@ swarm/kafka/create-certificate.sh "$LUNA_KAFKA_CERT_VERSION"
 Das Skript legt beim ersten Aufruf den step-ca-Provisioner `kafka` (max. 1 Jahr) an, startet step-ca neu und
 erzeugt die Secrets `kafka_keystore_v<n>` und `kafka_keystore_password_v<n>`.
 
-#### 9. luna-core-Image bauen
+#### 9. Images von luna-core und Frontend bauen
 
 Immer, wenn sich `luna-core` geändert hat (Java 25 nötig):
 
@@ -152,10 +158,16 @@ Immer, wenn sich `luna-core` geändert hat (Java 25 nötig):
 (cd luna-core && ./mvnw package jib:dockerBuild)
 ```
 
+Immer, wenn sich das Frontend geändert hat (nur Docker nötig, Node läuft im Build-Container):
+
+```bash
+docker build --platform linux/amd64 -t "luna-frontend:$LUNA_FRONTEND_VERSION" frontend
+```
+
 #### 10. Gesamten Stack deployen
 
 ```bash
-docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml luna
+docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/frontend.yml luna
 ```
 
 Beim ersten Start von Kafka legt das Startskript ([`swarm/kafka/start.sh`](swarm/kafka/start.sh)) den Superuser
@@ -168,12 +180,14 @@ Konfiguration die Benutzer und ACLs aller Services aus `LUNA_KAFKA_SERVICES` in 
 docker service ls
 docker service logs luna_kafka-init
 docker service logs luna_luna-core
+docker service ps luna_frontend
 ```
 
 - Alle Services zeigen `1/1`. Ausnahme: `kafka-init` beendet sich nach getaner Arbeit und zeigt dann `0/1`.
 - Das Log von `kafka-init` endet mit `Kafka users and ACLs are up to date.`
 - Das Log von `luna-core` enthält `Started Application`; `https://luna.internal/api/luna-core/actuator/health`
   meldet `UP`.
+- `https://luna.internal/` leitet zur Anmeldung bei Keycloak weiter und zeigt danach Luna.
 
 #### 12. Geräte einrichten (First start only)
 
@@ -205,7 +219,7 @@ Lokal: PostgreSQL unter `localhost:7432`, Keycloak unter `http://localhost:7080/
 ```bash
 export LUNA_KAFKA_CERT_VERSION=2
 swarm/kafka/create-certificate.sh "$LUNA_KAFKA_CERT_VERSION"
-docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml luna
+docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/frontend.yml luna
 ```
 
 Alte Versionen können danach mit `docker secret rm kafka_keystore_v1 kafka_keystore_password_v1` entfernt werden.
@@ -247,6 +261,9 @@ Alte Versionen können danach mit `docker secret rm kafka_keystore_v1 kafka_keys
   das ist bewusst so akzeptiert (kein zusätzliches `TZ`).
 - **Kafka-Admin-Passwort:** Wird nur beim allerersten Start (leeres Volume `kafka-data`) übernommen. Spätere
   Änderungen am Secret `kafka_admin_password` wirken nicht automatisch.
+- **Pflichtvariablen in Stack-Dateien:** Die Meldung in `${VAR:?Meldung}` darf keinen Bindestrich enthalten. Docker
+  liest ihn sonst als Standardwert-Operator und setzt z. B. `luna-core:core image version` statt der Version ein.
+  Prüfen lässt sich das mit `docker stack config -c … ` (zeigt die eingesetzten Werte).
 - **Realm-Import:** Keycloak importiert `luna-realm.json` nur, wenn der Realm `luna` noch nicht existiert. Spätere
   Änderungen an der Datei wirken nicht auf eine bestehende Installation; sie müssen zusätzlich in der Admin-Konsole
   nachgezogen werden. Außerdem lehnt Swarm geänderte Configs ab (`only updates to Labels are allowed`): Dann in

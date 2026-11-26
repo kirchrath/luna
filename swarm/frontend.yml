@@ -1,0 +1,30 @@
+# Luna frontend (nginx with the static build).
+#
+# Build the image first: docker build --platform linux/amd64 -t luna-frontend:<version> frontend
+# Deploy together with the other stack files:
+#   docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/frontend.yml luna
+#
+# Required variable: LUNA_FRONTEND_VERSION (see README.md).
+
+services:
+  frontend:
+    image: luna-frontend:${LUNA_FRONTEND_VERSION:?set LUNA_FRONTEND_VERSION to the version of the frontend image}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - luna
+    deploy:
+      labels:
+        traefik.enable: "true"
+        # Every request to luna.internal that no other rule (/api/…, /auth) claims goes to the frontend;
+        # Traefik prefers longer rules, so this router has the lowest priority.
+        traefik.http.routers.frontend.rule: Host(`luna.internal`)
+        traefik.http.routers.frontend.entrypoints: websecure
+        traefik.http.routers.frontend.tls.certresolver: stepca
+        traefik.http.services.frontend.loadbalancer.server.port: "8080"
+
+networks:
+  luna:
+    name: luna
+    driver: overlay
+    attachable: true

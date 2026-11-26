@@ -25,6 +25,17 @@ npm run format      # Formatierung mit Prettier anwenden
 npm run generate:api  # API-Wrapper aus ../luna-core/openapi.yaml neu erzeugen
 ```
 
+## Docker-Image
+
+```bash
+docker build --platform linux/amd64 -t luna-frontend:<version> .   # Version aus package.json
+```
+
+Mehrstufig: `node:24.22.3-alpine` baut mit `.env.production`, ausgeliefert wird
+`nginxinc/nginx-unprivileged:1.30.6-alpine` (ohne Root, Port 8080). Die nginx-Konfiguration in `nginx/` regelt
+SPA-Fallback, Caching und Sicherheits-Header inklusive Content-Security-Policy (nur eigene Origin). Im Stack läuft
+das Image über [`swarm/frontend.yml`](../swarm/frontend.yml).
+
 ## Anmeldung
 
 Die App ist vollständig geschützt und meldet über Keycloak (Realm `luna`, Client `luna-frontend`) an. Lokal muss
