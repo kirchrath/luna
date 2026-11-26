@@ -41,7 +41,10 @@ class GenerateOpenApiTest {
 
     /** Services that consume events of luna-core and generate their Java types from a copy of kafka-api.yaml. */
     private static final List<Path> KAFKA_API_CONSUMER_COPIES =
-            List.of(Path.of("../luna-task/src/main/resources/kafka-api/luna-core.yaml"));
+            List.of(
+                    Path.of("../luna-task/src/main/resources/kafka-api/luna-core.yaml"),
+                    Path.of("../luna-alert/src/main/resources/kafka-api/luna-core.yaml"),
+                    Path.of("../luna-note/src/main/resources/kafka-api/luna-core.yaml"));
 
     @Autowired
     private MockMvc mockMvc;
