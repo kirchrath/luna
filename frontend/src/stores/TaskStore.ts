@@ -9,7 +9,7 @@ const HTTP_BAD_REQUEST = 400;
 const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 
-export type TaskLoadState = 'idle' | 'loading' | 'loaded' | 'notFound' | 'failed';
+export type LoadState = 'idle' | 'loading' | 'loaded' | 'notFound' | 'failed';
 export type TaskSaveError = 'conflict' | 'invalid' | 'failed';
 export type TaskChanges = Omit<TaskUpdateDto, 'version'>;
 
@@ -20,7 +20,7 @@ export type TaskChanges = Omit<TaskUpdateDto, 'version'>;
 export class TaskStore {
   private _id: string | null = null;
   private _task: TaskDto | null = null;
-  private _loadState: TaskLoadState = 'idle';
+  private _loadState: LoadState = 'idle';
   private _saving = false;
   private _saveError: TaskSaveError | null = null;
   private _statusChanging = false;
@@ -49,11 +49,11 @@ export class TaskStore {
     this._task = task;
   }
 
-  get loadState(): TaskLoadState {
+  get loadState(): LoadState {
     return this._loadState;
   }
 
-  private set loadState(loadState: TaskLoadState) {
+  private set loadState(loadState: LoadState) {
     this._loadState = loadState;
   }
 
