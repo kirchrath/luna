@@ -47,7 +47,12 @@ Noch offen (bitte hier eintragen, sobald entschieden):
        - 6c-2 Frontend: generierter API-Wrapper, MobX-Store, Seite und STOMP-Abonnement (erledigt)
      - 6d nginx-Image und `swarm/frontend.yml` (erledigt)
      - 6e E2E-Tests mit Playwright (erledigt)
-  7. Danach weitere Quellen (z. B. E-Mail)
+  7. **Element-Services:** je Element-Art ein eigener Service, der die Events von `luna-core` verarbeitet
+     (erste Verarbeitung: Speichern, siehe [Element-Services](#element-services)). Je Service ein eigener Schritt:
+     - 7a `luna-task` (Vorlage für die weiteren)
+     - 7b–7f `luna-alert`, `luna-appointment`, `luna-invoice`, `luna-contract`, `luna-note` nach demselben Muster
+       (Namen, Felder und Endpunkte je Service vor der Umsetzung klären)
+  8. Danach weitere Quellen (z. B. E-Mail); `luna-core` ordnet nur ein und verteilt weiter.
 
   Keiner dieser Schritte ist ohne ausdrücklichen Auftrag umzusetzen.
 
@@ -60,6 +65,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | Backend | Zweck | Details |
 |---|---|---|
 | `luna-core` | **Event-Analyse:** empfängt Events aus unterschiedlichen Quellen, analysiert sie per **Spring AI** und entscheidet, welche neuen Elemente (z. B. Aufgabe, Alert) bzw. Events daraus entstehen. | [luna-core/README.md](luna-core/README.md) |
+| `luna-task` (geplant, Schritt 7a) | **Aufgaben:** verarbeitet die Aufgaben-Events von `luna-core` (`luna_core_task`), speichert sie als eigene Aufgaben, bietet List-, Detail- und Update-Endpunkte und veröffentlicht jede Änderung auf `luna_task_task`. | – |
 
 ## Grundprinzipien
 
@@ -129,6 +135,24 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   - **Kafka-API:** Jeder Service, der per Kafka veröffentlicht, erzeugt im `GenerateOpenApiTest` zusätzlich
     **`<backend>/kafka-api.yaml`** (OpenAPI) mit allen veröffentlichten DTOs und dem Topic je Event (eingecheckt).
     Jedes Feld dieser DTOs trägt `@Schema(requiredMode = …)` (`REQUIRED` bzw. `NOT_REQUIRED`).
+- **Element-Services** (je Element-Art ein Service, z. B. `luna-task`): <a id="element-services"></a>
+  - **Projection:** Jedes eingehende Event von `luna-core` landet zuerst in einer Projection-Entität
+    `Core<Element>Projection(id, core<Element>Id, version)`, z. B. `CoreTaskProjection(id, coreTaskId, version)`.
+    `version` ist hier die **Version des Core-Events** (`audit.version`) – bewusste Ausnahme von der
+    Entitäten-Regel: die Projection hat **kein eigenes Optimistic Locking**. Nur Events mit **neuerer Version** als
+    der gespeicherten werden weiterverarbeitet, ältere und gleiche werden verworfen.
+  - **Eigene Entität:** Danach entsteht bzw. ändert sich die Entität des Services mit Herkunft, z. B.
+    `Task(id, source = CORE, sourceId = coreTaskId, …)`.
+  - **Bearbeitet-Kennzeichen:** Die Entität hat ein Feld **`edited`**, das ein Update-Endpunkt auf `true` setzt.
+    Eine neuere Core-Version **überschreibt nur unbearbeitete** Entitäten; bei bearbeiteten wird sie nur in der
+    Projection vermerkt.
+  - **Eigene Events:** Nach dem Anlegen und **jeder Änderung** veröffentlicht der Service den vollständigen Stand
+    (`<Element>EventDto(id, audit, data)`, Key = eigene ID, nach dem Commit) auf `luna_<service>_<inhalt>`,
+    z. B. `luna_task_task`.
+  - **REST:** List-Endpunkt, Detail-Endpunkt und Update-Endpunkte (für `luna-task`: `PUT /tasks/{id}` mit
+    Optimistic Locking über `version` → `409` bei Konflikt, `POST /tasks/{id}/complete` und `/reopen`).
+  - **`luna-task`:** `Task` mit `title`, `description`, `dueDate`, `priority` (wie im Core-Event), `status`
+    (`OPEN`, `DONE`), `completedDate`, `source`, `sourceId` und `edited`.
 - **Push an das Frontend:** Backends melden Änderungen per **STOMP über WebSocket** (Spring
   `@EnableWebSocketMessageBroker`, einfacher Broker, Endpunkt `/ws`, Topics unter `/topic/…`; Pfade aus der
   `application.yml`). Nachrichten sind **Signale** (DTO mit ID), die Daten lädt der Client per REST.
@@ -453,7 +477,8 @@ Ports für Backends werden **ab 7080 fortlaufend** vergeben (7080 ist durch Keyc
 | Kafka | 7094 | – |
 | Keycloak | 7080 | `/auth` (Keycloak mit relativem Pfad `/auth` konfiguriert, **ohne** StripPrefix) |
 | `luna-core` | 7081 | `/api/luna-core` |
-| _nächstes Backend_ | 7082 | `/api/<backend-name>` |
+| `luna-task` (geplant) | 7082 | `/api/luna-task` |
+| _nächstes Backend_ | 7083 | `/api/<backend-name>` |
 
 ## Betrieb
 
