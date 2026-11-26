@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: luna-appointment
+    version: @project.version@
+  profiles:
+    default: local
+  datasource:
+    url:
+    username:
+    password:
+  flyway:
+    schemas: luna_appointment
+    default-schema: luna_appointment
+  kafka:
+    bootstrap-servers:
+    security:
+      protocol: SASL_SSL
+    ssl:
+      trust-store-type: PEM
+      trust-store-location:
+    properties:
+      "[sasl.mechanism]": SCRAM-SHA-512
+      "[sasl.jaas.config]": org.apache.kafka.common.security.scram.ScramLoginModule required username="${spring.application.name}" password="${app.kafka.password}";
+    consumer:
+      group-id: ${spring.application.name}
+      auto-offset-reset: earliest
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        "[spring.deserializer.key.delegate.class]": org.apache.kafka.common.serialization.UUIDDeserializer
+        "[spring.deserializer.value.delegate.class]": org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        "[spring.json.value.default.type]": de.kirchrath.luna.appointment.dto.core.AppointmentEventDto
+        "[spring.json.use.type.headers]": false
+    listener:
+      # A missing topic or ACL (e.g. while kafka-init is still running) must not stop the consumer for good.
+      auth-exception-retry-interval: 10s
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        "[spring.json.add.type.headers]": false
+  jackson:
+    # Optional fields are left out instead of sent as null, as the OpenAPI specification describes them.
+    default-property-inclusion: non_null
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 100
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri:
+          jwk-set-uri:
+
+server:
+  port: 7085
+
+app:
+  cors:
+    allowed-origins:
+  websocket:
+    endpoint: /ws
+    broker-prefix: /topic
+    topics:
+      appointments: ${app.websocket.broker-prefix}/appointments
+  kafka:
+    password:
+    topics:
+      core-appointment: luna_core_appointment
+      core-appointment-retry: luna_appointment_appointment_retry
+      dlt: luna_appointment_dlt
+      appointment: luna_appointment_appointment
+    retry:
+      retries: 10
+      delay: 10s
