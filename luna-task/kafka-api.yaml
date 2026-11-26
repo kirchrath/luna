@@ -1,0 +1,79 @@
+openapi: 3.1.0
+info:
+  title: Luna Task Kafka API
+  description: Events published by luna-task on Kafka. The key of each message is
+    the id of the event.
+  version: 0.0.1-SNAPSHOT
+components:
+  schemas:
+    AuditDto:
+      type: object
+      properties:
+        createdDate:
+          type: string
+          format: date-time
+        lastModifiedDate:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+      required:
+      - createdDate
+      - lastModifiedDate
+      - version
+    TaskDataDto:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        priority:
+          type: string
+          enum:
+          - LOW
+          - NORMAL
+          - HIGH
+        status:
+          type: string
+          enum:
+          - OPEN
+          - DONE
+        completedDate:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum:
+          - CORE
+        sourceId:
+          type: string
+          format: uuid
+        edited:
+          type: boolean
+      required:
+      - edited
+      - priority
+      - source
+      - status
+      - title
+    TaskEventDto:
+      type: object
+      description: Published on topic luna_task_task. The key of each message is the
+        id of the event.
+      properties:
+        id:
+          type: string
+          format: uuid
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+        data:
+          $ref: "#/components/schemas/TaskDataDto"
+      required:
+      - audit
+      - data
+      - id

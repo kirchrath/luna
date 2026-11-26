@@ -1,0 +1,71 @@
+spring:
+  application:
+    name: luna-task
+    version: @project.version@
+  profiles:
+    default: local
+  datasource:
+    url:
+    username:
+    password:
+  flyway:
+    schemas: luna_task
+    default-schema: luna_task
+  kafka:
+    bootstrap-servers:
+    security:
+      protocol: SASL_SSL
+    ssl:
+      trust-store-type: PEM
+      trust-store-location:
+    properties:
+      "[sasl.mechanism]": SCRAM-SHA-512
+      "[sasl.jaas.config]": org.apache.kafka.common.security.scram.ScramLoginModule required username="${spring.application.name}" password="${app.kafka.password}";
+    consumer:
+      group-id: ${spring.application.name}
+      auto-offset-reset: earliest
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        "[spring.deserializer.key.delegate.class]": org.apache.kafka.common.serialization.UUIDDeserializer
+        "[spring.deserializer.value.delegate.class]": org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        "[spring.json.value.default.type]": de.kirchrath.luna.task.dto.core.TaskEventDto
+        "[spring.json.use.type.headers]": false
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        "[spring.json.add.type.headers]": false
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 100
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri:
+          jwk-set-uri:
+
+server:
+  port: 7082
+
+app:
+  cors:
+    allowed-origins:
+  websocket:
+    endpoint: /ws
+    broker-prefix: /topic
+    topics:
+      tasks: ${app.websocket.broker-prefix}/tasks
+  kafka:
+    password:
+    topics:
+      core-task: luna_core_task
+      core-task-retry: luna_task_task_retry
+      dlt: luna_task_dlt
+      task: luna_task_task
+    retry:
+      retries: 10
+      delay: 10s
