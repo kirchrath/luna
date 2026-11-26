@@ -27,7 +27,7 @@ public class InboundEventNotifier {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void notifyStatusChanged(InboundEventStatusChangedEvent event) {
         messagingTemplate.convertAndSend(
-                webSocketProperties.topics().manualInboundEvents(), new InboundEventChangedDto(event.inboundEventId()));
+                webSocketProperties.topics().inboundEvents(), new InboundEventChangedDto(event.inboundEventId()));
         log.debug("Notified clients about the status change of inbound event {}", event.inboundEventId());
     }
 }

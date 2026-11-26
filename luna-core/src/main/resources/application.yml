@@ -31,6 +31,19 @@ spring:
     properties:
       "[sasl.mechanism]": SCRAM-SHA-512
       "[sasl.jaas.config]": org.apache.kafka.common.security.scram.ScramLoginModule required username="${spring.application.name}" password="${app.kafka.password}";
+    consumer:
+      group-id: ${spring.application.name}
+      auto-offset-reset: earliest
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        "[spring.deserializer.key.delegate.class]": org.apache.kafka.common.serialization.UUIDDeserializer
+        "[spring.deserializer.value.delegate.class]": org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        "[spring.json.value.default.type]": de.kirchrath.luna.core.dto.mail.EmailEventDto
+        "[spring.json.use.type.headers]": false
+    listener:
+      # A missing topic or ACL (e.g. while kafka-init is still running) must not stop the consumer for good.
+      auth-exception-retry-interval: 10s
     producer:
       key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
@@ -61,7 +74,7 @@ app:
     endpoint: /ws
     broker-prefix: /topic
     topics:
-      manual-inbound-events: ${app.websocket.broker-prefix}/inbound-events/manual
+      inbound-events: ${app.websocket.broker-prefix}/inbound-events
   kafka:
     password:
     topics:
@@ -71,6 +84,12 @@ app:
       invoice: luna_core_invoice
       contract: luna_core_contract
       note: luna_core_note
+      mail-email: luna_mail_email
+      mail-email-retry: luna_core_email_retry
+      dlt: luna_core_dlt
+    retry:
+      retries: 10
+      delay: 10s
   prompts:
     classification: classpath:prompts/classification.st
     task: classpath:prompts/qualification/task.st

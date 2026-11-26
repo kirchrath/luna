@@ -2,6 +2,7 @@ package de.kirchrath.luna.core.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -10,9 +11,10 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageRequest;
 
-import de.kirchrath.luna.core.dto.ManualInboundEventListDto;
+import de.kirchrath.luna.core.dto.InboundEventListDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.ResourceReferenceDto;
+import de.kirchrath.luna.core.dto.mail.EmailEventDto;
 
 class InboundEventApplicationServiceTest {
 
@@ -35,16 +37,28 @@ class InboundEventApplicationServiceTest {
     }
 
     @Test
-    void thatListingManualInboundEventsShouldResultIntoThePageOfTheDomainService() {
+    void thatListingInboundEventsShouldResultIntoThePageOfTheDomainService() {
         // given
-        var list = new ManualInboundEventListDto(List.of(), 0, 0);
+        var list = new InboundEventListDto(List.of(), 0, 0);
         var pageable = PageRequest.of(1, 20);
-        when(inboundEventDomainService.listManualInboundEvents(pageable)).thenReturn(list);
+        when(inboundEventDomainService.listInboundEvents(pageable)).thenReturn(list);
 
         // when
-        var listed = inboundEventApplicationService.listManualInboundEvents(pageable);
+        var listed = inboundEventApplicationService.listInboundEvents(pageable);
 
         // then
         assertThat(listed).isEqualTo(list);
+    }
+
+    @Test
+    void thatCreatingAMailInboundEventShouldResultIntoACallOfTheDomainService() {
+        // given
+        var email = new EmailEventDto().id(UUID.fromString("0b8f3a52-5a0e-4d7f-9f43-2f1c7f0f4a11"));
+
+        // when
+        inboundEventApplicationService.createMailInboundEvent(email);
+
+        // then
+        verify(inboundEventDomainService).createMailInboundEvent(email);
     }
 }

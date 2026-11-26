@@ -215,18 +215,32 @@ Schreiben; ACL für `luna-core` auf `luna_core_*` besteht bereits).
 **Tests:** Unit-Tests je Klasse (100 % Abdeckung), Integrationstest von der Eingabe bis zur Nachricht auf dem Topic
 mit PostgreSQL und Kafka per Testcontainers (ohne TLS/SASL), gemocktes `ChatModel`; ArchUnit-Regeln gelten weiter.
 
-### Liste der manuellen Eingaben (Schritt 5)
+### Liste der Eingaben (Schritt 5, seit Schritt 8 für alle Quellen)
 
-- **Endpunkt:** `GET /inbound-events/manual` (OperationId `listManualInboundEvents`), nur mit JWT.
+- **Endpunkt:** `GET /inbound-events` (OperationId `listInboundEvents`), nur mit JWT. Ersetzt seit Schritt 8
+  `GET /inbound-events/manual`.
 - **Parameter:** `page` (ab 0) und `size`; Standard und Obergrenze per `spring.data.web.pageable.default-page-size`
   (`20`) und `max-page-size` (`100`). Größere Werte werden gekappt. Sortiert nach Eingangszeit, neueste zuerst.
-- **Antwort:** `200` mit `ManualInboundEventListDto` (`items`, `totalPages`, `totalCount`); `401` ohne Token.
-  Ein `ManualInboundEventListItemDto` enthält `id`, `text`, `typeHint`, `status` (`InboundEventStatusDto`:
-  `RECEIVED`, `ANALYZED`, `FAILED`), `createdDate` und `elements` (`ElementReferenceDto` mit `id` und `type`;
-  `id` ist die ID des auf Kafka veröffentlichten Events).
-- **Abfrage:** Eine Seite `inbound_event` (`findBySource`) plus deren `outbound_event` in einer Abfrage
+- **Antwort:** `200` mit `InboundEventListDto` (`items`, `totalPages`, `totalCount`); `401` ohne Token.
+  Ein `InboundEventListItemDto` enthält `id`, `source` (`MANUAL`, `MAIL`), bei manuellen Eingaben `text` und
+  `typeHint`, bei E-Mails `subject` und `from`, außerdem `status` (`InboundEventStatusDto`: `RECEIVED`, `ANALYZED`,
+  `FAILED`), `createdDate` und `elements` (`ElementReferenceDto` mit `id` und `type`; `id` ist die ID des auf Kafka
+  veröffentlichten Events). Leere optionale Felder fehlen.
+- **Abfrage:** Eine Seite `inbound_event` (`findAll` mit `Pageable`) plus deren `outbound_event` in einer Abfrage
   (`findByInboundEventIdIn`). Das `Pageable` wird bis zum DomainService durchgereicht, der die Sortierung
   festlegt; eine übergebene Sortierung wird ignoriert.
+
+### E-Mails als Quelle (Schritt 8)
+
+- **Eingang:** `MailEmailEventHandler` liest `EmailEventDto` von `luna-mail` (Topic `luna_mail_email`) und legt eine
+  Eingabe mit `source = MAIL` und `source_id` = ID der E-Mail an; dieselbe E-Mail ein zweites Mal wird ignoriert.
+  Die DTOs werden aus `src/main/resources/kafka-api/luna-mail.yaml` generiert (Package `dto.mail`).
+- **Fehler:** Wiederholung über `luna_core_email_retry` (Standard 10-mal, 10 s, `app.kafka.retry.*`), danach
+  `luna_core_dlt`; nicht lesbare Events direkt ins DLT.
+- **Analyse:** wie bei der Schnelleingabe, mit Absender, Empfängern, Betreff, Eingang, Anhangsnamen und Text als
+  Eingabe (`InboundEventReader`). Bezug für relative Angaben („morgen“) ist der **Eingang der E-Mail** in der
+  Zeitzone des Servers; manuelle Eingaben beziehen sich weiter auf ihre Anlage.
+- **Push:** Eine neue E-Mail löst sofort ein Signal aus, damit sie in „Letzte Eingaben“ erscheint.
 
 ### Push-Signal an das Frontend (Schritt 6c-1)
 
@@ -236,9 +250,9 @@ mit PostgreSQL und Kafka per Testcontainers (ohne TLS/SASL), gemocktes `ChatMode
   Authorization-Header setzen können, akzeptiert `luna-core` das Token **nur auf `/ws`** auch als Query-Parameter
   `access_token` (eigener `BearerTokenResolver`); REST-Endpunkte verlangen weiterhin den Header.
   Ohne gültiges Token wird der Handshake mit `401` abgelehnt. Erlaubte Origins wie bei CORS (`app.cors.allowed-origins`).
-- **Topic `/topic/inbound-events/manual`:** Nachricht `InboundEventChangedDto` (`{"id": "<UUID>"}`), sobald eine
-  Eingabe `ANALYZED` oder `FAILED` wird. Fehlversuche mit erneutem Versuch lösen kein Signal aus. Das Signal enthält
-  bewusst nur die ID; der Client lädt die Liste neu (`GET /inbound-events/manual`).
+- **Topic `/topic/inbound-events`:** Nachricht `InboundEventChangedDto` (`{"id": "<UUID>"}`), sobald eine
+  Eingabe `ANALYZED` oder `FAILED` wird oder eine E-Mail eingeht. Fehlversuche mit erneutem Versuch lösen kein Signal
+  aus. Das Signal enthält bewusst nur die ID; der Client lädt die Liste neu (`GET /inbound-events`).
 - **Ablauf:** `ClassificationDomainService` veröffentlicht in der Transaktion ein `InboundEventStatusChangedEvent`;
   der `InboundEventNotifier` (`outbound`) sendet erst **nach dem Commit** (`@TransactionalEventListener`), damit
   zurückgerollte Änderungen kein Signal auslösen.
