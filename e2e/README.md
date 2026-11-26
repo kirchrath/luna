@@ -34,17 +34,18 @@ starten. Der HTML-Report liegt danach in `playwright-report/`.
 
 ## Aufbau
 
-| Pfad                  | Inhalt                                                                                                              |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `docker-compose.yml`  | Test-Umgebung (Projekt `luna-e2e`, erreichbar unter `http://localhost:7180`)                                        |
-| `traefik/dynamic.yml` | Routing wie im Stack, ohne TLS: `/api/luna-core` und `/api/luna-task` (mit StripPrefix), `/auth`, Rest ans Frontend |
-| `ai-stub/stub.py`     | OpenAI-kompatibler Stub für `luna-core`                                                                             |
-| `environment/`        | Bauen, Starten, Warten und Vorbereiten von Keycloak (Weiterleitung auf Port 7180, Testbenutzer)                     |
-| `tests/`              | Szenarien: Anmelden/Abmelden, Schnelleingabe mit Push-Signal, Navigation und Sprache                                |
+| Pfad                  | Inhalt                                                                                                                       |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `docker-compose.yml`  | Test-Umgebung (Projekt `luna-e2e`, erreichbar unter `http://localhost:7180`)                                                 |
+| `traefik/dynamic.yml` | Routing wie im Stack, ohne TLS: `/api/luna-core` und `/api/luna-task` (mit StripPrefix), `/auth`, Rest ans Frontend          |
+| `ai-stub/stub.py`     | OpenAI-kompatibler Stub für `luna-core`                                                                                      |
+| `environment/`        | Bauen, Starten, Warten und Vorbereiten von Keycloak (Weiterleitung auf Port 7180, Testbenutzer)                              |
+| `tests/`              | Szenarien: Anmelden/Abmelden, Schnelleingabe mit Push-Signal, Aufgaben (Push, Bearbeiten, Erledigen), Navigation und Sprache |
 
 - Das Frontend-Image wird mit `--build-arg MODE=e2e` gebaut und nutzt `frontend/.env.e2e`.
-- `luna-task` läuft mit und muss bereit sein (`/api/luna-task/actuator/health`); fachliche Tests folgen mit der
-  Frontend-Seite „Aufgaben“.
+- `luna-task` läuft mit und muss bereit sein (`/api/luna-task/actuator/health`).
+- Der KI-Stub übernimmt eine Markierung wie `[e2e-…]` aus der Eingabe in den Titel der Aufgabe, damit jeder Test
+  seine eigene Aufgabe findet.
 - Keycloak importiert den Realm aus `swarm/keycloak/luna-realm.json`; die zusätzliche Weiterleitung auf
   `http://localhost:7180/*` setzt nur die Test-Umgebung über die Admin-API, der Realm im Repo bleibt unverändert.
 - Alle Werte (Passwörter, Testbenutzer `e2e`) sind Testwerte ohne Bedeutung außerhalb dieser Umgebung.

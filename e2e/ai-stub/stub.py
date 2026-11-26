@@ -1,20 +1,29 @@
 """OpenAI-compatible chat endpoint with fixed answers for the end-to-end tests.
 
 The classification prompt asks for element types, the qualification prompts for items. Every input becomes
-one task, so the tests can rely on a predictable result.
+one task, so the tests can rely on a predictable result. A marker like [e2e-123] in the input is copied into the
+title of the task, so that a test finds its own task among those of other tests.
 """
 import json
+import re
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 CLASSIFICATION = {"types": ["TASK"]}
-QUALIFICATION = {"items": [{"title": "E2E task", "priority": "NORMAL"}]}
+TASK_TITLE = "E2E task"
 CLASSIFICATION_MARKER = "Element types"
+TEST_MARKER = re.compile(r"\[e2e-[\w-]+\]")
+
+
+def qualification(body):
+    marker = TEST_MARKER.search(body)
+    title = TASK_TITLE if marker is None else f"{TASK_TITLE} {marker.group(0)}"
+    return {"items": [{"title": title, "priority": "NORMAL"}]}
 
 
 class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         body = self.rfile.read(int(self.headers.get("Content-Length", 0))).decode()
-        answer = CLASSIFICATION if CLASSIFICATION_MARKER in body else QUALIFICATION
+        answer = CLASSIFICATION if CLASSIFICATION_MARKER in body else qualification(body)
         payload = json.dumps({
             "id": "e2e",
             "object": "chat.completion",
