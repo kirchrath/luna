@@ -151,8 +151,9 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   - **Projection:** Jedes eingehende Event von `luna-core` landet zuerst in einer Projection-Entität
     `Core<Element>Projection(id, core<Element>Id, version)`, z. B. `CoreTaskProjection(id, coreTaskId, version)`.
     `version` ist hier die **Version des Core-Events** (`audit.version`) – bewusste Ausnahme von der
-    Entitäten-Regel: die Projection hat **kein eigenes Optimistic Locking**. Nur Events mit **neuerer Version** als
-    der gespeicherten werden weiterverarbeitet, ältere und gleiche werden verworfen.
+    Entitäten-Regel: die Projection hat **kein eigenes Optimistic Locking** und **keine Audit-Felder**
+    (`createdDate`, `lastModifiedDate`), da sie nur doppelte oder veraltete Verarbeitung verhindert. Nur Events mit
+    **neuerer Version** als der gespeicherten werden weiterverarbeitet, ältere und gleiche werden verworfen.
   - **Eigene Entität:** Danach entsteht bzw. ändert sich die Entität des Services mit Herkunft, z. B.
     `Task(id, source = CORE, sourceId = coreTaskId, …)`.
   - **Bearbeitet-Kennzeichen:** Die Entität hat ein Feld **`edited`**, das ein Update-Endpunkt auf `true` setzt.

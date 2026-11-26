@@ -44,7 +44,7 @@ public class CoreTaskDomainService {
         var projection = projectionRepository.findByCoreTaskId(event.getId());
         if (projection.isEmpty()) {
             // The projection has no optimistic lock, so Spring Data cannot tell a new one from an existing one.
-            aggregateTemplate.insert(new CoreTaskProjection(null, event.getId(), coreVersion, null, null));
+            aggregateTemplate.insert(new CoreTaskProjection(null, event.getId(), coreVersion));
             publish(taskRepository.save(taskConverter.fromCore(event)));
             return;
         }
