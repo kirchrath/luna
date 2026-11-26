@@ -379,13 +379,16 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
     Komponenten rufen den API-Wrapper nie direkt auf, sondern lesen Daten und Ladezustand aus Stores
     (`observer`) und lösen Aktionen über Store-Methoden aus. Alle Stores erzeugt der `RootStore`.
   - Reiner UI-Zustand (z. B. Sprache, eingeklappte Navigation) bleibt in React-State bzw. i18next.
-  - MobX läuft mit **`enforceActions: 'always'`**: Zustand nur in Actions ändern, nach `await` per `runInAction`.
+  - MobX läuft mit **`enforceActions: 'always'`**. Zustand eines Stores liegt in **privaten `_`-Feldern** mit
+    öffentlichem Getter und **privatem Setter** (`makeAutoObservable` macht Setter zu Actions); Änderungen laufen
+    immer über den Setter, auch nach `await`. **`runInAction` wird nie verwendet** (leicht vergessen); ESLint
+    verbietet den Import.
   - Stores bekommen ihre Abhängigkeiten (API-Client, Push-Verbindung) im Konstruktor; `createRootStore` baut sie
     aus den Vite-Variablen. In Tests liefert `fakeRootStore()` (`src/test`) gemockte Clients.
   - `src/api/<backend>/` enthält neben dem generierten `schema.d.ts` handgeschriebenen Code für Client
     (`openapi-fetch` mit Token-Middleware, Token aus dem gemeinsamen `UserManager`), Push-Verbindung
-    (`@stomp/stompjs`) und Typ-Aliase. Push-DTOs nimmt `GenerateOpenApiTest` als Schemas in die `openapi.yaml` auf,
-    damit auch ihre Typen generiert werden.
+    (`@stomp/stompjs`) und Typ-Aliase. Push-DTOs nimmt der springdoc-`OpenApiCustomizer` in
+    `luna-core` (`config/OpenApiConfig`) als Schemas in die OpenAPI-Definition auf, damit auch ihre Typen generiert werden.
   - Basis-URL je Backend in `.env.development`/`.env.production` (`VITE_LUNA_CORE_URL`).
   - Generierter Code wird **eingecheckt** und nie von Hand geändert. Bei API-Änderungen: Backend anpassen,
     Spec erzeugen, Wrapper neu generieren und im selben Commit mit einchecken.
