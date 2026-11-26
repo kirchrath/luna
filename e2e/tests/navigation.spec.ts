@@ -10,12 +10,12 @@ test('that choosing an area should result into its placeholder page', async ({ p
   // when
   await page
     .getByRole('navigation', { name: 'Hauptnavigation' })
-    .getByRole('link', { name: /Termine/ })
+    .getByRole('link', { name: /Einkauf & Haushalt/ })
     .click();
 
   // then
-  await expect(page).toHaveURL('/calendar');
-  await expect(page.getByRole('heading', { name: 'Termine' })).toBeVisible();
+  await expect(page).toHaveURL('/shopping');
+  await expect(page.getByRole('heading', { name: 'Einkauf & Haushalt' })).toBeVisible();
   await expect(page.getByText('Dieser Bereich kommt in einem späteren Schritt.')).toBeVisible();
 });
 

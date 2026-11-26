@@ -14,7 +14,7 @@ test('that opening a page without session should result into the keycloak login 
 
   // then
   await expect(page).toHaveURL(path);
-  await expect(page.getByRole('heading', { name: 'Termine' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Termine' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Benutzermenü' })).toContainText(TEST_USER.firstName);
 });
 
