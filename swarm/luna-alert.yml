@@ -1,0 +1,51 @@
+# luna-alert backend.
+#
+# Build the image first (in luna-alert/): ./mvnw package jib:dockerBuild
+# Deploy together with the other stack files:
+#   docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml \
+#     -c swarm/luna-task.yml -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/frontend.yml luna
+#
+# Required variables: LUNA_ALERT_VERSION (see README.md).
+# Messages of ${VAR:?message} must not contain '-': Docker reads it as default value operator.
+
+services:
+  luna-alert:
+    image: luna-alert:${LUNA_ALERT_VERSION:?set LUNA_ALERT_VERSION to the version of the luna alert image}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      # Root certificate of step-ca to verify the Kafka certificate.
+      - step-ca-data:/step:ro
+      - /etc/localtime:/etc/localtime:ro
+    secrets:
+      # Read by Spring via configtree: the file name is the property name.
+      - source: luna_db_password
+        target: spring.datasource.password
+      - source: kafka_luna_alert_password
+        target: app.kafka.password
+    networks:
+      - luna
+    deploy:
+      labels:
+        traefik.enable: "true"
+        traefik.http.routers.luna-alert.rule: Host(`luna.internal`) && PathPrefix(`/api/luna-alert`)
+        traefik.http.routers.luna-alert.entrypoints: websecure
+        traefik.http.routers.luna-alert.tls.certresolver: stepca
+        traefik.http.routers.luna-alert.middlewares: luna-alert-strip-prefix
+        traefik.http.middlewares.luna-alert-strip-prefix.stripprefix.prefixes: /api/luna-alert
+        traefik.http.services.luna-alert.loadbalancer.server.port: "7083"
+
+networks:
+  luna:
+    name: luna
+    driver: overlay
+    attachable: true
+
+volumes:
+  step-ca-data:
+
+secrets:
+  luna_db_password:
+    external: true
+  kafka_luna_alert_password:
+    external: true
