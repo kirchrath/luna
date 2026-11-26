@@ -1,0 +1,272 @@
+openapi: 3.1.0
+info:
+  title: Luna Note API
+  version: 0.0.1-SNAPSHOT
+servers:
+- url: /api/luna-note
+paths:
+  /notes/{id}:
+    get:
+      tags:
+      - Notes
+      operationId: getNote
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteDto"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+    put:
+      tags:
+      - Notes
+      operationId: updateNote
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteUpdateDto"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteDto"
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+        "409":
+          description: Conflict
+  /notes/{id}/restore:
+    post:
+      tags:
+      - Notes
+      operationId: restoreNote
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteDto"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+  /notes/{id}/archive:
+    post:
+      tags:
+      - Notes
+      operationId: archiveNote
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteDto"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not Found
+  /notes:
+    get:
+      tags:
+      - Notes
+      operationId: listNotes
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - ARCHIVED
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteListDto"
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+components:
+  schemas:
+    NoteUpdateDto:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 500
+          minLength: 0
+        summary:
+          type: string
+          maxLength: 10000
+          minLength: 0
+        version:
+          type: integer
+          format: int64
+      required:
+      - summary
+      - title
+      - version
+    AuditDto:
+      type: object
+      properties:
+        createdDate:
+          type: string
+          format: date-time
+        lastModifiedDate:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+      required:
+      - createdDate
+      - lastModifiedDate
+      - version
+    NoteDataDto:
+      type: object
+      properties:
+        title:
+          type: string
+        summary:
+          type: string
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - ARCHIVED
+        archivedDate:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum:
+          - CORE
+        sourceId:
+          type: string
+          format: uuid
+        edited:
+          type: boolean
+      required:
+      - edited
+      - source
+      - status
+      - summary
+      - title
+    NoteDto:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/NoteDataDto"
+        audit:
+          $ref: "#/components/schemas/AuditDto"
+      required:
+      - audit
+      - data
+    NoteListDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NoteListItemDto"
+        totalPages:
+          type: integer
+          format: int32
+        totalCount:
+          type: integer
+          format: int64
+      required:
+      - items
+      - totalCount
+      - totalPages
+    NoteListItemDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        summary:
+          type: string
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - ARCHIVED
+        edited:
+          type: boolean
+        createdDate:
+          type: string
+          format: date-time
+      required:
+      - createdDate
+      - edited
+      - id
+      - status
+      - summary
+      - title
+    NoteChangedDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+      required:
+      - id
