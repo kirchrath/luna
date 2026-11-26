@@ -1,6 +1,8 @@
 import {
   createLunaAlertClient,
   createLunaAlertPushConnector,
+  createLunaAppointmentClient,
+  createLunaAppointmentPushConnector,
   createLunaCoreClient,
   createLunaCorePushConnector,
   createLunaNoteClient,
@@ -21,5 +23,7 @@ export function createRootStore(tokenSource: TokenSource, env: ImportMetaEnv = i
     connectLunaAlertPush: createLunaAlertPushConnector(env.VITE_LUNA_ALERT_URL, tokenSource),
     lunaNoteClient: createLunaNoteClient(env.VITE_LUNA_NOTE_URL, tokenSource),
     connectLunaNotePush: createLunaNotePushConnector(env.VITE_LUNA_NOTE_URL, tokenSource),
+    lunaAppointmentClient: createLunaAppointmentClient(env.VITE_LUNA_APPOINTMENT_URL, tokenSource),
+    connectLunaAppointmentPush: createLunaAppointmentPushConnector(env.VITE_LUNA_APPOINTMENT_URL, tokenSource),
   });
 }

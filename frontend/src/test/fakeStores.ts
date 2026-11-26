@@ -3,7 +3,10 @@ import { vi } from 'vitest';
 import type {
   AlertDto,
   AlertListDto,
+  AppointmentDto,
+  AppointmentListDto,
   LunaAlertClient,
+  LunaAppointmentClient,
   LunaCoreClient,
   LunaNoteClient,
   LunaTaskClient,
@@ -88,6 +91,33 @@ export function fakeLunaAlertClient(list: AlertListDto = EMPTY_PAGE, alert: Aler
   return { ...fake, client: fake.client as unknown as LunaAlertClient };
 }
 
+export const APPOINTMENT: AppointmentDto = {
+  data: {
+    title: 'Dentist Dr. Weber',
+    start: '2026-12-01T09:00:00Z',
+    end: '2026-12-01T10:00:00Z',
+    allDay: false,
+    location: 'Practice at the market',
+    description: 'Bring the bonus booklet',
+    status: 'SCHEDULED',
+    source: 'CORE',
+    sourceId: 'core-appointment-1',
+    edited: false,
+  },
+  audit: { createdDate: '2026-11-26T08:00:00Z', lastModifiedDate: '2026-11-26T08:00:00Z', version: 1 },
+};
+
+export function fakeLunaAppointmentClient(
+  list: AppointmentListDto = EMPTY_PAGE,
+  appointment: AppointmentDto | null = APPOINTMENT,
+) {
+  const fake = fakeElementClient<AppointmentListDto, AppointmentDto>('/appointments', list, appointment);
+  const GET = vi.fn((path: string) =>
+    path === '/appointments/range' ? respond<AppointmentListDto | AppointmentDto>(list) : fake.GET(path),
+  );
+  return { ...fake, GET, client: { ...fake.client, GET } as unknown as LunaAppointmentClient };
+}
+
 export function fakeLunaNoteClient(list: NoteListDto = EMPTY_PAGE, note: NoteDto | null = NOTE) {
   const fake = fakeElementClient<NoteListDto, NoteDto>('/notes', list, note);
   return { ...fake, client: fake.client as unknown as LunaNoteClient };
@@ -110,11 +140,13 @@ interface FakeRootStoreOptions {
   alert?: AlertDto | null;
   noteList?: NoteListDto;
   note?: NoteDto | null;
+  appointmentList?: AppointmentListDto;
+  appointment?: AppointmentDto | null;
 }
 
 export function fakeRootStore(
   list?: ManualInboundEventListDto,
-  { taskList, task, alertList, alert, noteList, note }: FakeRootStoreOptions = {},
+  { taskList, task, alertList, alert, noteList, note, appointmentList, appointment }: FakeRootStoreOptions = {},
 ) {
   const lunaCore = fakeLunaCoreClient(list);
   const push = fakePushConnector();
@@ -124,6 +156,8 @@ export function fakeRootStore(
   const alertPush = fakePushConnector();
   const lunaNote = fakeLunaNoteClient(noteList, note);
   const notePush = fakePushConnector();
+  const lunaAppointment = fakeLunaAppointmentClient(appointmentList, appointment);
+  const appointmentPush = fakePushConnector();
   return {
     rootStore: new RootStore({
       lunaCoreClient: lunaCore.client,
@@ -134,6 +168,8 @@ export function fakeRootStore(
       connectLunaAlertPush: alertPush.connect,
       lunaNoteClient: lunaNote.client,
       connectLunaNotePush: notePush.connect,
+      lunaAppointmentClient: lunaAppointment.client,
+      connectLunaAppointmentPush: appointmentPush.connect,
     }),
     lunaCore,
     push,
@@ -143,5 +179,7 @@ export function fakeRootStore(
     alertPush,
     lunaNote,
     notePush,
+    lunaAppointment,
+    appointmentPush,
   };
 }

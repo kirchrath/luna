@@ -1,4 +1,5 @@
 export * from './luna-alert';
+export * from './luna-appointment';
 export * from './luna-core';
 export * from './luna-note';
 export * from './luna-task';

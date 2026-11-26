@@ -579,6 +579,235 @@ html {
   }
 }
 
+// Appointments: agenda grouped by day and month grid.
+.appointment-day + .appointment-day {
+  margin-top: 1.25rem;
+}
+
+.appointment-day-title {
+  margin-bottom: 0.5rem;
+  font-family: $luna-font-display;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--bulma-text-weak);
+}
+
+.appointment {
+  padding: 0.625rem 0;
+  border-top: 1px solid var(--bulma-border-weak);
+
+  &:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+}
+
+.appointment-link {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  color: var(--bulma-text);
+
+  &:hover .element-title {
+    text-decoration: underline;
+  }
+}
+
+.appointment-time {
+  flex: none;
+  width: 7.5rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--bulma-link);
+  font-weight: 600;
+}
+
+.appointment-title-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+
+  .tag {
+    flex: none;
+  }
+}
+
+.appointment.is-cancelled,
+.month-event.is-cancelled {
+  .element-title,
+  .month-event-title {
+    text-decoration: line-through;
+    color: var(--bulma-text-weak);
+  }
+
+  .appointment-time {
+    color: var(--bulma-text-weak);
+  }
+}
+
+.title.is-cancelled {
+  text-decoration: line-through;
+  color: var(--bulma-text-weak);
+}
+
+.view-toggle.buttons .button {
+  margin-bottom: 0;
+}
+
+.month-navigation {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  .button {
+    margin-bottom: 0;
+  }
+}
+
+.month-title {
+  min-width: 10rem;
+  text-align: center;
+  font-family: $luna-font-display;
+  font-weight: 600;
+}
+
+.month {
+  padding: 0.5rem;
+}
+
+.month-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.month-weekday {
+  padding: 0.25rem 0.375rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.month-day {
+  min-height: 6rem;
+  padding: 0.25rem;
+  border-top: 1px solid var(--bulma-border-weak);
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+
+  &.is-selected {
+    background-color: var(--bulma-background);
+    border-radius: 6px;
+  }
+}
+
+.month-day-number {
+  align-self: flex-start;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bulma-text);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--bulma-border-weak);
+  }
+
+  &.is-today {
+    background-color: var(--bulma-link);
+    color: var(--bulma-link-invert);
+    font-weight: 600;
+  }
+}
+
+.month-event {
+  display: block;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 4px;
+  background-color: rgba($luna-highlight, 0.12);
+  color: var(--bulma-text);
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &.is-cancelled {
+    background-color: var(--bulma-border-weak);
+  }
+}
+
+.month-selection {
+  margin-top: 1.25rem;
+}
+
+.appointment-time-inputs {
+  display: flex;
+  gap: 0.5rem;
+
+  .input[type='time'] {
+    flex: none;
+    width: 8.5rem;
+  }
+}
+
+@media screen and (max-width: $mobile) {
+  .appointment-link {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.125rem 0.75rem;
+
+    .appointment-time {
+      width: auto;
+      grid-column: 1;
+    }
+
+    .element-body {
+      grid-column: 1;
+    }
+
+    > svg {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+    }
+  }
+
+  .month-title {
+    min-width: 0;
+  }
+
+  .month-day {
+    min-height: 3rem;
+    align-items: center;
+  }
+
+  // Small screens show a dot per appointment instead of its title.
+  .month-day-number {
+    align-self: center;
+  }
+
+  .month-event {
+    width: 0.375rem;
+    height: 0.375rem;
+    padding: 0;
+    border-radius: 999px;
+    background-color: var(--bulma-link);
+    display: inline-block;
+
+    .month-event-title {
+      display: none;
+    }
+
+    &.is-cancelled {
+      background-color: var(--bulma-border);
+    }
+  }
+}
+
 @media screen and (max-width: $mobile) {
   .element-heading {
     flex-direction: column;

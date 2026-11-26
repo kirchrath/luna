@@ -1,10 +1,12 @@
 import type { RouteObject } from 'react-router';
 
 import { AppLayout } from './layout';
-import { ALERT_PATH, AREAS, NOTE_PATH, PATHS, TASK_PATH } from './navigation';
+import { ALERT_PATH, APPOINTMENT_PATH, AREAS, NOTE_PATH, PATHS, TASK_PATH } from './navigation';
 import {
   AlertDetailPage,
   AlertListPage,
+  AppointmentDetailPage,
+  AppointmentsPage,
   ComingSoonPage,
   NoteDetailPage,
   NoteListPage,
@@ -24,6 +26,8 @@ export const routes: RouteObject[] = [
       { path: NOTE_PATH, element: <NoteDetailPage /> },
       { path: PATHS.alerts, element: <AlertListPage /> },
       { path: ALERT_PATH, element: <AlertDetailPage /> },
+      { path: PATHS.calendar, element: <AppointmentsPage /> },
+      { path: APPOINTMENT_PATH, element: <AppointmentDetailPage /> },
       ...AREAS.filter(({ available }) => !available).map((definition) => ({
         path: PATHS[definition.area],
         element: <ComingSoonPage {...definition} />,
