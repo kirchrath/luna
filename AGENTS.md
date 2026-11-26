@@ -53,8 +53,9 @@ Noch offen (bitte hier eintragen, sobald entschieden):
      (erste Verarbeitung: Speichern, siehe [Element-Services](#element-services)). Je Service ein eigener Schritt:
      - 7a `luna-task` (Vorlage für die weiteren), aufgeteilt in:
        - 7a-1 Service selbst: Consumer mit Retry/DLT, Projection, Aufgabe, Kafka-Event, Push, REST (erledigt)
-       - 7a-2 Stack-Datei, Kafka-Benutzer und ACLs, Secrets, Betriebs-README, E2E-Umgebung (erledigt; fachliche
-         E2E-Tests folgen mit der Frontend-Seite „Aufgaben“)
+       - 7a-2 Stack-Datei, Kafka-Benutzer und ACLs, Secrets, Betriebs-README, E2E-Umgebung (erledigt)
+       - 7a-3 Frontend: Seiten „Aufgaben“ (Liste) und Details/Bearbeiten, fachliche E2E-Tests (erledigt;
+         Planung in [frontend/docs](frontend/docs/README.md#aufgaben-schritt-7a-3))
      - 7b–7f `luna-alert`, `luna-appointment`, `luna-invoice`, `luna-contract`, `luna-note` nach demselben Muster
        (Namen, Felder und Endpunkte je Service vor der Umsetzung klären)
   8. Danach weitere Quellen (z. B. E-Mail); `luna-core` ordnet nur ein und verteilt weiter.
@@ -177,6 +178,9 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   (Operation-IDs, Schemas, Response-Codes, `requiredMode`) – sie ist der Vertrag für den Frontend-Wrapper.
   **Keine Beschreibungstexte:** kein `description` in `@Schema`, `@Parameter` und `@Tag`, kein `summary` in
   `@Operation`, kein `description` in `@ApiResponse` (springdoc setzt dort den Standardtext des Status-Codes).
+  **Optionale Felder** fehlen in REST-Antworten, statt `null` zu sein (`spring.jackson.default-property-inclusion:
+  non_null`), so wie die Spec sie beschreibt; sonst wird im Frontend z. B. aus `dueDate: null` der 01.01.1970.
+  Umgesetzt in `luna-task`; `luna-core` (`typeHint`) _TODO_.
 - **Docker-Image:** Jedes Backend stellt **immer** ein Docker-Image bereit, gebaut mit Jib.
   - Kein eigenes `Dockerfile` für Backends; die Image-Konfiguration liegt in der `pom.xml`.
   - Images werden **lokal** in den Docker-Daemon gebaut (`jib:dockerBuild`), nur für `linux/amd64`.
@@ -405,7 +409,7 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
 | Codequalität | **ESLint** (typescript-eslint `strictTypeChecked`, React-Hooks) und **Prettier** (`npm run lint`) |
 | Icons | **lucide-react**; Logo als eigene Komponente |
 | Schriften | **Inter** und **Space Grotesk** (Überschriften), lokal über `@fontsource-variable` |
-| Design | Ruhige, graue Oberfläche: Hintergrund **`#f3f4f6`** (Bulma `--bulma-background`), Primärfarbe **`#4a5260`** (Bulma `$primary`); kräftige Farbe nur für Highlights: Petrol **`#1f7a8c`** (Bulma `$link`); dunkler Modus automatisch nach Geräteeinstellung |
+| Design | Ruhige, graue Oberfläche: Hintergrund **`#f3f4f6`** (Bulma `--bulma-background`), Primärfarbe **`#4a5260`** (Bulma `$primary`); kräftige Farbe nur für Highlights: Petrol **`#1f7a8c`** (Bulma `$link`), für Überfälliges Orange **`#d9822b`** (`$luna-overdue`); dunkler Modus automatisch nach Geräteeinstellung |
 | Install-Skripte | npm 11 führt Install-Skripte von Abhängigkeiten nur nach Freigabe aus (`allowScripts` in `package.json`). Jedes neue Skript **prüfen** und bewusst freigeben (`true`) oder ablehnen (`false`); abgelehnt sind `@parcel/watcher` und `fsevents` (bringen fertige Binaries mit, die Skripte würden nur nativ kompilieren) |
 | Versionen | in `package.json` **exakt gepinnt** (`.npmrc`: `save-exact`), `package-lock.json` eingecheckt; TypeScript **5.9.x** (neuere Versionen werden von typescript-eslint und openapi-typescript noch nicht unterstützt) |
 
@@ -431,11 +435,15 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
     verbietet den Import.
   - Stores bekommen ihre Abhängigkeiten (API-Client, Push-Verbindung) im Konstruktor; `createRootStore` baut sie
     aus den Vite-Variablen. In Tests liefert `fakeRootStore()` (`src/test`) gemockte Clients.
-  - `src/api/<backend>/` enthält neben dem generierten `schema.d.ts` handgeschriebenen Code für Client
-    (`openapi-fetch` mit Token-Middleware, Token aus dem gemeinsamen `UserManager`), Push-Verbindung
-    (`@stomp/stompjs`) und Typ-Aliase. Push-DTOs nimmt der springdoc-`OpenApiCustomizer` in
-    `luna-core` (`config/OpenApiConfig`) als Schemas in die OpenAPI-Definition auf, damit auch ihre Typen generiert werden.
-  - Basis-URL je Backend in `.env.development`/`.env.production` (`VITE_LUNA_CORE_URL`).
+  - `src/api/shared/` enthält den gemeinsamen Code aller Backends: `createAuthorizedClient` (`openapi-fetch` mit
+    Token-Middleware, Token aus dem gemeinsamen `UserManager`) und `createPushConnector` (`@stomp/stompjs`, ein Topic
+    je Verbindung). `src/api/<backend>/` enthält das generierte `schema.d.ts`, dünne Fabriken
+    (`createLunaCoreClient`, `createLunaCorePushConnector` …) mit dem Push-Topic des Backends und Typ-Aliase.
+    Das `schema.d.ts` wird nicht über `index.ts` exportiert (die Namen `paths`/`components` kollidieren sonst).
+    Push-DTOs nimmt der springdoc-`OpenApiCustomizer` des Backends (`config/OpenApiConfig`) als Schemas in die
+    OpenAPI-Definition auf, damit auch ihre Typen generiert werden.
+  - Basis-URL je Backend in `.env.development`/`.env.production`/`.env.e2e` (`VITE_LUNA_CORE_URL`,
+    `VITE_LUNA_TASK_URL`).
   - Generierter Code wird **eingecheckt** und nie von Hand geändert (auch nicht von Prettier: `schema.d.ts` steht in
     `.prettierignore`). Bei API-Änderungen: Backend anpassen,
     Spec erzeugen, Wrapper neu generieren und im selben Commit mit einchecken.
@@ -642,8 +650,8 @@ npm ci && npm run lint && npm run coverage && npm run build
 npm run dev   # http://localhost:5173
 ```
 
-API-Wrapper von `luna-core` aus `luna-core/openapi.yaml` neu generieren (schreibt
-`frontend/src/api/luna-core/schema.d.ts`):
+API-Wrapper aller Backends aus `<backend>/openapi.yaml` neu generieren (schreibt
+`frontend/src/api/<backend>/schema.d.ts`; einzeln per `npm run generate:api:<backend>`):
 
 ```bash
 cd frontend && npm run generate:api
