@@ -63,11 +63,12 @@ services:
       # Every service may write to (and auto-create) topics starting with luna_<service without luna->_.
       # Each service needs the secret kafka_<service with _ instead of ->_password (declared below).
       LUNA_KAFKA_SERVICES: |
-        luna-core:
+        luna-core: luna_mail_email, luna_core_email_retry, luna_core_dlt
         luna-task: luna_core_task, luna_task_task_retry, luna_task_dlt
         luna-alert: luna_core_alert, luna_alert_alert_retry, luna_alert_dlt
         luna-note: luna_core_note, luna_note_note_retry, luna_note_dlt
         luna-appointment: luna_core_appointment, luna_appointment_appointment_retry, luna_appointment_dlt
+        luna-mail:
     volumes:
       # Root certificate of step-ca to verify the Kafka certificate.
       - step-ca-data:/step:ro
@@ -83,6 +84,7 @@ services:
       - kafka_luna_alert_password
       - kafka_luna_note_password
       - kafka_luna_appointment_password
+      - kafka_luna_mail_password
     networks:
       - luna
     deploy:
@@ -117,6 +119,8 @@ secrets:
   kafka_luna_note_password:
     external: true
   kafka_luna_appointment_password:
+    external: true
+  kafka_luna_mail_password:
     external: true
   kafka_keystore:
     external: true

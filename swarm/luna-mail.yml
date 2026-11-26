@@ -1,0 +1,59 @@
+# luna-mail backend: fetches new emails of the configured IMAP accounts.
+#
+# Build the image first (in luna-mail/): ./mvnw package jib:dockerBuild
+# The accounts come from the secret mail_accounts_v<n> (see luna-mail/README.md).
+# Deploy together with the other stack files:
+#   docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml \
+#     -c swarm/luna-task.yml -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/luna-appointment.yml \
+#     -c swarm/luna-mail.yml -c swarm/frontend.yml luna
+#
+# Required variables: LUNA_MAIL_VERSION and LUNA_MAIL_ACCOUNTS_VERSION (see README.md).
+# Messages of ${VAR:?message} must not contain '-': Docker reads it as default value operator.
+
+services:
+  luna-mail:
+    image: luna-mail:${LUNA_MAIL_VERSION:?set LUNA_MAIL_VERSION to the version of the luna mail image}
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      # Root certificate of step-ca to verify the Kafka certificate.
+      - step-ca-data:/step:ro
+      - /etc/localtime:/etc/localtime:ro
+    secrets:
+      # Read by Spring via configtree: the file name is the property name.
+      - source: luna_db_password
+        target: spring.datasource.password
+      - source: kafka_luna_mail_password
+        target: app.kafka.password
+      # YAML with all accounts and their app passwords, imported by application-prod.yml.
+      - source: mail_accounts
+        target: mail-accounts.yml
+    networks:
+      - luna
+    deploy:
+      labels:
+        traefik.enable: "true"
+        traefik.http.routers.luna-mail.rule: Host(`luna.internal`) && PathPrefix(`/api/luna-mail`)
+        traefik.http.routers.luna-mail.entrypoints: websecure
+        traefik.http.routers.luna-mail.tls.certresolver: stepca
+        traefik.http.routers.luna-mail.middlewares: luna-mail-strip-prefix
+        traefik.http.middlewares.luna-mail-strip-prefix.stripprefix.prefixes: /api/luna-mail
+        traefik.http.services.luna-mail.loadbalancer.server.port: "7086"
+
+networks:
+  luna:
+    name: luna
+    driver: overlay
+    attachable: true
+
+volumes:
+  step-ca-data:
+
+secrets:
+  luna_db_password:
+    external: true
+  kafka_luna_mail_password:
+    external: true
+  mail_accounts:
+    external: true
+    name: mail_accounts_v${LUNA_MAIL_ACCOUNTS_VERSION:?set LUNA_MAIL_ACCOUNTS_VERSION to the current version of the mail accounts}
