@@ -31,6 +31,9 @@ spring:
         "[spring.deserializer.value.delegate.class]": org.springframework.kafka.support.serializer.JacksonJsonDeserializer
         "[spring.json.value.default.type]": de.kirchrath.luna.task.dto.core.TaskEventDto
         "[spring.json.use.type.headers]": false
+    listener:
+      # A missing topic or ACL (e.g. while kafka-init is still running) must not stop the consumer for good.
+      auth-exception-retry-interval: 10s
     producer:
       key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
