@@ -65,6 +65,8 @@ services:
       LUNA_KAFKA_SERVICES: |
         luna-core:
         luna-task: luna_core_task, luna_task_task_retry, luna_task_dlt
+        luna-alert: luna_core_alert, luna_alert_alert_retry, luna_alert_dlt
+        luna-note: luna_core_note, luna_note_note_retry, luna_note_dlt
     volumes:
       # Root certificate of step-ca to verify the Kafka certificate.
       - step-ca-data:/step:ro
@@ -77,6 +79,8 @@ services:
       - kafka_admin_password
       - kafka_luna_core_password
       - kafka_luna_task_password
+      - kafka_luna_alert_password
+      - kafka_luna_note_password
     networks:
       - luna
     deploy:
@@ -105,6 +109,10 @@ secrets:
   kafka_luna_core_password:
     external: true
   kafka_luna_task_password:
+    external: true
+  kafka_luna_alert_password:
+    external: true
+  kafka_luna_note_password:
     external: true
   kafka_keystore:
     external: true

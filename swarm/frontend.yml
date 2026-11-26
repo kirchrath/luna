@@ -3,7 +3,7 @@
 # Build the image first: docker build --platform linux/amd64 -t luna-frontend:<version> frontend
 # Deploy together with the other stack files:
 #   docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml \
-#     -c swarm/luna-task.yml -c swarm/frontend.yml luna
+#     -c swarm/luna-task.yml -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/frontend.yml luna
 #
 # Required variable: LUNA_FRONTEND_VERSION (see README.md).
 
