@@ -10,3 +10,7 @@ export const LUNA_TASK_IMAGE = 'luna-task:e2e';
 export const LUNA_ALERT_IMAGE = 'luna-alert:e2e';
 export const LUNA_NOTE_IMAGE = 'luna-note:e2e';
 export const LUNA_APPOINTMENT_IMAGE = 'luna-appointment:e2e';
+export const LUNA_MAIL_IMAGE = 'luna-mail:e2e';
+/** SMTP port of the test mail server (GreenMail), published for the tests; luna-mail reads its mailbox via IMAP. */
+export const SMTP_PORT = 7125;
+export const MAIL_ADDRESS = 'luna@luna.test';
