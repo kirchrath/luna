@@ -226,6 +226,10 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   (`server.forward-headers-strategy: framework`); sonst gilt jedes POST/PUT und der WebSocket-Handshake von
   `https://luna.internal` als fremde Origin (`403`). Jeder Controller-Test sichert das mit einem weitergeleiteten
   Request ab (`thatARequestForwardedByTraefikFromTheOwnHttpsOriginShouldResultIntoNoCorsRejection`).
+  Den **WebSocket-Handshake** leitet Traefik mit `X-Forwarded-Proto: wss` weiter; die errechnete URL (`wss://…`) passt
+  dann nie zur Origin `https://luna.internal`. Deshalb erlaubt das Profil `prod` die eigene Origin ausdrücklich
+  (`app.cors.allowed-origins: https://luna.internal`), die E2E-Umgebung `http://localhost:7180`. Die
+  `*NotificationIntegrationTest`s prüfen einen so weitergeleiteten Handshake.
 
 ### Regeln für Java-Services
 
