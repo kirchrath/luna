@@ -63,13 +63,19 @@ for secret in step_ca_password postgres_password keycloak_db_password luna_db_pa
 done
 ```
 
-Die E-Mail-Konten für `luna-mail` als YAML-Datei mit App-Passwörtern anlegen (Aufbau und Einrichtung des
-Gmail-App-Passworts siehe [luna-mail/README.md](luna-mail/README.md)) und als versioniertes Secret
-`mail_accounts_v<n>` speichern; die Datei danach löschen:
+Die E-Mail-Konten für `luna-mail` als YAML-Datei mit App-Passwörtern und dem **Lebensbereich je Konto**
+(`area: PERSONAL` oder `WORK`, Pflicht) anlegen (Aufbau und Einrichtung des Gmail-App-Passworts siehe
+[luna-mail/README.md](luna-mail/README.md)) und als versioniertes Secret `mail_accounts_v<n>` speichern; die Datei
+danach löschen:
 
 ```bash
 docker secret create mail_accounts_v1 mail-accounts.yml && rm mail-accounts.yml
 ```
+
+> [!IMPORTANT]
+> **Update auf die Lebensbereiche:** Ein bestehendes Secret ohne `area` je Konto reicht nicht mehr – `luna-mail`
+> startet dann nicht. Vor dem Deploy eine neue Version mit `area` anlegen und `LUNA_MAIL_ACCOUNTS_VERSION` erhöhen.
+> Bestehende Eingaben, E-Mails und Elemente ordnen die Migrationen dem Bereich `WORK` zu.
 
 Den API-Key des KI-Anbieters für `luna-core` selbst eintragen (bei Ollama einen beliebigen Platzhalter):
 

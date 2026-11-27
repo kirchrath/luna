@@ -181,6 +181,30 @@ Visuelle Planung der Seiten für `luna-task`.
   **Absender**; Zeitpunkt, Status und entstandene Elemente wie bei manuellen Eingaben. Kein eigener Bereich für
   E-Mails.
 
+## Lebensbereiche
+
+| Ansicht | Datei |
+|---|---|
+| Kopfzeile, Schnelleingabe und Liste (Desktop) | [life-areas-desktop.svg](life-areas-desktop.svg) |
+| Kopfzeile und Liste (Smartphone) | [life-areas-mobile.svg](life-areas-mobile.svg) |
+
+![Lebensbereiche, Desktop](life-areas-desktop.svg)
+
+- **Werte:** „Privat“ (`PERSONAL`, Icon Haus) und „Beruflich“ (`WORK`, Icon Aktentasche); weitere Bereiche nur per
+  Code-Änderung in allen Services.
+- **Globaler Umschalter** in der Kopfzeile: „Alle Bereiche“ (Standard) / „Privat“ / „Beruflich“. Er gilt für alle
+  Listen (Aufgaben, Notizen, Warnungen, Termine inkl. Monat, Letzte Eingaben); eine gerade sichtbare Liste lädt sofort
+  neu. Die Wahl wird im `localStorage` gemerkt (`luna.lifeArea.filter`). Auf dem Smartphone nur Icons, der Name steht
+  im Tooltip und `aria-label`.
+- **Schnelleingabe:** Neue Eingaben gehören zum gewählten Bereich (Hinweis statt Auswahl). Bei „Alle Bereiche“
+  erscheinen Chips „Privat“ / „Beruflich“; vorausgewählt ist der zuletzt gewählte Bereich (`luna.lifeArea.input`,
+  beim ersten Mal „Privat“).
+- **Anzeige:** In Listen ein kleines Icon mit Tooltip, auf Detailseiten in der Karte „Herkunft“ „Bereich: …“.
+- **Unveränderlich:** Der Bereich wird bei der Eingabe festgelegt (bzw. am E-Mail-Konto) und lässt sich an Elementen
+  nicht ändern; die Formulare haben kein Feld dafür.
+- **Technik:** `LifeAreaStore` (MobX) hält Filter und Bereich neuer Eingaben; die Listen-Stores hängen `area` an ihre
+  Anfragen und laden per `reaction` neu, solange sie verbunden (sichtbar) sind.
+
 ## Offen (_TODO_)
 
 - Monitoring als ein Eintrag oder später mit Unterpunkten (Heimnetz & Server, Smart Home & Energie,

@@ -72,10 +72,22 @@ Noch offen (bitte hier eintragen, sobald entschieden):
        nur liest, was Outlook im Web anzeigt (nie dessen Anmeldung nutzen).
   9. **Zurückgestellt bis zum Schluss:** `luna-invoice` und `luna-contract` nach demselben Muster
      (Namen, Felder und Endpunkte je Service vor der Umsetzung klären).
+  10. **Lebensbereiche** (siehe [Lebensbereiche](#lebensbereiche)):
+      - 10a Bereich an Eingabe und allen Elementen, Weitergabe über Kafka, Anzeige und globaler Filter (erledigt)
+      - _TODO_ weitere Wirkungen, je ein eigener Schritt: KI-Anbieter je Bereich (z. B. beruflich nur ein lokales
+        Modell), Zugriff/Sichtbarkeit, Priorisierung/Benachrichtigungen; weitere Bereiche (z. B. Familie,
+        Hochprivat, Beruflich-Vertraulich, Beruflich-Privat).
 
   Keiner dieser Schritte ist ohne ausdrücklichen Auftrag umzusetzen.
 
 Betrieb: siehe Abschnitt [Betrieb](#betrieb) (Heimnetz, Docker Stack).
+
+Weitere offene Punkte (_TODO_, nicht ohne Auftrag umsetzen):
+
+- **MapStruct:** nicht gemappte Ziele sollen den Build abbrechen (`unmappedTargetPolicy = ERROR`), außer sie sind
+  ausdrücklich mit `ignore` markiert. Aktuell warnen z. B. die Element-Mapper in `luna-core` für das Ziel `withId`.
+- **Firefox meldet „Nicht sicher“** für `https://luna.internal`, obwohl das Root-Zertifikat importiert ist und die
+  Kette mit `openssl s_client` als `0 (ok)` geprüft wird. Ursache noch unklar.
 
 Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschläge zur Auswahl vorlegen (siehe Grundprinzip 3).
 
@@ -197,6 +209,14 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
     Ganztägige Termine beginnen um 00:00 Ortszeit, `end` ist der letzte Tag. Eine zusätzliche Spalte `effective_end`
     (Ende, ohne Ende der Beginn, ganztägig das Ende des letzten Tages) trennt kommende von vergangenen Terminen
     (laufende zählen als kommend) und dient der Abfrage eines Zeitraums (`GET /appointments/range`).
+- **Lebensbereiche:** <a id="lebensbereiche"></a> Jede Eingabe und jedes daraus entstandene Element gehört zu genau
+  einem Lebensbereich: Enum `LifeArea` (Entität) bzw. `LifeAreaDto` mit `PERSONAL` und `WORK`, Feld/Spalte `area`, in
+  **jedem** Service als eigener Enum (neue Werte in allen Services im selben Commit). Bestimmt wird er bei der Eingabe
+  (manuell Pflichtfeld, E-Mail-Konten Pflichtangabe `area` im Secret) und ist danach **unveränderlich**: Element-
+  Services setzen ihn nur beim Anlegen aus dem Core-Event, weder Update-Endpunkte noch neuere Core-Versionen ändern ihn.
+  `luna-core` veröffentlicht ihn als `area` im Element-Event (nicht in `…EventDataDto`, das ist auch das KI-Schema),
+  Element-Services in `data`. Alle List-Endpunkte filtern optional per `?area=` (Repository-Methoden mit
+  `…AreaIn(Collection<LifeArea>)`; ohne Filter alle Werte). Bestand vor der Einführung: `WORK`.
 - **Quell-Services** (z. B. `luna-mail`): liefern Rohdaten an `luna-core` (`luna_<quelle>_<inhalt>`); `luna-core`
   speichert sie als `InboundEvent` mit `source` und `source_id` (ID des Quell-Events, doppelte werden ignoriert) und
   analysiert sie wie manuelle Eingaben. Die Analyse-Eingabe je Quelle baut `InboundEventReader`.
@@ -479,7 +499,9 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
   - **Jede Kommunikation mit einem Backend läuft über MobX-Stores** (ausgenommen die OIDC-Anmeldung).
     Komponenten rufen den API-Wrapper nie direkt auf, sondern lesen Daten und Ladezustand aus Stores
     (`observer`) und lösen Aktionen über Store-Methoden aus. Alle Stores erzeugt der `RootStore`.
-  - Reiner UI-Zustand (z. B. Sprache, eingeklappte Navigation) bleibt in React-State bzw. i18next.
+  - Reiner UI-Zustand (z. B. Sprache, eingeklappte Navigation) bleibt in React-State bzw. i18next. Ausnahme: der
+    globale Lebensbereich (`LifeAreaStore`), da er die Anfragen aller Listen-Stores bestimmt; diese laden per MobX-
+    `reaction` neu, solange sie verbunden (sichtbar) sind.
   - MobX läuft mit **`enforceActions: 'always'`**. Zustand eines Stores liegt in **privaten `_`-Feldern** mit
     öffentlichem Getter und **privatem Setter** (`makeAutoObservable` macht Setter zu Actions); Änderungen laufen
     immer über den Setter, auch nach `await`. **`runInAction` wird nie verwendet** (leicht vergessen); ESLint

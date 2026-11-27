@@ -97,8 +97,8 @@ Ausdrücklich **nicht** Teil von `luna-core`:
 ### Manuelle Eingabe (Schritt 2)
 
 - **Endpunkt:** `POST /inbound-events/manual` (OperationId `createManualInboundEvent`), nur mit JWT.
-- **Request:** `ManualInputDataDto` mit `text` (Pflicht, nicht leer, max. 10.000 Zeichen) und optionalem
-  `typeHint` (`LunaElementTypeDto`: `TASK`, `ALERT`, `APPOINTMENT`, `INVOICE`, `CONTRACT`, `NOTE`).
+- **Request:** `ManualInputDataDto` mit `text` (Pflicht, nicht leer, max. 10.000 Zeichen), `area` (Pflicht,
+  Lebensbereich `PERSONAL` oder `WORK`) und optionalem `typeHint` (`LunaElementTypeDto`: `TASK`, `ALERT`, `APPOINTMENT`, `INVOICE`, `CONTRACT`, `NOTE`).
 - **Antwort:** `202 Accepted` mit `ResourceReferenceDto` (`{"id": "…"}`); `400` bei ungültiger Eingabe,
   `401` ohne gültiges Token.
 - **Speicherung:** Tabelle `inbound_event` mit `id`, `source` (`EventSource`, z. B. `MANUAL`), `data` (JSONB,
@@ -219,16 +219,26 @@ mit PostgreSQL und Kafka per Testcontainers (ohne TLS/SASL), gemocktes `ChatMode
 
 - **Endpunkt:** `GET /inbound-events` (OperationId `listInboundEvents`), nur mit JWT. Ersetzt seit Schritt 8
   `GET /inbound-events/manual`.
-- **Parameter:** `page` (ab 0) und `size`; Standard und Obergrenze per `spring.data.web.pageable.default-page-size`
+- **Parameter:** optional `area` (nur Eingaben dieses Lebensbereichs), `page` (ab 0) und `size`; Standard und Obergrenze per `spring.data.web.pageable.default-page-size`
   (`20`) und `max-page-size` (`100`). Größere Werte werden gekappt. Sortiert nach Eingangszeit, neueste zuerst.
 - **Antwort:** `200` mit `InboundEventListDto` (`items`, `totalPages`, `totalCount`); `401` ohne Token.
-  Ein `InboundEventListItemDto` enthält `id`, `source` (`MANUAL`, `MAIL`), bei manuellen Eingaben `text` und
+  Ein `InboundEventListItemDto` enthält `id`, `source` (`MANUAL`, `MAIL`), `area`, bei manuellen Eingaben `text` und
   `typeHint`, bei E-Mails `subject` und `from`, außerdem `status` (`InboundEventStatusDto`: `RECEIVED`, `ANALYZED`,
   `FAILED`), `createdDate` und `elements` (`ElementReferenceDto` mit `id` und `type`; `id` ist die ID des auf Kafka
   veröffentlichten Events). Leere optionale Felder fehlen.
 - **Abfrage:** Eine Seite `inbound_event` (`findAll` mit `Pageable`) plus deren `outbound_event` in einer Abfrage
   (`findByInboundEventIdIn`). Das `Pageable` wird bis zum DomainService durchgereicht, der die Sortierung
   festlegt; eine übergebene Sortierung wird ignoriert.
+
+### Lebensbereiche
+
+- Jede Eingabe gehört zu genau einem **Lebensbereich** (`LifeArea`: `PERSONAL`, `WORK`; fester Enum in allen
+  Services, weitere Werte nur per Code-Änderung in allen Services). Manuelle Eingaben bringen ihn im Request mit,
+  E-Mails übernehmen den Bereich ihres Kontos aus `luna-mail`.
+- `inbound_event.area` speichert ihn; jedes daraus entstandene Element übernimmt ihn (`outbound_event.area`) und
+  veröffentlicht ihn als `area` im Element-Event (`ElementEventDto`, neben `id`, `audit` und `data`). Der Bereich
+  steht bewusst nicht in den `…EventDataDto`, da diese auch das Antwortschema der KI sind.
+- Der Bereich ist danach **unveränderlich**. Bestand vor Einführung der Bereiche gehört zu `WORK` (Migration `V5`).
 
 ### E-Mails als Quelle (Schritt 8)
 

@@ -38,6 +38,7 @@ Fehler werden über `luna_appointment_appointment_retry` wiederholt (Standard 10
 | `status` | `SCHEDULED`, `CANCELLED` | neu immer `SCHEDULED` |
 | `cancelledDate` | Zeitpunkt | beim Absagen |
 | `source`, `sourceId` | `CORE` + ID des Core-Termins | Core-Event |
+| `area` | `PERSONAL`, `WORK` (Lebensbereich) | Core-Event, danach **unveränderlich** (kein Update-Endpunkt ändert ihn, neuere Core-Versionen auch nicht) |
 | `edited` | ja/nein | `true` nach jeder Änderung durch den Benutzer |
 
 **Ganztägige Termine** beginnen um 00:00 Ortszeit; `end` ist der letzte Tag (ebenfalls 00:00).
@@ -52,8 +53,8 @@ Spezifikation: [openapi.yaml](openapi.yaml). Veröffentlichte Events: [kafka-api
 
 | Methode und Pfad | Zweck |
 |---|---|
-| `GET /appointments?period=&page=&size=` | `UPCOMING` (Standard, früheste zuerst), `PAST` (späteste zuerst) oder `ALL` |
-| `GET /appointments/range?from=&to=` | alle Termine, die sich mit dem Zeitraum überschneiden (z. B. ein Monat), früheste zuerst |
+| `GET /appointments?period=&area=&page=&size=` | `UPCOMING` (Standard, früheste zuerst), `PAST` (späteste zuerst) oder `ALL`; optional nach Lebensbereich gefiltert |
+| `GET /appointments/range?from=&to=&area=` | alle Termine, die sich mit dem Zeitraum überschneiden (z. B. ein Monat), früheste zuerst; optional nach Lebensbereich gefiltert |
 | `GET /appointments/{id}` | Details (`404`, wenn unbekannt) |
 | `PUT /appointments/{id}` | bearbeiten; mit `version` (`409` bei Konflikt, `400` bei Ende vor Beginn) |
 | `POST /appointments/{id}/cancel` | absagen (bereits abgesagt: unverändert) |
