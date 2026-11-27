@@ -4,7 +4,8 @@
 # Deploy together with the other stack files:
 #   docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml luna
 #
-# Required variables: LUNA_CORE_VERSION, SPRING_AI_MODEL_CHAT, LUNA_AI_API_KEY_PROPERTY (see README.md).
+# Required variables: LUNA_CORE_VERSION and the AI provider of each life area (LUNA_AI_<AREA>_TYPE, _MODEL; see
+# README.md).
 # Messages of ${VAR:?message} must not contain '-': Docker reads it as default value operator.
 
 services:
@@ -12,13 +13,13 @@ services:
     image: luna-core:${LUNA_CORE_VERSION:?set LUNA_CORE_VERSION to the version of the luna core image}
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - SPRING_AI_MODEL_CHAT=${SPRING_AI_MODEL_CHAT:?set SPRING_AI_MODEL_CHAT to ollama, anthropic or openai}
-      # Optional AI settings; variables that are not set are not passed to the container.
-      - SPRING_AI_OLLAMA_BASE_URL
-      - SPRING_AI_OLLAMA_CHAT_MODEL
-      - SPRING_AI_ANTHROPIC_CHAT_MODEL
-      - SPRING_AI_OPENAI_BASE_URL
-      - SPRING_AI_OPENAI_CHAT_MODEL
+      # The AI provider of each life area; every input is analyzed by the provider of its area only.
+      - APP_AI_PROVIDERS_PERSONAL_TYPE=${LUNA_AI_PERSONAL_TYPE:?set LUNA_AI_PERSONAL_TYPE to ollama, anthropic or openai}
+      - APP_AI_PROVIDERS_PERSONAL_MODEL=${LUNA_AI_PERSONAL_MODEL:?set LUNA_AI_PERSONAL_MODEL to the chat model}
+      - APP_AI_PROVIDERS_PERSONAL_BASE_URL=${LUNA_AI_PERSONAL_BASE_URL:-}
+      - APP_AI_PROVIDERS_WORK_TYPE=${LUNA_AI_WORK_TYPE:?set LUNA_AI_WORK_TYPE to ollama, anthropic or openai}
+      - APP_AI_PROVIDERS_WORK_MODEL=${LUNA_AI_WORK_MODEL:?set LUNA_AI_WORK_MODEL to the chat model}
+      - APP_AI_PROVIDERS_WORK_BASE_URL=${LUNA_AI_WORK_BASE_URL:-}
     volumes:
       # Root certificate of step-ca to verify the Kafka certificate.
       - step-ca-data:/step:ro
@@ -29,8 +30,10 @@ services:
         target: spring.datasource.password
       - source: kafka_luna_core_password
         target: app.kafka.password
-      - source: luna_core_ai_api_key
-        target: ${LUNA_AI_API_KEY_PROPERTY:?set LUNA_AI_API_KEY_PROPERTY to the property of the AI API key, see README}
+      - source: luna_core_ai_personal_api_key
+        target: app.ai.providers.personal.api-key
+      - source: luna_core_ai_work_api_key
+        target: app.ai.providers.work.api-key
     networks:
       - luna
     deploy:
@@ -57,5 +60,7 @@ secrets:
     external: true
   kafka_luna_core_password:
     external: true
-  luna_core_ai_api_key:
+  luna_core_ai_personal_api_key:
+    external: true
+  luna_core_ai_work_api_key:
     external: true

@@ -46,7 +46,7 @@ class InboundEventReaderTest {
         var analysisInput = inboundEventReader.analysisInput(inboundEvent);
 
         // then
-        assertThat(analysisInput).isEqualTo(new AnalysisInput("Dentist tomorrow", LunaElementTypeDto.APPOINTMENT, CREATED));
+        assertThat(analysisInput).isEqualTo(new AnalysisInput(LifeArea.PERSONAL, "Dentist tomorrow", LunaElementTypeDto.APPOINTMENT, CREATED));
         assertThat(inboundEventReader.manualInput(inboundEvent)).isEqualTo(input);
         assertThat(inboundEventReader.email(inboundEvent)).isNull();
     }
@@ -82,6 +82,7 @@ class InboundEventReaderTest {
                 Please pay by Friday.""");
         assertThat(analysisInput.typeHint()).isNull();
         assertThat(analysisInput.referenceTime()).isEqualTo(RECEIVED);
+        assertThat(analysisInput.area()).isEqualTo(LifeArea.PERSONAL);
         assertThat(inboundEventReader.manualInput(inboundEvent)).isNull();
         assertThat(inboundEventReader.email(inboundEvent).getSubject()).isEqualTo("Invoice 4711");
     }

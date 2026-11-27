@@ -138,16 +138,16 @@ class ElementProcessorTest {
     <D> void thatQualifyingValidDataShouldResultIntoTheData(Case<D> testCase) {
         // given
         var processor = processor(testCase, mock(repositoryType(testCase.type())));
-        when(elementQualificationClient.<D>qualify(any(), eq("Some input"), eq(NOW), any()))
+        when(elementQualificationClient.<D>qualify(eq(LifeArea.WORK), any(), eq("Some input"), eq(NOW), any()))
                 .thenReturn(new QualificationResultDto<>(List.of(testCase.validData(), testCase.validData())));
 
         // when
-        var data = processor.qualify("Some input", NOW);
+        var data = processor.qualify(LifeArea.WORK, "Some input", NOW);
 
         // then
         assertThat(data).containsExactly(testCase.validData(), testCase.validData());
         assertThat(processor.type()).isEqualTo(testCase.type());
-        verify(elementQualificationClient).qualify(eq(new ClassPathResource(testCase.prompt())), eq("Some input"),
+        verify(elementQualificationClient).qualify(eq(LifeArea.WORK), eq(new ClassPathResource(testCase.prompt())), eq("Some input"),
                 eq(NOW), any());
     }
 
@@ -156,11 +156,11 @@ class ElementProcessorTest {
     <D> void thatQualifyingDataWithoutRequiredFieldsShouldResultIntoAConstraintViolation(Case<D> testCase) {
         // given
         var processor = processor(testCase, mock(repositoryType(testCase.type())));
-        when(elementQualificationClient.<D>qualify(any(), any(), any(), any()))
+        when(elementQualificationClient.<D>qualify(any(), any(), any(), any(), any()))
                 .thenReturn(new QualificationResultDto<>(List.of(testCase.validData(), testCase.invalidData())));
 
         // when / then
-        assertThatThrownBy(() -> processor.qualify("Some input", NOW)).isInstanceOf(ConstraintViolationException.class);
+        assertThatThrownBy(() -> processor.qualify(LifeArea.WORK, "Some input", NOW)).isInstanceOf(ConstraintViolationException.class);
     }
 
     @ParameterizedTest
@@ -170,7 +170,7 @@ class ElementProcessorTest {
         var processor = processor(testCase, mock(repositoryType(testCase.type())));
 
         // when / then
-        assertThatThrownBy(() -> processor.qualify("Some input", NOW))
+        assertThatThrownBy(() -> processor.qualify(LifeArea.WORK, "Some input", NOW))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining(testCase.type().name());
     }
@@ -180,11 +180,11 @@ class ElementProcessorTest {
     <D> void thatQualifyingWithoutItemsShouldResultIntoAnError(Case<D> testCase) {
         // given
         var processor = processor(testCase, mock(repositoryType(testCase.type())));
-        when(elementQualificationClient.<D>qualify(any(), any(), any(), any()))
+        when(elementQualificationClient.<D>qualify(any(), any(), any(), any(), any()))
                 .thenReturn(new QualificationResultDto<>(null));
 
         // when / then
-        assertThatThrownBy(() -> processor.qualify("Some input", NOW)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> processor.qualify(LifeArea.WORK, "Some input", NOW)).isInstanceOf(IllegalStateException.class);
     }
 
     @ParameterizedTest
@@ -192,11 +192,11 @@ class ElementProcessorTest {
     <D> void thatQualifyingWithAnEmptyItemListShouldResultIntoAnError(Case<D> testCase) {
         // given
         var processor = processor(testCase, mock(repositoryType(testCase.type())));
-        when(elementQualificationClient.<D>qualify(any(), any(), any(), any()))
+        when(elementQualificationClient.<D>qualify(any(), any(), any(), any(), any()))
                 .thenReturn(new QualificationResultDto<>(List.of()));
 
         // when / then
-        assertThatThrownBy(() -> processor.qualify("Some input", NOW)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> processor.qualify(LifeArea.WORK, "Some input", NOW)).isInstanceOf(IllegalStateException.class);
     }
 
     @ParameterizedTest

@@ -3,7 +3,7 @@
 The classification prompt asks for element types, the qualification prompts for items. Every input becomes one
 task, so the tests can rely on a predictable result; a marker like [e2e-alert-123], [e2e-note-123] or
 [e2e-appointment-123] makes it an alert, a note or an appointment (tomorrow 10:00-11:00 UTC) instead. The marker is copied into the title, so that a test finds its own element among those of
-other tests.
+other tests. The requested model is added to the title as well, so that a test sees which provider analyzed an input.
 """
 import json
 import re
@@ -28,8 +28,9 @@ def classification(body):
 
 
 def title(prefix, body):
+    model = json.loads(body).get("model", "unknown")
     marker = TEST_MARKER.search(body)
-    return prefix if marker is None else f"{prefix} {marker.group(0)}"
+    return f"{prefix} ({model})" if marker is None else f"{prefix} ({model}) {marker.group(0)}"
 
 
 def qualification(body):
