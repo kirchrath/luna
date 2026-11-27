@@ -2,6 +2,7 @@ package de.kirchrath.luna.alert.converter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
@@ -9,10 +10,12 @@ import de.kirchrath.luna.alert.data.entity.Alert;
 import de.kirchrath.luna.alert.data.entity.AlertSeverity;
 import de.kirchrath.luna.alert.data.entity.AlertSource;
 import de.kirchrath.luna.alert.data.entity.AlertStatus;
+import de.kirchrath.luna.alert.data.entity.LifeArea;
 import de.kirchrath.luna.alert.dto.AlertDto;
 import de.kirchrath.luna.alert.dto.AlertEventDto;
 import de.kirchrath.luna.alert.dto.AlertListItemDto;
 import de.kirchrath.luna.alert.dto.AlertStatusDto;
+import de.kirchrath.luna.alert.dto.LifeAreaDto;
 import de.kirchrath.luna.alert.dto.core.AlertEventDataDto;
 
 @Component
@@ -33,6 +36,7 @@ public class AlertConverter {
         return applyCore(Alert.builder()
                 .source(AlertSource.CORE)
                 .sourceId(event.getId())
+                .area(alertMapper.toEntity(event.getArea()))
                 .status(AlertStatus.OPEN)
                 .build(), event);
     }
@@ -64,5 +68,10 @@ public class AlertConverter {
 
     public List<AlertStatus> toEntities(List<AlertStatusDto> statuses) {
         return statuses.stream().map(alertMapper::toEntity).toList();
+    }
+
+    /** Only the given area, or all areas without one. */
+    public Set<LifeArea> toEntities(LifeAreaDto area) {
+        return area == null ? Set.of(LifeArea.values()) : Set.of(alertMapper.toEntity(area));
     }
 }

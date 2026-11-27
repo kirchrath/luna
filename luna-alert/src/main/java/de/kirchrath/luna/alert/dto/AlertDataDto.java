@@ -14,5 +14,6 @@ public record AlertDataDto(
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) OffsetDateTime acknowledgedDate,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) OffsetDateTime resolvedDate,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) AlertSourceDto source,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) UUID sourceId) {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) UUID sourceId,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) LifeAreaDto area) {
 }

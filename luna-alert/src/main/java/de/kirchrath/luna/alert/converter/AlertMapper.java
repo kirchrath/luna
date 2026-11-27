@@ -7,12 +7,14 @@ import org.mapstruct.MappingConstants;
 import de.kirchrath.luna.alert.data.entity.Alert;
 import de.kirchrath.luna.alert.data.entity.AlertSeverity;
 import de.kirchrath.luna.alert.data.entity.AlertStatus;
+import de.kirchrath.luna.alert.data.entity.LifeArea;
 import de.kirchrath.luna.alert.dto.AlertDataDto;
 import de.kirchrath.luna.alert.dto.AlertDto;
 import de.kirchrath.luna.alert.dto.AlertEventDto;
 import de.kirchrath.luna.alert.dto.AlertListItemDto;
 import de.kirchrath.luna.alert.dto.AlertStatusDto;
 import de.kirchrath.luna.alert.dto.AuditDto;
+import de.kirchrath.luna.alert.dto.LifeAreaDto;
 import de.kirchrath.luna.alert.dto.core.AlertEventDataDto;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
@@ -35,4 +37,8 @@ public interface AlertMapper {
     AlertStatus toEntity(AlertStatusDto status);
 
     AlertSeverity toEntity(AlertEventDataDto.SeverityEnum severity);
+
+    LifeArea toEntity(LifeAreaDto area);
+
+    LifeArea toEntity(de.kirchrath.luna.alert.dto.core.AlertEventDto.AreaEnum area);
 }

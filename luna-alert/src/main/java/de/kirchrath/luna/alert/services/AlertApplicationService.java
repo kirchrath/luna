@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import de.kirchrath.luna.alert.dto.AlertDto;
 import de.kirchrath.luna.alert.dto.AlertListDto;
 import de.kirchrath.luna.alert.dto.AlertStatusDto;
+import de.kirchrath.luna.alert.dto.LifeAreaDto;
 
 @Service
 public class AlertApplicationService {
@@ -19,8 +20,8 @@ public class AlertApplicationService {
         this.alertDomainService = alertDomainService;
     }
 
-    public AlertListDto listAlerts(List<AlertStatusDto> statuses, Pageable pageable) {
-        return alertDomainService.listAlerts(statuses, pageable);
+    public AlertListDto listAlerts(List<AlertStatusDto> statuses, LifeAreaDto area, Pageable pageable) {
+        return alertDomainService.listAlerts(statuses, area, pageable);
     }
 
     public AlertDto getAlert(UUID id) {
