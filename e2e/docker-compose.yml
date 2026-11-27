@@ -175,6 +175,7 @@ services:
       APP_MAIL_SESSION_MAIL_IMAPS_SSL_CHECKSERVERIDENTITY: 'false'
       APP_MAIL_ACCOUNTS_E2E_USERNAME: luna@luna.test
       APP_MAIL_ACCOUNTS_E2E_PASSWORD: luna-e2e
+      APP_MAIL_ACCOUNTS_E2E_AREA: WORK
 
   frontend:
     image: luna-frontend:e2e
