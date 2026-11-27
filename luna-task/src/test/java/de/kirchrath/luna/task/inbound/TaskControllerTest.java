@@ -13,6 +13,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -111,7 +113,10 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.id").doesNotExist())
                 .andExpect(jsonPath("$.data.title").value("Pay the electricity bill"))
                 .andExpect(jsonPath("$.data.description").value("Before the end of the month"))
-                .andExpect(jsonPath("$.data.dueDate").value("2026-11-30T11:00:00Z"))
+                // Dates are returned in the time zone of the server, so the expected text depends on where the test runs.
+                .andExpect(jsonPath("$.data.dueDate").value(DUE_DATE.atZoneSameInstant(ZoneId.systemDefault())
+                        .toOffsetDateTime()
+                        .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)))
                 .andExpect(jsonPath("$.data.priority").value("NORMAL"))
                 .andExpect(jsonPath("$.data.status").value("OPEN"))
                 .andExpect(jsonPath("$.data.source").value("CORE"))
