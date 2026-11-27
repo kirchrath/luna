@@ -16,6 +16,8 @@ import de.kirchrath.luna.core.dto.AppointmentEventDto;
 public interface AppointmentElementMapper {
 
     @Mapping(target = "id", ignore = true)
+    // EntityWithId#withId looks like a fluent setter to MapStruct; the id is set by EntityIdCallback.
+    @Mapping(target = "withId", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "lastModifiedDate", ignore = true)
     @Mapping(target = "version", ignore = true)

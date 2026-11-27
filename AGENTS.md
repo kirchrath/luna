@@ -84,8 +84,6 @@ Betrieb: siehe Abschnitt [Betrieb](#betrieb) (Heimnetz, Docker Stack).
 
 Weitere offene Punkte (_TODO_, nicht ohne Auftrag umsetzen):
 
-- **MapStruct:** nicht gemappte Ziele sollen den Build abbrechen (`unmappedTargetPolicy = ERROR`), außer sie sind
-  ausdrücklich mit `ignore` markiert. Aktuell warnen z. B. die Element-Mapper in `luna-core` für das Ziel `withId`.
 - **Firefox meldet „Nicht sicher“** für `https://luna.internal`, obwohl das Root-Zertifikat importiert ist und die
   Kette mit `openssl s_client` als `0 (ok)` geprüft wird. Ursache noch unklar.
 
@@ -137,7 +135,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak, Kafka, GreenMail `greenmail/standalone:2.1.15` für IMAP/SMTP) |
 | Service-Kommunikation | **Kafka** – Kommunikation zwischen Services **ausschließlich** über Kafka |
 | KI / Event-Analyse | **Spring AI 2.1.0** (in `luna-core`); Anbieter konfigurierbar über `spring.ai.model.chat` (Ollama, Anthropic Claude, OpenAI-kompatibel), kein Standard; nicht genutzte Modellarten mit `none` abgeschaltet |
-| Mapping | **MapStruct 1.6.3** (Mapper in `converter`) |
+| Mapping | **MapStruct 1.6.3** (Mapper in `converter`); nicht gemappte Ziele brechen den Build ab (`-Amapstruct.unmappedTargetPolicy=ERROR` im `maven-compiler-plugin`), außer sie sind per `@Mapping(target = …, ignore = true)` ausdrücklich ausgenommen – z. B. `withId` aus `EntityWithId`, das MapStruct für einen Fluent-Setter hält |
 | E-Mail | **Jakarta Mail** (`spring-boot-starter-mail`, Version von Spring Boot) und **jsoup 1.24.1** (HTML → Text) in `luna-mail` |
 | Lombok | Version von Spring Boot verwaltet; **nur** `@Slf4j`, `@Builder(toBuilder = true)` und `@With` |
 | Architekturtests | **ArchUnit 1.5.1** (`archunit-junit5`) |
