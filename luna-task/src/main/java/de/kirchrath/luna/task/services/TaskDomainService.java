@@ -1,5 +1,6 @@
 package de.kirchrath.luna.task.services;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -46,12 +47,12 @@ public class TaskDomainService {
     }
 
     @Transactional(readOnly = true)
-    public TaskListDto listTasks(TaskStatusDto status, LifeAreaDto area, Pageable pageable) {
+    public TaskListDto listTasks(TaskStatusDto status, List<LifeAreaDto> areas, Pageable pageable) {
         var pageRequest = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), LIST_ORDER);
-        var areas = taskConverter.toEntities(area);
+        var lifeAreas = taskConverter.toAreas(areas);
         var tasks = status == null
-                ? taskRepository.findByAreaIn(areas, pageRequest)
-                : taskRepository.findByStatusAndAreaIn(taskConverter.toEntity(status), areas, pageRequest);
+                ? taskRepository.findByAreaIn(lifeAreas, pageRequest)
+                : taskRepository.findByStatusAndAreaIn(taskConverter.toEntity(status), lifeAreas, pageRequest);
         return new TaskListDto(
                 tasks.map(taskConverter::toListItemDto).getContent(), tasks.getTotalPages(), tasks.getTotalElements());
     }

@@ -113,6 +113,18 @@ class NoteControllerTest {
     }
 
     @Test
+    void thatListingNotesOfSeveralAreasShouldResultIntoTheNotesOfTheseAreas() throws Exception {
+        // given
+        save("Pumpkin soup", NoteStatus.ACTIVE, LifeArea.PERSONAL);
+        save("Team meeting", NoteStatus.ACTIVE, LifeArea.WORK);
+
+        // when / then
+        mockMvc.perform(get("/notes").param("area", "PERSONAL", "WORK").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(2));
+    }
+
+    @Test
     void thatListingNotesWithAnUnknownAreaShouldResultIntoABadRequest() throws Exception {
         // when / then
         mockMvc.perform(get("/notes").param("area", "UNKNOWN").with(jwt())).andExpect(status().isBadRequest());

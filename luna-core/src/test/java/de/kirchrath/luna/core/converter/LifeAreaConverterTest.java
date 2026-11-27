@@ -2,6 +2,9 @@ package de.kirchrath.luna.core.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -37,5 +40,23 @@ class LifeAreaConverterTest {
 
         // then
         assertThat(converted).isEqualTo(expected);
+    }
+
+    @Test
+    void thatConvertingNoAreasShouldResultIntoAllAreas() {
+        // when
+        var areas = lifeAreaConverter.toAreas(List.of());
+
+        // then
+        assertThat(areas).containsExactlyInAnyOrder(LifeArea.values());
+    }
+
+    @Test
+    void thatConvertingSomeAreasShouldResultIntoTheseAreas() {
+        // when
+        var areas = lifeAreaConverter.toAreas(List.of(LifeAreaDto.WORK, LifeAreaDto.WORK));
+
+        // then
+        assertThat(areas).containsExactly(LifeArea.WORK);
     }
 }

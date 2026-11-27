@@ -122,6 +122,18 @@ class TaskControllerTest {
     }
 
     @Test
+    void thatListingTasksOfSeveralAreasShouldResultIntoTheTasksOfTheseAreas() throws Exception {
+        // given
+        save("Buy flowers", DUE_DATE, TaskStatus.OPEN, LifeArea.PERSONAL);
+        save("Prepare the review", DUE_DATE, TaskStatus.OPEN, LifeArea.WORK);
+
+        // when / then
+        mockMvc.perform(get("/tasks").param("area", "PERSONAL", "WORK").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(2));
+    }
+
+    @Test
     void thatListingTasksWithAnUnknownAreaShouldResultIntoABadRequest() throws Exception {
         // when / then
         mockMvc.perform(get("/tasks").param("area", "UNKNOWN").with(jwt())).andExpect(status().isBadRequest());

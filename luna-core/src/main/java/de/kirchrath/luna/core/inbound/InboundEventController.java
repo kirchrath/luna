@@ -1,5 +1,7 @@
 package de.kirchrath.luna.core.inbound;
 
+import java.util.List;
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -31,6 +33,7 @@ import jakarta.validation.Valid;
 public class InboundEventController {
 
     private static final String MANUAL = "/manual";
+    private static final String AREA = "area";
 
     private final InboundEventApplicationService inboundEventApplicationService;
 
@@ -51,8 +54,9 @@ public class InboundEventController {
                 @ApiResponse(responseCode = "401", content = @Content)
             })
     public InboundEventListDto listInboundEvents(
-            @RequestParam(required = false) LifeAreaDto area, @Parameter(hidden = true) Pageable pageable) {
-        return inboundEventApplicationService.listInboundEvents(area, pageable);
+            @RequestParam(name = AREA, required = false, defaultValue = "") List<LifeAreaDto> areas,
+            @Parameter(hidden = true) Pageable pageable) {
+        return inboundEventApplicationService.listInboundEvents(areas, pageable);
     }
 
     @PostMapping(

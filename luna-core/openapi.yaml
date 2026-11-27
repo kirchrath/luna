@@ -48,10 +48,13 @@ paths:
         in: query
         required: false
         schema:
-          type: string
-          enum:
-          - PERSONAL
-          - WORK
+          type: array
+          default: []
+          items:
+            type: string
+            enum:
+            - PERSONAL
+            - WORK
       responses:
         "200":
           description: OK

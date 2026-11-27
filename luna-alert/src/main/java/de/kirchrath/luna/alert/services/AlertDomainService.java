@@ -45,14 +45,15 @@ public class AlertDomainService {
         this.eventPublisher = eventPublisher;
     }
 
-    /** Without statuses the alerts of all statuses are listed, without area those of all areas. */
+    /** Without statuses the alerts of all statuses are listed, without areas those of all areas. */
     @Transactional(readOnly = true)
-    public AlertListDto listAlerts(List<AlertStatusDto> statuses, LifeAreaDto area, Pageable pageable) {
+    public AlertListDto listAlerts(List<AlertStatusDto> statuses, List<LifeAreaDto> areas, Pageable pageable) {
         var pageRequest = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), LIST_ORDER);
-        var areas = alertConverter.toEntities(area);
+        var lifeAreas = alertConverter.toAreas(areas);
         var alerts = statuses.isEmpty()
-                ? alertRepository.findByAreaIn(areas, pageRequest)
-                : alertRepository.findByStatusInAndAreaIn(alertConverter.toEntities(statuses), areas, pageRequest);
+                ? alertRepository.findByAreaIn(lifeAreas, pageRequest)
+                : alertRepository.findByStatusInAndAreaIn(
+                        alertConverter.toEntities(statuses), lifeAreas, pageRequest);
         return new AlertListDto(
                 alerts.map(alertConverter::toListItemDto).getContent(), alerts.getTotalPages(),
                 alerts.getTotalElements());

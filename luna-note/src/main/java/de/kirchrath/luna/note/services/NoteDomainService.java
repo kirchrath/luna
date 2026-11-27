@@ -1,5 +1,6 @@
 package de.kirchrath.luna.note.services;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -45,12 +46,12 @@ public class NoteDomainService {
     }
 
     @Transactional(readOnly = true)
-    public NoteListDto listNotes(NoteStatusDto status, LifeAreaDto area, Pageable pageable) {
+    public NoteListDto listNotes(NoteStatusDto status, List<LifeAreaDto> areas, Pageable pageable) {
         var pageRequest = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), LIST_ORDER);
-        var areas = noteConverter.toEntities(area);
+        var lifeAreas = noteConverter.toAreas(areas);
         var notes = status == null
-                ? noteRepository.findByAreaIn(areas, pageRequest)
-                : noteRepository.findByStatusAndAreaIn(noteConverter.toEntity(status), areas, pageRequest);
+                ? noteRepository.findByAreaIn(lifeAreas, pageRequest)
+                : noteRepository.findByStatusAndAreaIn(noteConverter.toEntity(status), lifeAreas, pageRequest);
         return new NoteListDto(
                 notes.map(noteConverter::toListItemDto).getContent(), notes.getTotalPages(), notes.getTotalElements());
     }

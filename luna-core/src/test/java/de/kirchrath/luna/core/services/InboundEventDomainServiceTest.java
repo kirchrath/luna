@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,6 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import de.kirchrath.luna.core.converter.InboundEventConverter;
@@ -139,14 +139,14 @@ class InboundEventDomainServiceTest {
                 new EventData(jsonMapper.writeValueAsString(email("Invoice 4711"))),
                 InboundEventStatus.RECEIVED, 0, NOW, NOW, 0L);
         var pageRequest = PageRequest.of(1, 2, Sort.by(Sort.Direction.DESC, "createdDate"));
-        when(inboundEventRepository.findAll(pageRequest))
+        when(inboundEventRepository.findByAreaIn(Set.of(LifeArea.PERSONAL, LifeArea.WORK), pageRequest))
                 .thenReturn(new PageImpl<>(List.of(received, analyzed), pageRequest, 5));
         when(outboundEventRepository.findByInboundEventIdIn(List.of(receivedId, ID))).thenReturn(List.of(
                 new OutboundEvent(
                         taskId, ID, LunaElementType.TASK, LifeArea.PERSONAL, OutboundEventStatus.PUBLISHED, NOW, NOW, 0L)));
 
         // when
-        var list = inboundEventDomainService.listInboundEvents(null, PageRequest.of(1, 2, Sort.by("text")));
+        var list = inboundEventDomainService.listInboundEvents(List.of(), PageRequest.of(1, 2, Sort.by("text")));
 
         // then
         assertThat(list.totalCount()).isEqualTo(5);
@@ -178,11 +178,11 @@ class InboundEventDomainServiceTest {
                 new EventData(jsonMapper.writeValueAsString(email("Invoice 4711"))),
                 InboundEventStatus.RECEIVED, 0, NOW, NOW, 0L);
         var pageRequest = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdDate"));
-        when(inboundEventRepository.findByArea(LifeArea.WORK, pageRequest))
+        when(inboundEventRepository.findByAreaIn(Set.of(LifeArea.WORK), pageRequest))
                 .thenReturn(new PageImpl<>(List.of(work), pageRequest, 1));
 
         // when
-        var list = inboundEventDomainService.listInboundEvents(LifeAreaDto.WORK, PageRequest.of(0, 20));
+        var list = inboundEventDomainService.listInboundEvents(List.of(LifeAreaDto.WORK), PageRequest.of(0, 20));
 
         // then
         assertThat(list.totalCount()).isEqualTo(1);
@@ -190,7 +190,6 @@ class InboundEventDomainServiceTest {
             assertThat(item.id()).isEqualTo(ID);
             assertThat(item.area()).isEqualTo(LifeAreaDto.WORK);
         });
-        verify(inboundEventRepository, never()).findAll(any(Pageable.class));
     }
 
     private EmailEventDataDto email(String subject) {

@@ -1,5 +1,6 @@
 package de.kirchrath.luna.appointment.services;
 
+import java.util.List;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -49,15 +50,16 @@ public class AppointmentDomainService {
 
     /** Upcoming appointments earliest first, past ones latest first. */
     @Transactional(readOnly = true)
-    public AppointmentListDto listAppointments(AppointmentPeriodDto period, LifeAreaDto area, Pageable pageable) {
+    public AppointmentListDto listAppointments(
+            AppointmentPeriodDto period, List<LifeAreaDto> areas, Pageable pageable) {
         var now = timeProvider.now();
-        var areas = appointmentConverter.toEntities(area);
+        var lifeAreas = appointmentConverter.toAreas(areas);
         var appointments = switch (period) {
             case UPCOMING -> appointmentRepository.findByEffectiveEndGreaterThanEqualAndAreaIn(
-                    now, areas, page(pageable, EARLIEST_FIRST));
+                    now, lifeAreas, page(pageable, EARLIEST_FIRST));
             case PAST -> appointmentRepository.findByEffectiveEndLessThanAndAreaIn(
-                    now, areas, page(pageable, LATEST_FIRST));
-            case ALL -> appointmentRepository.findByAreaIn(areas, page(pageable, EARLIEST_FIRST));
+                    now, lifeAreas, page(pageable, LATEST_FIRST));
+            case ALL -> appointmentRepository.findByAreaIn(lifeAreas, page(pageable, EARLIEST_FIRST));
         };
         return new AppointmentListDto(
                 appointments.map(appointmentConverter::toListItemDto).getContent(), appointments.getTotalPages(),
@@ -66,10 +68,11 @@ public class AppointmentDomainService {
 
     /** All appointments overlapping the range, e.g. a month of the calendar. */
     @Transactional(readOnly = true)
-    public AppointmentListDto listAppointmentsInRange(OffsetDateTime from, OffsetDateTime to, LifeAreaDto area) {
+    public AppointmentListDto listAppointmentsInRange(
+            OffsetDateTime from, OffsetDateTime to, List<LifeAreaDto> areas) {
         var items = appointmentRepository
                 .findByStartLessThanAndEffectiveEndGreaterThanAndAreaIn(
-                        to, from, appointmentConverter.toEntities(area), EARLIEST_FIRST)
+                        to, from, appointmentConverter.toAreas(areas), EARLIEST_FIRST)
                 .stream()
                 .map(appointmentConverter::toListItemDto)
                 .toList();

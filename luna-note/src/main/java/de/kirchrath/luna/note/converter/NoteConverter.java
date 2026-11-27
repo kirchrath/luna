@@ -1,6 +1,8 @@
 package de.kirchrath.luna.note.converter;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
@@ -70,8 +72,10 @@ public class NoteConverter {
         return noteMapper.toEntity(status);
     }
 
-    /** Only the given area, or all areas without one. */
-    public Set<LifeArea> toEntities(LifeAreaDto area) {
-        return area == null ? Set.of(LifeArea.values()) : Set.of(noteMapper.toEntity(area));
+    /** The given areas, or all areas without any. */
+    public Set<LifeArea> toAreas(List<LifeAreaDto> areas) {
+        return areas.isEmpty()
+                ? Set.of(LifeArea.values())
+                : areas.stream().map(noteMapper::toEntity).collect(Collectors.toUnmodifiableSet());
     }
 }

@@ -290,7 +290,7 @@ class InboundEventControllerTest {
         result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isEmpty())
                 .andExpect(jsonPath("$.totalCount").value(0));
-        verify(inboundEventApplicationService).listInboundEvents(null, PageRequest.of(0, 20));
+        verify(inboundEventApplicationService).listInboundEvents(List.of(), PageRequest.of(0, 20));
     }
 
     @Test
@@ -303,7 +303,7 @@ class InboundEventControllerTest {
 
         // then
         result.andExpect(status().isOk());
-        verify(inboundEventApplicationService).listInboundEvents(null, PageRequest.of(0, 100));
+        verify(inboundEventApplicationService).listInboundEvents(List.of(), PageRequest.of(0, 100));
     }
 
     @Test
@@ -321,6 +321,20 @@ class InboundEventControllerTest {
                 .andExpect(jsonPath("$.totalCount").value(1))
                 .andExpect(jsonPath("$.items[0].id").value(ID.toString()))
                 .andExpect(jsonPath("$.items[0].area").value("WORK"));
+    }
+
+    @Test
+    void thatListingInputsOfSeveralAreasShouldResultIntoTheInputsOfTheseAreas() throws Exception {
+        // given
+        when(uuidProvider.randomUuid()).thenReturn(UUID.randomUUID(), UUID.randomUUID());
+        saveManualInput("Buy flowers for mum", LifeAreaDto.PERSONAL, null, InboundEventStatus.RECEIVED);
+        saveManualInput("Book the team event", LifeAreaDto.WORK, null, InboundEventStatus.RECEIVED);
+
+        // when
+        var result = mockMvc.perform(get("/inbound-events").param("area", "PERSONAL", "WORK").with(jwt()));
+
+        // then
+        result.andExpect(status().isOk()).andExpect(jsonPath("$.totalCount").value(2));
     }
 
     @Test

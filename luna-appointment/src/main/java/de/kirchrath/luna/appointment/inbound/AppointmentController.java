@@ -1,5 +1,6 @@
 package de.kirchrath.luna.appointment.inbound;
 
+import java.util.List;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -35,7 +36,9 @@ import jakarta.validation.Valid;
 @Tag(name = "Appointments")
 public class AppointmentController {
 
+
     private static final String ID = "/{id}";
+    private static final String AREA = "area";
 
     private final AppointmentApplicationService appointmentApplicationService;
 
@@ -58,9 +61,9 @@ public class AppointmentController {
             })
     public AppointmentListDto listAppointments(
             @RequestParam(defaultValue = "UPCOMING") AppointmentPeriodDto period,
-            @RequestParam(required = false) LifeAreaDto area,
+            @RequestParam(name = AREA, required = false, defaultValue = "") List<LifeAreaDto> areas,
             @Parameter(hidden = true) Pageable pageable) {
-        return appointmentApplicationService.listAppointments(period, area, pageable);
+        return appointmentApplicationService.listAppointments(period, areas, pageable);
     }
 
     @GetMapping(path = "/range", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -74,8 +77,8 @@ public class AppointmentController {
     public AppointmentListDto listAppointmentsInRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
-            @RequestParam(required = false) LifeAreaDto area) {
-        return appointmentApplicationService.listAppointmentsInRange(from, to, area);
+            @RequestParam(name = AREA, required = false, defaultValue = "") List<LifeAreaDto> areas) {
+        return appointmentApplicationService.listAppointmentsInRange(from, to, areas);
     }
 
     @GetMapping(path = ID, produces = MediaType.APPLICATION_JSON_VALUE)

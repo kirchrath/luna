@@ -42,10 +42,10 @@ class InboundEventApplicationServiceTest {
         // given
         var list = new InboundEventListDto(List.of(), 0, 0);
         var pageable = PageRequest.of(1, 20);
-        when(inboundEventDomainService.listInboundEvents(LifeAreaDto.WORK, pageable)).thenReturn(list);
+        when(inboundEventDomainService.listInboundEvents(List.of(LifeAreaDto.WORK), pageable)).thenReturn(list);
 
         // when
-        var listed = inboundEventApplicationService.listInboundEvents(LifeAreaDto.WORK, pageable);
+        var listed = inboundEventApplicationService.listInboundEvents(List.of(LifeAreaDto.WORK), pageable);
 
         // then
         assertThat(listed).isEqualTo(list);

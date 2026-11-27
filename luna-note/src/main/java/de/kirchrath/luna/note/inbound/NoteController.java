@@ -1,5 +1,6 @@
 package de.kirchrath.luna.note.inbound;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
@@ -33,7 +34,9 @@ import jakarta.validation.Valid;
 @Tag(name = "Notes")
 public class NoteController {
 
+
     private static final String ID = "/{id}";
+    private static final String AREA = "area";
 
     private final NoteApplicationService noteApplicationService;
 
@@ -56,9 +59,9 @@ public class NoteController {
             })
     public NoteListDto listNotes(
             @RequestParam(required = false) NoteStatusDto status,
-            @RequestParam(required = false) LifeAreaDto area,
+            @RequestParam(name = AREA, required = false, defaultValue = "") List<LifeAreaDto> areas,
             @Parameter(hidden = true) Pageable pageable) {
-        return noteApplicationService.listNotes(status, area, pageable);
+        return noteApplicationService.listNotes(status, areas, pageable);
     }
 
     @GetMapping(path = ID, produces = MediaType.APPLICATION_JSON_VALUE)

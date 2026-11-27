@@ -30,7 +30,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name = "Alerts")
 public class AlertController {
 
+
     private static final String ID = "/{id}";
+    private static final String AREA = "area";
 
     private final AlertApplicationService alertApplicationService;
 
@@ -53,9 +55,9 @@ public class AlertController {
             })
     public AlertListDto listAlerts(
             @RequestParam(required = false, defaultValue = "") List<AlertStatusDto> status,
-            @RequestParam(required = false) LifeAreaDto area,
+            @RequestParam(name = AREA, required = false, defaultValue = "") List<LifeAreaDto> areas,
             @Parameter(hidden = true) Pageable pageable) {
-        return alertApplicationService.listAlerts(status, area, pageable);
+        return alertApplicationService.listAlerts(status, areas, pageable);
     }
 
     @GetMapping(path = ID, produces = MediaType.APPLICATION_JSON_VALUE)

@@ -78,13 +78,11 @@ public class InboundEventDomainService {
     }
 
     @Transactional(readOnly = true)
-    /** @param area only the inbound events of this life area, all if {@code null} */
-    public InboundEventListDto listInboundEvents(LifeAreaDto area, Pageable pageable) {
+    /** @param areas only the inbound events of these life areas, all without any */
+    public InboundEventListDto listInboundEvents(List<LifeAreaDto> areas, Pageable pageable) {
         var page = PageRequest.of(
                 pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Order.desc(InboundEvent::createdDate)));
-        var inboundEvents = area == null
-                ? inboundEventRepository.findAll(page)
-                : inboundEventRepository.findByArea(lifeAreaConverter.toEntity(area), page);
+        var inboundEvents = inboundEventRepository.findByAreaIn(lifeAreaConverter.toAreas(areas), page);
         var outboundEvents = outboundEventRepository
                 .findByInboundEventIdIn(inboundEvents.map(InboundEvent::id).getContent())
                 .stream()

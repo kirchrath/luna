@@ -1,5 +1,6 @@
 package de.kirchrath.luna.core.data.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,7 +20,7 @@ public interface InboundEventRepository
 
     List<InboundEvent> findByStatusOrderByCreatedDateAsc(InboundEventStatus status, Limit limit);
 
-    Page<InboundEvent> findByArea(LifeArea area, Pageable pageable);
+    Page<InboundEvent> findByAreaIn(Collection<LifeArea> areas, Pageable pageable);
 
     boolean existsBySourceAndSourceId(EventSource source, UUID sourceId);
 }

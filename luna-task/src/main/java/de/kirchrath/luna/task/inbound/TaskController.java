@@ -1,5 +1,6 @@
 package de.kirchrath.luna.task.inbound;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
@@ -33,7 +34,9 @@ import jakarta.validation.Valid;
 @Tag(name = "Tasks")
 public class TaskController {
 
+
     private static final String ID = "/{id}";
+    private static final String AREA = "area";
 
     private final TaskApplicationService taskApplicationService;
 
@@ -56,9 +59,9 @@ public class TaskController {
             })
     public TaskListDto listTasks(
             @RequestParam(required = false) TaskStatusDto status,
-            @RequestParam(required = false) LifeAreaDto area,
+            @RequestParam(name = AREA, required = false, defaultValue = "") List<LifeAreaDto> areas,
             @Parameter(hidden = true) Pageable pageable) {
-        return taskApplicationService.listTasks(status, area, pageable);
+        return taskApplicationService.listTasks(status, areas, pageable);
     }
 
     @GetMapping(path = ID, produces = MediaType.APPLICATION_JSON_VALUE)

@@ -174,6 +174,17 @@ class AppointmentControllerTest {
     }
 
     @Test
+    void thatListingAllAppointmentsOfSeveralAreasShouldResultIntoTheAppointmentsOfTheseAreas() throws Exception {
+        // given
+        appointmentRepository.save(nextWeek.toBuilder().area(LifeArea.WORK).build());
+
+        // when / then
+        mockMvc.perform(get("/appointments").param("period", "ALL").param("area", "PERSONAL", "WORK").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(4));
+    }
+
+    @Test
     void thatListingAppointmentsWithAnUnknownAreaShouldResultIntoABadRequest() throws Exception {
         // when / then
         mockMvc.perform(get("/appointments").param("area", "UNKNOWN").with(jwt())).andExpect(status().isBadRequest());

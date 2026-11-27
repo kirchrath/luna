@@ -119,6 +119,18 @@ class AlertControllerTest {
     }
 
     @Test
+    void thatListingAlertsOfSeveralAreasShouldResultIntoTheAlertsOfTheseAreas() throws Exception {
+        // given
+        save("Disk almost full", AlertSeverity.CRITICAL, 0, AlertStatus.OPEN, LifeArea.PERSONAL);
+        save("Build server down", AlertSeverity.CRITICAL, 0, AlertStatus.OPEN, LifeArea.WORK);
+
+        // when / then
+        mockMvc.perform(get("/alerts").param("area", "PERSONAL", "WORK").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(2));
+    }
+
+    @Test
     void thatListingAlertsWithAnUnknownAreaShouldResultIntoABadRequest() throws Exception {
         // when / then
         mockMvc.perform(get("/alerts").param("area", "UNKNOWN").with(jwt())).andExpect(status().isBadRequest());

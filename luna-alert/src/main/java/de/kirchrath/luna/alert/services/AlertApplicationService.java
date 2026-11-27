@@ -20,8 +20,8 @@ public class AlertApplicationService {
         this.alertDomainService = alertDomainService;
     }
 
-    public AlertListDto listAlerts(List<AlertStatusDto> statuses, LifeAreaDto area, Pageable pageable) {
-        return alertDomainService.listAlerts(statuses, area, pageable);
+    public AlertListDto listAlerts(List<AlertStatusDto> statuses, List<LifeAreaDto> areas, Pageable pageable) {
+        return alertDomainService.listAlerts(statuses, areas, pageable);
     }
 
     public AlertDto getAlert(UUID id) {
