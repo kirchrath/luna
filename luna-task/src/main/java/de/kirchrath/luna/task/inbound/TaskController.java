@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import de.kirchrath.luna.task.dto.LifeAreaDto;
 import de.kirchrath.luna.task.dto.TaskDto;
 import de.kirchrath.luna.task.dto.TaskListDto;
 import de.kirchrath.luna.task.dto.TaskStatusDto;
@@ -54,8 +55,10 @@ public class TaskController {
                 @ApiResponse(responseCode = "401", content = @Content)
             })
     public TaskListDto listTasks(
-            @RequestParam(required = false) TaskStatusDto status, @Parameter(hidden = true) Pageable pageable) {
-        return taskApplicationService.listTasks(status, pageable);
+            @RequestParam(required = false) TaskStatusDto status,
+            @RequestParam(required = false) LifeAreaDto area,
+            @Parameter(hidden = true) Pageable pageable) {
+        return taskApplicationService.listTasks(status, area, pageable);
     }
 
     @GetMapping(path = ID, produces = MediaType.APPLICATION_JSON_VALUE)

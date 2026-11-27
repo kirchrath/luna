@@ -4,10 +4,12 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
+import de.kirchrath.luna.task.data.entity.LifeArea;
 import de.kirchrath.luna.task.data.entity.Task;
 import de.kirchrath.luna.task.data.entity.TaskPriority;
 import de.kirchrath.luna.task.data.entity.TaskStatus;
 import de.kirchrath.luna.task.dto.AuditDto;
+import de.kirchrath.luna.task.dto.LifeAreaDto;
 import de.kirchrath.luna.task.dto.TaskDataDto;
 import de.kirchrath.luna.task.dto.TaskDto;
 import de.kirchrath.luna.task.dto.TaskEventDto;
@@ -38,4 +40,8 @@ public interface TaskMapper {
     TaskPriority toEntity(TaskPriorityDto priority);
 
     TaskPriority toEntity(TaskEventDataDto.PriorityEnum priority);
+
+    LifeArea toEntity(LifeAreaDto area);
+
+    LifeArea toEntity(de.kirchrath.luna.task.dto.core.TaskEventDto.AreaEnum area);
 }

@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import de.kirchrath.luna.task.dto.LifeAreaDto;
 import de.kirchrath.luna.task.dto.TaskDto;
 import de.kirchrath.luna.task.dto.TaskListDto;
 import de.kirchrath.luna.task.dto.TaskStatusDto;
@@ -19,8 +20,8 @@ public class TaskApplicationService {
         this.taskDomainService = taskDomainService;
     }
 
-    public TaskListDto listTasks(TaskStatusDto status, Pageable pageable) {
-        return taskDomainService.listTasks(status, pageable);
+    public TaskListDto listTasks(TaskStatusDto status, LifeAreaDto area, Pageable pageable) {
+        return taskDomainService.listTasks(status, area, pageable);
     }
 
     public TaskDto getTask(UUID id) {

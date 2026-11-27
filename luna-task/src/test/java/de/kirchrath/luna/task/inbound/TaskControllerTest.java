@@ -28,6 +28,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import de.kirchrath.luna.task.config.TestcontainersConfig;
+import de.kirchrath.luna.task.data.entity.LifeArea;
 import de.kirchrath.luna.task.data.entity.Task;
 import de.kirchrath.luna.task.data.entity.TaskPriority;
 import de.kirchrath.luna.task.data.entity.TaskSource;
@@ -70,6 +71,7 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.items[*].id").value(contains(
                         sooner.id().toString(), later.id().toString(), withoutDueDate.id().toString())))
                 .andExpect(jsonPath("$.items[0].title").value("Sooner"))
+                .andExpect(jsonPath("$.items[0].area").value("PERSONAL"))
                 .andExpect(jsonPath("$.items[0].priority").value("NORMAL"))
                 .andExpect(jsonPath("$.items[0].status").value("OPEN"))
                 .andExpect(jsonPath("$.items[0].edited").value(false))
@@ -89,6 +91,40 @@ class TaskControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[*].id").value(contains(done.id().toString())))
                 .andExpect(jsonPath("$.totalCount").value(1));
+    }
+
+    @Test
+    void thatListingTasksByAreaShouldResultIntoTheTasksOfThisAreaOnly() throws Exception {
+        // given
+        save("Buy flowers", DUE_DATE, TaskStatus.OPEN, LifeArea.PERSONAL);
+        var work = save("Prepare the review", DUE_DATE, TaskStatus.OPEN, LifeArea.WORK);
+
+        // when / then
+        mockMvc.perform(get("/tasks").param("area", "WORK").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[*].id").value(contains(work.id().toString())))
+                .andExpect(jsonPath("$.items[0].area").value("WORK"))
+                .andExpect(jsonPath("$.totalCount").value(1));
+    }
+
+    @Test
+    void thatListingTasksByStatusAndAreaShouldResultIntoTheTasksMatchingBoth() throws Exception {
+        // given
+        save("Buy flowers", DUE_DATE, TaskStatus.DONE, LifeArea.PERSONAL);
+        save("Prepare the review", DUE_DATE, TaskStatus.OPEN, LifeArea.WORK);
+        var doneWork = save("Book the room", DUE_DATE, TaskStatus.DONE, LifeArea.WORK);
+
+        // when / then
+        mockMvc.perform(get("/tasks").param("status", "DONE").param("area", "WORK").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[*].id").value(contains(doneWork.id().toString())))
+                .andExpect(jsonPath("$.totalCount").value(1));
+    }
+
+    @Test
+    void thatListingTasksWithAnUnknownAreaShouldResultIntoABadRequest() throws Exception {
+        // when / then
+        mockMvc.perform(get("/tasks").param("area", "UNKNOWN").with(jwt())).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -122,6 +158,7 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.data.status").value("OPEN"))
                 .andExpect(jsonPath("$.data.source").value("CORE"))
                 .andExpect(jsonPath("$.data.sourceId").value(task.sourceId().toString()))
+                .andExpect(jsonPath("$.data.area").value("PERSONAL"))
                 .andExpect(jsonPath("$.data.edited").value(false))
                 .andExpect(jsonPath("$.audit.version").value(0));
     }
@@ -150,6 +187,20 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.data.edited").value(true))
                 .andExpect(jsonPath("$.audit.version").value(1));
         assertThat(taskRepository.findById(task.id())).get().extracting(Task::title).isEqualTo("Pay the gas bill");
+    }
+
+    @Test
+    void thatUpdatingATaskWithAnotherAreaShouldResultIntoTheUnchangedArea() throws Exception {
+        // given
+        var task = save("Pay the electricity bill", DUE_DATE, TaskStatus.OPEN);
+
+        // when / then
+        mockMvc.perform(put("/tasks/{id}", task.id()).with(jwt()).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"title": "Pay the gas bill", "priority": "HIGH", "area": "WORK", "version": 0}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.area").value("PERSONAL"));
+        assertThat(taskRepository.findById(task.id())).get().extracting(Task::area).isEqualTo(LifeArea.PERSONAL);
     }
 
     @Test
@@ -230,9 +281,14 @@ class TaskControllerTest {
     }
 
     private Task save(String title, OffsetDateTime dueDate, TaskStatus status) {
+        return save(title, dueDate, status, LifeArea.PERSONAL);
+    }
+
+    private Task save(String title, OffsetDateTime dueDate, TaskStatus status, LifeArea area) {
         return taskRepository.save(Task.builder()
                 .source(TaskSource.CORE)
                 .sourceId(UUID.randomUUID())
+                .area(area)
                 .title(title)
                 .description("Before the end of the month")
                 .dueDate(dueDate)

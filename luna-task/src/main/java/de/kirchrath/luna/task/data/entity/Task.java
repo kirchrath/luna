@@ -16,6 +16,7 @@ public record Task(
         @With @Id UUID id,
         TaskSource source,
         UUID sourceId,
+        LifeArea area,
         String title,
         String description,
         OffsetDateTime dueDate,
