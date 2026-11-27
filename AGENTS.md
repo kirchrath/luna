@@ -675,6 +675,9 @@ Bei neuen Top-Level-Verzeichnissen diese Übersicht aktualisieren.
 
 ### Setup, Build, Test
 
+Alle Projekte und ihre Images auf einmal: `./build.sh [--skip-tests] [projekt …]` (Wurzelverzeichnis; neue Backends
+dort in `BACKENDS` eintragen).
+
 Backends (Beispiel `luna-core`, benötigt Java 25 und Docker für Testcontainers):
 
 ```bash

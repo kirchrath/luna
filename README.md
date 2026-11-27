@@ -182,27 +182,19 @@ erzeugt die Secrets `kafka_keystore_v<n>` und `kafka_keystore_password_v<n>`.
 
 #### 9. Images der Backends und des Frontends bauen
 
-Immer, wenn sich `luna-core` geändert hat (Java 25 nötig):
+Immer, wenn sich etwas geändert hat, mit [`build.sh`](build.sh) (Docker nötig; für die Backends Java 25, für die
+Tests des Frontends Node 24):
 
 ```bash
-(cd luna-core && ./mvnw package jib:dockerBuild)
+./build.sh --skip-tests                 # alle Images, ohne Tests (z. B. auf dem Server nach git pull)
+./build.sh --skip-tests luna-core       # nur die genannten Projekte
+./build.sh                              # alle Projekte mit Tests (Backends ./mvnw verify, Frontend Lint und Coverage)
 ```
 
-Ebenso für die Element-Services, wenn sie sich geändert haben:
-
-```bash
-(cd luna-task && ./mvnw package jib:dockerBuild)
-(cd luna-alert && ./mvnw package jib:dockerBuild)
-(cd luna-note && ./mvnw package jib:dockerBuild)
-(cd luna-appointment && ./mvnw package jib:dockerBuild)
-(cd luna-mail && ./mvnw package jib:dockerBuild)
-```
-
-Immer, wenn sich das Frontend geändert hat (nur Docker nötig, Node läuft im Build-Container):
-
-```bash
-docker build --platform linux/amd64 -t "luna-frontend:$LUNA_FRONTEND_VERSION" frontend
-```
+Projekte: `luna-core`, `luna-task`, `luna-alert`, `luna-note`, `luna-appointment`, `luna-mail`, `frontend`.
+Getaggt wird mit der Version aus der jeweiligen `pom.xml` (zusätzlich `latest`) bzw. aus `frontend/package.json`;
+diese Versionen gehören in die Variablen aus Schritt 4. Das Frontend-Image baut Node im Build-Container, ohne Tests
+ist auf dem Server also kein Node nötig.
 
 #### 10. Gesamten Stack deployen
 
