@@ -16,5 +16,6 @@ public record AppointmentDataDto(
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) OffsetDateTime cancelledDate,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) AppointmentSourceDto source,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) UUID sourceId,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) LifeAreaDto area,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) boolean edited) {
 }

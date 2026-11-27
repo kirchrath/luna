@@ -19,6 +19,7 @@ import de.kirchrath.luna.appointment.dto.AppointmentDto;
 import de.kirchrath.luna.appointment.dto.AppointmentListDto;
 import de.kirchrath.luna.appointment.dto.AppointmentPeriodDto;
 import de.kirchrath.luna.appointment.dto.AppointmentUpdateDto;
+import de.kirchrath.luna.appointment.dto.LifeAreaDto;
 import de.kirchrath.luna.appointment.services.AppointmentApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -57,8 +58,9 @@ public class AppointmentController {
             })
     public AppointmentListDto listAppointments(
             @RequestParam(defaultValue = "UPCOMING") AppointmentPeriodDto period,
+            @RequestParam(required = false) LifeAreaDto area,
             @Parameter(hidden = true) Pageable pageable) {
-        return appointmentApplicationService.listAppointments(period, pageable);
+        return appointmentApplicationService.listAppointments(period, area, pageable);
     }
 
     @GetMapping(path = "/range", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -71,8 +73,9 @@ public class AppointmentController {
             })
     public AppointmentListDto listAppointmentsInRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to) {
-        return appointmentApplicationService.listAppointmentsInRange(from, to);
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
+            @RequestParam(required = false) LifeAreaDto area) {
+        return appointmentApplicationService.listAppointmentsInRange(from, to, area);
     }
 
     @GetMapping(path = ID, produces = MediaType.APPLICATION_JSON_VALUE)

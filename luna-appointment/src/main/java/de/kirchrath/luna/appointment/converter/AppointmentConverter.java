@@ -1,5 +1,7 @@
 package de.kirchrath.luna.appointment.converter;
 
+import java.util.Set;
+
 import java.time.OffsetDateTime;
 
 import org.springframework.stereotype.Component;
@@ -7,10 +9,12 @@ import org.springframework.stereotype.Component;
 import de.kirchrath.luna.appointment.data.entity.Appointment;
 import de.kirchrath.luna.appointment.data.entity.AppointmentSource;
 import de.kirchrath.luna.appointment.data.entity.AppointmentStatus;
+import de.kirchrath.luna.appointment.data.entity.LifeArea;
 import de.kirchrath.luna.appointment.dto.AppointmentDto;
 import de.kirchrath.luna.appointment.dto.AppointmentEventDto;
 import de.kirchrath.luna.appointment.dto.AppointmentListItemDto;
 import de.kirchrath.luna.appointment.dto.AppointmentUpdateDto;
+import de.kirchrath.luna.appointment.dto.LifeAreaDto;
 import de.kirchrath.luna.appointment.dto.core.AppointmentEventDataDto;
 
 @Component
@@ -29,6 +33,7 @@ public class AppointmentConverter {
         return applyCore(Appointment.builder()
                 .source(AppointmentSource.CORE)
                 .sourceId(event.getId())
+                .area(appointmentMapper.toEntity(event.getArea()))
                 .status(AppointmentStatus.SCHEDULED)
                 .edited(false)
                 .build(), event);
@@ -77,5 +82,10 @@ public class AppointmentConverter {
                 .allDay(allDay)
                 .effectiveEnd(allDay ? last.plusDays(ONE_DAY) : last)
                 .build();
+    }
+
+    /** Only the given area, or all areas without one. */
+    public Set<LifeArea> toEntities(LifeAreaDto area) {
+        return area == null ? Set.of(LifeArea.values()) : Set.of(appointmentMapper.toEntity(area));
     }
 }

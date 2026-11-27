@@ -31,6 +31,7 @@ import de.kirchrath.luna.appointment.config.TestcontainersConfig;
 import de.kirchrath.luna.appointment.data.entity.Appointment;
 import de.kirchrath.luna.appointment.data.entity.AppointmentSource;
 import de.kirchrath.luna.appointment.data.entity.AppointmentStatus;
+import de.kirchrath.luna.appointment.data.entity.LifeArea;
 import de.kirchrath.luna.appointment.data.repository.AppointmentRepository;
 import de.kirchrath.luna.appointment.data.repository.CoreAppointmentProjectionRepository;
 import de.kirchrath.luna.appointment.services.TimeProvider;
@@ -78,6 +79,7 @@ class AppointmentControllerTest {
                 .andExpect(jsonPath("$.items[*].id").value(contains(
                         running.id().toString(), tomorrow.id().toString(), nextWeek.id().toString())))
                 .andExpect(jsonPath("$.items[0].title").value("Conference"))
+                .andExpect(jsonPath("$.items[0].area").value("PERSONAL"))
                 .andExpect(jsonPath("$.items[0].end").isNotEmpty())
                 .andExpect(jsonPath("$.items[0].allDay").value(false))
                 .andExpect(jsonPath("$.items[0].location").value("Town hall"))
@@ -126,6 +128,58 @@ class AppointmentControllerTest {
     }
 
     @Test
+    void thatListingUpcomingAppointmentsOfAnAreaShouldResultIntoTheAppointmentsOfThisAreaOnly() throws Exception {
+        // given
+        var work = appointmentRepository.save(nextWeek.toBuilder().area(LifeArea.WORK).build());
+
+        // when / then
+        mockMvc.perform(get("/appointments").param("area", "WORK").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[*].id").value(contains(work.id().toString())))
+                .andExpect(jsonPath("$.items[0].area").value("WORK"))
+                .andExpect(jsonPath("$.totalCount").value(1));
+    }
+
+    @Test
+    void thatListingPastAppointmentsOfAnAreaShouldResultIntoNoAppointmentsOfOtherAreas() throws Exception {
+        // when / then
+        mockMvc.perform(get("/appointments").param("period", "PAST").param("area", "WORK").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty());
+    }
+
+    @Test
+    void thatListingAllAppointmentsOfAnAreaShouldResultIntoTheAppointmentsOfThisAreaOnly() throws Exception {
+        // when / then
+        mockMvc.perform(get("/appointments").param("period", "ALL").param("area", "PERSONAL").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(4));
+    }
+
+    @Test
+    void thatListingAppointmentsInARangeOfAnAreaShouldResultIntoTheOverlappingAppointmentsOfThisArea()
+            throws Exception {
+        // given
+        var work = appointmentRepository.save(running.toBuilder().area(LifeArea.WORK).build());
+
+        // when / then
+        mockMvc.perform(get("/appointments/range")
+                        .param("from", "2026-11-26T12:00:00+01:00")
+                        .param("to", "2026-11-28T00:00:00+01:00")
+                        .param("area", "WORK")
+                        .with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[*].id").value(contains(work.id().toString())))
+                .andExpect(jsonPath("$.totalCount").value(1));
+    }
+
+    @Test
+    void thatListingAppointmentsWithAnUnknownAreaShouldResultIntoABadRequest() throws Exception {
+        // when / then
+        mockMvc.perform(get("/appointments").param("area", "UNKNOWN").with(jwt())).andExpect(status().isBadRequest());
+    }
+
+    @Test
     void thatListingAppointmentsInARangeWithoutEndShouldResultIntoABadRequest() throws Exception {
         // when / then
         mockMvc.perform(get("/appointments/range").param("from", "2026-11-26T12:00:00+01:00").with(jwt()))
@@ -152,6 +206,7 @@ class AppointmentControllerTest {
                 .andExpect(content().string(not(containsString(":null"))))
                 .andExpect(jsonPath("$.data.effectiveEnd").doesNotExist())
                 .andExpect(jsonPath("$.data.source").value("CORE"))
+                .andExpect(jsonPath("$.data.area").value("PERSONAL"))
                 .andExpect(jsonPath("$.data.edited").value(false))
                 .andExpect(jsonPath("$.audit.version").value(0));
     }
@@ -181,6 +236,21 @@ class AppointmentControllerTest {
                 .extracting(Appointment::effectiveEnd)
                 .satisfies(end -> assertThat(end.toInstant())
                         .isEqualTo(OffsetDateTime.parse("2026-12-06T00:00:00+01:00").toInstant()));
+    }
+
+    @Test
+    void thatUpdatingAnAppointmentWithAnotherAreaShouldResultIntoTheUnchangedArea() throws Exception {
+        // when / then
+        mockMvc.perform(put("/appointments/{id}", nextWeek.id()).with(jwt()).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title": "Tyre change", "start": "2026-12-03T09:00:00+01:00", "allDay": false,
+                                 "area": "WORK", "version": 0}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.area").value("PERSONAL"));
+        assertThat(appointmentRepository.findById(nextWeek.id())).get()
+                .extracting(Appointment::area)
+                .isEqualTo(LifeArea.PERSONAL);
     }
 
     @Test
@@ -262,6 +332,7 @@ class AppointmentControllerTest {
         return appointmentRepository.save(Appointment.builder()
                 .source(AppointmentSource.CORE)
                 .sourceId(UUID.randomUUID())
+                .area(LifeArea.PERSONAL)
                 .title(title)
                 .start(startTime)
                 .end(endTime)

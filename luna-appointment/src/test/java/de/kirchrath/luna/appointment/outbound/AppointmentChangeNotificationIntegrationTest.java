@@ -38,6 +38,7 @@ import de.kirchrath.luna.appointment.config.TestcontainersConfig;
 import de.kirchrath.luna.appointment.data.entity.Appointment;
 import de.kirchrath.luna.appointment.data.entity.AppointmentSource;
 import de.kirchrath.luna.appointment.data.entity.AppointmentStatus;
+import de.kirchrath.luna.appointment.data.entity.LifeArea;
 import de.kirchrath.luna.appointment.data.repository.AppointmentRepository;
 import de.kirchrath.luna.appointment.dto.AppointmentChangedDto;
 import de.kirchrath.luna.appointment.services.AppointmentApplicationService;
@@ -87,6 +88,7 @@ class AppointmentChangeNotificationIntegrationTest {
         var appointment = appointmentRepository.save(Appointment.builder()
                 .source(AppointmentSource.CORE)
                 .sourceId(UUID.randomUUID())
+                .area(LifeArea.PERSONAL)
                 .title("Dentist")
                 .start(OffsetDateTime.parse("2026-12-01T10:00:00+01:00"))
                 .effectiveEnd(OffsetDateTime.parse("2026-12-01T10:00:00+01:00"))

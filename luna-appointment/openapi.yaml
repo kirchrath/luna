@@ -133,6 +133,14 @@ paths:
           - UPCOMING
           - PAST
           - ALL
+      - name: area
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
       responses:
         "200":
           description: OK
@@ -162,6 +170,14 @@ paths:
         schema:
           type: string
           format: date-time
+      - name: area
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
       responses:
         "200":
           description: OK
@@ -238,10 +254,16 @@ components:
         sourceId:
           type: string
           format: uuid
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         edited:
           type: boolean
       required:
       - allDay
+      - area
       - edited
       - source
       - start
@@ -296,6 +318,11 @@ components:
         id:
           type: string
           format: uuid
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         title:
           type: string
         start:
@@ -317,6 +344,7 @@ components:
           type: boolean
       required:
       - allDay
+      - area
       - edited
       - id
       - start
