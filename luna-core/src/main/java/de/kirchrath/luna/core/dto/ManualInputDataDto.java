@@ -2,6 +2,7 @@ package de.kirchrath.luna.core.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record ManualInputDataDto(
@@ -9,6 +10,10 @@ public record ManualInputDataDto(
         @NotBlank
         @Size(max = 10_000)
         String text,
+
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+        @NotNull
+        LifeAreaDto area,
 
         LunaElementTypeDto typeHint) {
 }

@@ -17,6 +17,9 @@ public record InboundEventListItemDto(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
         InboundEventSourceDto source,
 
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+        LifeAreaDto area,
+
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         String text,
 

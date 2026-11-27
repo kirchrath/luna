@@ -14,6 +14,8 @@ import de.kirchrath.luna.core.data.entity.EventData;
 import de.kirchrath.luna.core.data.entity.EventSource;
 import de.kirchrath.luna.core.data.entity.InboundEvent;
 import de.kirchrath.luna.core.data.entity.InboundEventStatus;
+import de.kirchrath.luna.core.data.entity.LifeArea;
+import de.kirchrath.luna.core.dto.LifeAreaDto;
 import de.kirchrath.luna.core.dto.LunaElementTypeDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.mail.EmailAttachmentDto;
@@ -37,7 +39,7 @@ class InboundEventReaderTest {
     @Test
     void thatReadingAManualInboundEventShouldResultIntoItsInputRelativeToItsCreation() {
         // given
-        var input = new ManualInputDataDto("Dentist tomorrow", LunaElementTypeDto.APPOINTMENT);
+        var input = new ManualInputDataDto("Dentist tomorrow", LifeAreaDto.PERSONAL, LunaElementTypeDto.APPOINTMENT);
         var inboundEvent = inboundEvent(EventSource.MANUAL, input);
 
         // when
@@ -108,7 +110,7 @@ class InboundEventReaderTest {
     }
 
     private InboundEvent inboundEvent(EventSource source, Object data) {
-        return new InboundEvent(UUID.randomUUID(), source, null, new EventData(jsonMapper.writeValueAsString(data)),
+        return new InboundEvent(UUID.randomUUID(), source, null, LifeArea.PERSONAL, new EventData(jsonMapper.writeValueAsString(data)),
                 InboundEventStatus.RECEIVED, 0, CREATED, CREATED, 0L);
     }
 }

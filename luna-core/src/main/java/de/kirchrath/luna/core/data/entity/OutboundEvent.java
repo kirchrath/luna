@@ -14,6 +14,7 @@ public record OutboundEvent(
         @With @Id UUID id,
         UUID inboundEventId,
         LunaElementType type,
+        LifeArea area,
         OutboundEventStatus status,
         @CreatedDate OffsetDateTime createdDate,
         @LastModifiedDate OffsetDateTime lastModifiedDate,

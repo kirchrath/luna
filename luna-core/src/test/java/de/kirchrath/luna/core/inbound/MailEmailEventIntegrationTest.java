@@ -30,6 +30,7 @@ import de.kirchrath.luna.core.config.ChatModelTestConfig;
 import de.kirchrath.luna.core.config.TestcontainersConfig;
 import de.kirchrath.luna.core.data.entity.EventSource;
 import de.kirchrath.luna.core.data.entity.InboundEventStatus;
+import de.kirchrath.luna.core.data.entity.LifeArea;
 import de.kirchrath.luna.core.data.repository.InboundEventRepository;
 import de.kirchrath.luna.core.data.repository.OutboundEventRepository;
 import de.kirchrath.luna.core.dto.mail.EmailEventDataDto;
@@ -99,6 +100,7 @@ class MailEmailEventIntegrationTest {
         await().atMost(TIMEOUT).until(() -> inboundEventRepository.existsBySourceAndSourceId(EventSource.MAIL, emailId));
         var inboundEvent = inboundEventRepository.findAll().iterator().next();
         assertThat(inboundEvent.status()).isEqualTo(InboundEventStatus.RECEIVED);
+        assertThat(inboundEvent.area()).isEqualTo(LifeArea.WORK);
         assertThat(jsonMapper.readValue(inboundEvent.data().json(), EmailEventDataDto.class).getSubject())
                 .isEqualTo("Invoice 4711");
     }
@@ -148,6 +150,7 @@ class MailEmailEventIntegrationTest {
                 "data", Map.of(
                         "account", "private",
                         "address", "luna@luna.test",
+                        "area", "WORK",
                         "from", "Power company <billing@power.test>",
                         "to", List.of("luna@luna.test"),
                         "subject", subject,

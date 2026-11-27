@@ -29,6 +29,7 @@ import org.springframework.kafka.test.utils.KafkaTestUtils;
 import de.kirchrath.luna.core.config.ChatModelTestConfig;
 import de.kirchrath.luna.core.config.TestcontainersConfig;
 import de.kirchrath.luna.core.data.entity.InboundEventStatus;
+import de.kirchrath.luna.core.data.entity.LifeArea;
 import de.kirchrath.luna.core.data.entity.LunaElementType;
 import de.kirchrath.luna.core.data.entity.OutboundEvent;
 import de.kirchrath.luna.core.data.entity.OutboundEventStatus;
@@ -37,6 +38,7 @@ import de.kirchrath.luna.core.data.repository.AppointmentElementRepository;
 import de.kirchrath.luna.core.data.repository.InboundEventRepository;
 import de.kirchrath.luna.core.data.repository.OutboundEventRepository;
 import de.kirchrath.luna.core.data.repository.TaskElementRepository;
+import de.kirchrath.luna.core.dto.LifeAreaDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -88,7 +90,8 @@ class ClassificationIntegrationTest {
     void thatRunningTheClassificationSchedulerShouldResultIntoStoredAndPublishedElements() {
         // given
         var reference = inboundEventApplicationService.createManualInboundEvent(
-                new ManualInputDataDto("Dentist on Tuesday at 10, bring the bonus booklet and pay the invoice there", null));
+                new ManualInputDataDto(
+                        "Dentist on Tuesday at 10, bring the bonus booklet and pay the invoice there", LifeAreaDto.WORK, null));
         when(chatModel.call(any(Prompt.class))).thenAnswer(invocation -> answer(invocation.<Prompt>getArgument(0)));
 
         // when
@@ -101,6 +104,7 @@ class ClassificationIntegrationTest {
         assertThat(outboundEvents).extracting(OutboundEvent::type)
                 .containsExactlyInAnyOrder(LunaElementType.APPOINTMENT, LunaElementType.TASK, LunaElementType.TASK);
         assertThat(outboundEvents).extracting(OutboundEvent::status).containsOnly(OutboundEventStatus.PUBLISHED);
+        assertThat(outboundEvents).extracting(OutboundEvent::area).containsOnly(LifeArea.WORK);
         var taskEvents = outboundEvents.stream().filter(event -> event.type() == LunaElementType.TASK).toList();
         assertThat(taskEvents).extracting(event -> taskElementRepository.findByOutboundEventId(event.id())
                         .orElseThrow().title())
@@ -117,6 +121,7 @@ class ClassificationIntegrationTest {
         var appointmentMessage = jsonMapper.readTree(records.get(appointmentEvent.id().toString()));
         assertThat(appointmentMessage.get("id").asString()).isEqualTo(appointmentEvent.id().toString());
         assertThat(appointmentMessage.get("type").asString()).isEqualTo("APPOINTMENT");
+        assertThat(appointmentMessage.get("area").asString()).isEqualTo("WORK");
         assertThat(appointmentMessage.get("data").get("title").asString()).isEqualTo("Dentist");
         assertThat(OffsetDateTime.parse(appointmentMessage.get("data").get("start").asString()))
                 .isAtSameInstantAs(OffsetDateTime.parse("2026-12-01T10:00:00+01:00"));
@@ -126,7 +131,7 @@ class ClassificationIntegrationTest {
     @Test
     void thatRunningTheClassificationSchedulerWithAFailingProviderShouldResultIntoAnotherAttemptLater() {
         // given
-        var reference = inboundEventApplicationService.createManualInboundEvent(new ManualInputDataDto("Something", null));
+        var reference = inboundEventApplicationService.createManualInboundEvent(new ManualInputDataDto("Something", LifeAreaDto.PERSONAL, null));
         when(chatModel.call(any(Prompt.class))).thenThrow(new IllegalStateException("provider unavailable"));
 
         // when

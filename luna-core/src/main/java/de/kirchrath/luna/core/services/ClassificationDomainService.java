@@ -80,7 +80,14 @@ public class ClassificationDomainService {
             return;
         }
         elements.forEach(element -> element.storeAndPublish(outboundEventRepository.save(new OutboundEvent(
-                null, inboundEvent.id(), element.type(), OutboundEventStatus.PUBLISHED, null, null, null))));
+                null,
+                inboundEvent.id(),
+                element.type(),
+                inboundEvent.area(),
+                OutboundEventStatus.PUBLISHED,
+                null,
+                null,
+                null))));
         inboundEventRepository.save(inboundEvent.withStatus(InboundEventStatus.ANALYZED));
         eventPublisher.publishEvent(new InboundEventStatusChangedEvent(inboundEvent.id()));
         log.debug("Published {} element(s) for inbound event {}", elements.size(), inboundEvent.id());

@@ -17,14 +17,18 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import de.kirchrath.luna.core.converter.InboundEventConverter;
 import de.kirchrath.luna.core.converter.InboundEventMapperImpl;
+import de.kirchrath.luna.core.converter.LifeAreaConverter;
+import de.kirchrath.luna.core.converter.LifeAreaMapperImpl;
 import de.kirchrath.luna.core.data.entity.EventData;
 import de.kirchrath.luna.core.data.entity.EventSource;
 import de.kirchrath.luna.core.data.entity.InboundEvent;
 import de.kirchrath.luna.core.data.entity.InboundEventStatus;
+import de.kirchrath.luna.core.data.entity.LifeArea;
 import de.kirchrath.luna.core.data.entity.LunaElementType;
 import de.kirchrath.luna.core.data.entity.OutboundEvent;
 import de.kirchrath.luna.core.data.entity.OutboundEventStatus;
@@ -33,6 +37,7 @@ import de.kirchrath.luna.core.data.repository.OutboundEventRepository;
 import de.kirchrath.luna.core.dto.ElementReferenceDto;
 import de.kirchrath.luna.core.dto.InboundEventSourceDto;
 import de.kirchrath.luna.core.dto.InboundEventStatusDto;
+import de.kirchrath.luna.core.dto.LifeAreaDto;
 import de.kirchrath.luna.core.dto.LunaElementTypeDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.mail.EmailEventDataDto;
@@ -54,6 +59,7 @@ class InboundEventDomainServiceTest {
             outboundEventRepository,
             new InboundEventConverter(new InboundEventMapperImpl()),
             new InboundEventReader(jsonMapper, new TimeProvider()),
+            new LifeAreaConverter(new LifeAreaMapperImpl()),
             jsonMapper,
             eventPublisher);
 
@@ -62,7 +68,7 @@ class InboundEventDomainServiceTest {
         // given
         when(inboundEventRepository.save(any()))
                 .thenAnswer(invocation -> invocation.<InboundEvent>getArgument(0).withId(ID));
-        var input = new ManualInputDataDto("Pay the electricity bill", LunaElementTypeDto.TASK);
+        var input = new ManualInputDataDto("Pay the electricity bill", LifeAreaDto.PERSONAL, LunaElementTypeDto.TASK);
 
         // when
         var reference = inboundEventDomainService.createManualInboundEvent(input);
@@ -75,6 +81,7 @@ class InboundEventDomainServiceTest {
         assertThat(stored.id()).isNull();
         assertThat(stored.source()).isEqualTo(EventSource.MANUAL);
         assertThat(stored.sourceId()).isNull();
+        assertThat(stored.area()).isEqualTo(LifeArea.PERSONAL);
         assertThat(jsonMapper.readValue(stored.data().json(), ManualInputDataDto.class)).isEqualTo(input);
         assertThat(stored.status()).isEqualTo(InboundEventStatus.RECEIVED);
         assertThat(stored.attempts()).isZero();
@@ -100,6 +107,7 @@ class InboundEventDomainServiceTest {
         var stored = captor.getValue();
         assertThat(stored.source()).isEqualTo(EventSource.MAIL);
         assertThat(stored.sourceId()).isEqualTo(EMAIL_ID);
+        assertThat(stored.area()).isEqualTo(LifeArea.WORK);
         assertThat(jsonMapper.readValue(stored.data().json(), EmailEventDataDto.class).getSubject())
                 .isEqualTo("Invoice 4711");
         assertThat(stored.status()).isEqualTo(InboundEventStatus.RECEIVED);
@@ -124,20 +132,21 @@ class InboundEventDomainServiceTest {
         // given
         var receivedId = UUID.fromString("9a4c2e1b-8d7f-4e3a-b2c1-0f9e8d7c6b5a");
         var taskId = UUID.fromString("6d1f0a3e-3c4b-4f63-8a3e-1e2f3a4b5c6d");
-        var analyzed = new InboundEvent(ID, EventSource.MANUAL, null,
-                new EventData(jsonMapper.writeValueAsString(new ManualInputDataDto("Pay the invoice", LunaElementTypeDto.TASK))),
+        var analyzed = new InboundEvent(ID, EventSource.MANUAL, null, LifeArea.PERSONAL, new EventData(jsonMapper
+                        .writeValueAsString(new ManualInputDataDto("Pay the invoice", LifeAreaDto.PERSONAL, LunaElementTypeDto.TASK))),
                 InboundEventStatus.ANALYZED, 1, NOW, NOW, 1L);
-        var received = new InboundEvent(receivedId, EventSource.MAIL, EMAIL_ID,
+        var received = new InboundEvent(receivedId, EventSource.MAIL, EMAIL_ID, LifeArea.WORK,
                 new EventData(jsonMapper.writeValueAsString(email("Invoice 4711"))),
                 InboundEventStatus.RECEIVED, 0, NOW, NOW, 0L);
         var pageRequest = PageRequest.of(1, 2, Sort.by(Sort.Direction.DESC, "createdDate"));
         when(inboundEventRepository.findAll(pageRequest))
                 .thenReturn(new PageImpl<>(List.of(received, analyzed), pageRequest, 5));
         when(outboundEventRepository.findByInboundEventIdIn(List.of(receivedId, ID))).thenReturn(List.of(
-                new OutboundEvent(taskId, ID, LunaElementType.TASK, OutboundEventStatus.PUBLISHED, NOW, NOW, 0L)));
+                new OutboundEvent(
+                        taskId, ID, LunaElementType.TASK, LifeArea.PERSONAL, OutboundEventStatus.PUBLISHED, NOW, NOW, 0L)));
 
         // when
-        var list = inboundEventDomainService.listInboundEvents(PageRequest.of(1, 2, Sort.by("text")));
+        var list = inboundEventDomainService.listInboundEvents(null, PageRequest.of(1, 2, Sort.by("text")));
 
         // then
         assertThat(list.totalCount()).isEqualTo(5);
@@ -146,6 +155,7 @@ class InboundEventDomainServiceTest {
         var first = list.items().getFirst();
         assertThat(first.id()).isEqualTo(receivedId);
         assertThat(first.source()).isEqualTo(InboundEventSourceDto.MAIL);
+        assertThat(first.area()).isEqualTo(LifeAreaDto.WORK);
         assertThat(first.subject()).isEqualTo("Invoice 4711");
         assertThat(first.from()).isEqualTo("Power company <billing@power.test>");
         assertThat(first.text()).isNull();
@@ -161,10 +171,33 @@ class InboundEventDomainServiceTest {
         assertThat(second.elements()).containsExactly(new ElementReferenceDto(taskId, LunaElementTypeDto.TASK));
     }
 
+    @Test
+    void thatListingTheInboundEventsOfAnAreaShouldResultIntoThePageOfThisArea() {
+        // given
+        var work = new InboundEvent(ID, EventSource.MAIL, EMAIL_ID, LifeArea.WORK,
+                new EventData(jsonMapper.writeValueAsString(email("Invoice 4711"))),
+                InboundEventStatus.RECEIVED, 0, NOW, NOW, 0L);
+        var pageRequest = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdDate"));
+        when(inboundEventRepository.findByArea(LifeArea.WORK, pageRequest))
+                .thenReturn(new PageImpl<>(List.of(work), pageRequest, 1));
+
+        // when
+        var list = inboundEventDomainService.listInboundEvents(LifeAreaDto.WORK, PageRequest.of(0, 20));
+
+        // then
+        assertThat(list.totalCount()).isEqualTo(1);
+        assertThat(list.items()).singleElement().satisfies(item -> {
+            assertThat(item.id()).isEqualTo(ID);
+            assertThat(item.area()).isEqualTo(LifeAreaDto.WORK);
+        });
+        verify(inboundEventRepository, never()).findAll(any(Pageable.class));
+    }
+
     private EmailEventDataDto email(String subject) {
         return new EmailEventDataDto()
                 .account("private")
                 .address("luna@luna.test")
+                .area(EmailEventDataDto.AreaEnum.WORK)
                 .from("Power company <billing@power.test>")
                 .to(List.of("luna@luna.test"))
                 .subject(subject)

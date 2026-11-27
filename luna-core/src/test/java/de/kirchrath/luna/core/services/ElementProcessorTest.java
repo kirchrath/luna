@@ -35,6 +35,7 @@ import de.kirchrath.luna.core.converter.NoteElementMapperImpl;
 import de.kirchrath.luna.core.converter.TaskElementConverter;
 import de.kirchrath.luna.core.converter.TaskElementMapperImpl;
 import de.kirchrath.luna.core.data.entity.EntityWithId;
+import de.kirchrath.luna.core.data.entity.LifeArea;
 import de.kirchrath.luna.core.data.entity.LunaElementType;
 import de.kirchrath.luna.core.data.entity.OutboundEvent;
 import de.kirchrath.luna.core.data.entity.OutboundEventStatus;
@@ -67,6 +68,7 @@ class ElementProcessorTest {
     private static final UUID OUTBOUND_EVENT_ID = UUID.fromString("6d1f0a3e-3c4b-4f63-8a3e-1e2f3a4b5c6d");
     private static final OutboundEvent OUTBOUND_EVENT = new OutboundEvent(
             OUTBOUND_EVENT_ID, UUID.fromString("3f2b9c1d-7e6a-4b5c-9d8e-1a2b3c4d5e6f"), LunaElementType.TASK,
+            LifeArea.PERSONAL,
             OutboundEventStatus.PUBLISHED, NOW, NOW, 0L);
     private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
 

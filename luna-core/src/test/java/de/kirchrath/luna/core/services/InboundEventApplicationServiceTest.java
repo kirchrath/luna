@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageRequest;
 
 import de.kirchrath.luna.core.dto.InboundEventListDto;
+import de.kirchrath.luna.core.dto.LifeAreaDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.ResourceReferenceDto;
 import de.kirchrath.luna.core.dto.mail.EmailEventDto;
@@ -25,7 +26,7 @@ class InboundEventApplicationServiceTest {
     @Test
     void thatCreatingAManualInboundEventShouldResultIntoTheReferenceOfTheDomainService() {
         // given
-        var input = new ManualInputDataDto("Something", null);
+        var input = new ManualInputDataDto("Something", LifeAreaDto.PERSONAL, null);
         var reference = new ResourceReferenceDto(UUID.fromString("0b8f3a52-5a0e-4d7f-9f43-2f1c7f0f4a11"));
         when(inboundEventDomainService.createManualInboundEvent(input)).thenReturn(reference);
 
@@ -41,10 +42,10 @@ class InboundEventApplicationServiceTest {
         // given
         var list = new InboundEventListDto(List.of(), 0, 0);
         var pageable = PageRequest.of(1, 20);
-        when(inboundEventDomainService.listInboundEvents(pageable)).thenReturn(list);
+        when(inboundEventDomainService.listInboundEvents(LifeAreaDto.WORK, pageable)).thenReturn(list);
 
         // when
-        var listed = inboundEventApplicationService.listInboundEvents(pageable);
+        var listed = inboundEventApplicationService.listInboundEvents(LifeAreaDto.WORK, pageable);
 
         // then
         assertThat(listed).isEqualTo(list);

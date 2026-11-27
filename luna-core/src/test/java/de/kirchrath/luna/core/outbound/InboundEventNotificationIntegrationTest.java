@@ -42,6 +42,7 @@ import de.kirchrath.luna.core.data.entity.EventData;
 import de.kirchrath.luna.core.data.entity.EventSource;
 import de.kirchrath.luna.core.data.entity.InboundEvent;
 import de.kirchrath.luna.core.data.entity.InboundEventStatus;
+import de.kirchrath.luna.core.data.entity.LifeArea;
 import de.kirchrath.luna.core.data.repository.InboundEventRepository;
 import de.kirchrath.luna.core.data.repository.OutboundEventRepository;
 import de.kirchrath.luna.core.dto.InboundEventChangedDto;
@@ -103,7 +104,7 @@ class InboundEventNotificationIntegrationTest {
     void thatAFinallyFailedClassificationShouldResultIntoASignalToSubscribedClients() throws Exception {
         // given
         var inboundEvent = inboundEventRepository.save(new InboundEvent(
-                null, EventSource.MANUAL, null, new EventData("{\"text\": \"Something\"}"), InboundEventStatus.RECEIVED, 2,
+                null, EventSource.MANUAL, null, LifeArea.PERSONAL, new EventData("{\"text\": \"Something\"}"), InboundEventStatus.RECEIVED, 2,
                 null, null, null));
         when(chatModel.call(any(Prompt.class))).thenThrow(new IllegalStateException("provider unavailable"));
         var session = connect("ws://localhost:" + port + "/ws?access_token=" + TOKEN);

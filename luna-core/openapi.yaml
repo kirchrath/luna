@@ -44,6 +44,14 @@ paths:
         schema:
           type: integer
           minimum: 1
+      - name: area
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
       responses:
         "200":
           description: OK
@@ -62,6 +70,11 @@ components:
           type: string
           maxLength: 10000
           minLength: 0
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         typeHint:
           type: string
           enum:
@@ -72,6 +85,7 @@ components:
           - CONTRACT
           - NOTE
       required:
+      - area
       - text
     ResourceReferenceDto:
       type: object
@@ -127,6 +141,11 @@ components:
           enum:
           - MANUAL
           - MAIL
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         text:
           type: string
         typeHint:
@@ -156,6 +175,7 @@ components:
           items:
             $ref: "#/components/schemas/ElementReferenceDto"
       required:
+      - area
       - createdDate
       - elements
       - id

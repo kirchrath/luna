@@ -23,6 +23,7 @@ public interface ContractElementMapper {
 
     @Mapping(target = "id", source = "outboundEvent.id")
     @Mapping(target = "audit", source = "outboundEvent")
+    @Mapping(target = "area", source = "outboundEvent.area")
     @Mapping(target = "data", source = "element")
     ContractEventDto toEventDto(OutboundEvent outboundEvent, ContractElement element);
 

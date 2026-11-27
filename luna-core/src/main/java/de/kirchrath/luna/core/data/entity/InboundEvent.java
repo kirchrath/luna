@@ -14,6 +14,7 @@ public record InboundEvent(
         @With @Id UUID id,
         EventSource source,
         UUID sourceId,
+        LifeArea area,
         EventData data,
         @With InboundEventStatus status,
         @With int attempts,
