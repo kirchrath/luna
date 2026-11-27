@@ -135,4 +135,37 @@ describe('AppLayout', () => {
     expect(readPreference(STORAGE_KEYS.lifeAreaFilter)).toBe('WORK');
     expect(screen.queryByRole('group', { name: 'Lebensbereich' })).toBeNull();
   });
+
+  it('that hiding an area on this device should result into no area switch and only the other area', async () => {
+    // given
+    await renderApp('/');
+    await userEvent.click(screen.getByRole('button', { name: 'Benutzermenü' }));
+    const areas = screen.getByRole('group', { name: 'Bereiche auf diesem Gerät' });
+
+    // when
+    await userEvent.click(within(areas).getByRole('checkbox', { name: 'Beruflich' }));
+
+    // then
+    expect(within(areas).getByRole('checkbox', { name: 'Beruflich' })).not.toBeChecked();
+    expect(within(areas).getByRole('checkbox', { name: 'Privat' })).toBeDisabled();
+    expect(screen.queryByRole('group', { name: 'Angezeigter Lebensbereich' })).toBeNull();
+    expect(readPreference(STORAGE_KEYS.lifeAreaHidden)).toBe('WORK');
+    expect(
+      screen.getByText('Wird unter „Privat“ gespeichert – umstellen über den Lebensbereich oben.'),
+    ).toBeInTheDocument();
+  });
+
+  it('that showing a hidden area again should result into the area switch with this area', async () => {
+    // given
+    writePreference(STORAGE_KEYS.lifeAreaHidden, 'WORK');
+    await renderApp('/');
+    await userEvent.click(screen.getByRole('button', { name: 'Benutzermenü' }));
+
+    // when
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Beruflich' }));
+
+    // then
+    const switcher = screen.getByRole('group', { name: 'Angezeigter Lebensbereich' });
+    expect(within(switcher).getByRole('button', { name: 'Beruflich' })).toBeInTheDocument();
+  });
 });

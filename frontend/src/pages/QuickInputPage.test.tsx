@@ -312,7 +312,7 @@ describe('QuickInputPage', () => {
       body: { text: 'Prepare the review', area: 'WORK' },
     });
     expect(lunaCore.GET).toHaveBeenCalledWith('/inbound-events', {
-      params: { query: { page: 0, size: 10, area: 'WORK' } },
+      params: { query: { page: 0, size: 10, area: ['WORK'] } },
     });
   });
 });

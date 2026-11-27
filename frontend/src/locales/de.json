@@ -357,6 +357,8 @@
     "ALL": "Alle Bereiche",
     "PERSONAL": "Privat",
     "WORK": "Beruflich",
-    "detail": "Bereich: {{area}}"
+    "detail": "Bereich: {{area}}",
+    "deviceLabel": "Bereiche auf diesem Gerät",
+    "lastVisible": "Mindestens ein Bereich bleibt sichtbar."
   }
 }

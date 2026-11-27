@@ -9,6 +9,7 @@ import { AREAS, PATHS, QUICK_INPUT_ICON } from '../navigation';
 import { readPreference, STORAGE_KEYS, writePreference } from '../services';
 import { AppShell, LanguageSwitch, Logo, UserMenu } from '../ui';
 import { LifeAreaSwitch } from './LifeAreaSwitch';
+import { LifeAreaVisibility } from './LifeAreaVisibility';
 
 const ICON_SIZE = 20;
 const COLLAPSED = 'true';
@@ -53,7 +54,9 @@ export function AppLayout() {
             logoutLabel={t('auth.logout')}
             logoutIcon={<LogOut size={16} aria-hidden="true" />}
             onLogout={() => void auth.signoutRedirect()}
-          />
+          >
+            <LifeAreaVisibility />
+          </UserMenu>
         </>
       }
       navigationLabel={t('navigation.label')}

@@ -254,7 +254,7 @@ describe('AppointmentMonthStore', () => {
     // then
     expect(lunaAppointment.GET).toHaveBeenCalledWith('/appointments/range', {
       params: {
-        query: { from: new Date(2026, 10, 1).toISOString(), to: new Date(2026, 11, 1).toISOString(), area: 'WORK' },
+        query: { from: new Date(2026, 10, 1).toISOString(), to: new Date(2026, 11, 1).toISOString(), area: ['WORK'] },
       },
     });
   });
@@ -273,7 +273,7 @@ describe('AppointmentMonthStore', () => {
     await vi.waitFor(() => {
       expect(lunaAppointment.GET).toHaveBeenLastCalledWith('/appointments/range', {
         params: {
-          query: { from: new Date(2026, 10, 1).toISOString(), to: new Date(2026, 11, 1).toISOString(), area: 'WORK' },
+          query: { from: new Date(2026, 10, 1).toISOString(), to: new Date(2026, 11, 1).toISOString(), area: ['WORK'] },
         },
       });
     });

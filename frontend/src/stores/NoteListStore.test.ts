@@ -263,7 +263,7 @@ describe('NoteListStore', () => {
 
     // then
     expect(lunaNote.GET).toHaveBeenCalledWith('/notes', {
-      params: { query: { page: 0, size: 20, status: 'ACTIVE', area: 'WORK' } },
+      params: { query: { page: 0, size: 20, status: 'ACTIVE', area: ['WORK'] } },
     });
   });
 
@@ -280,7 +280,7 @@ describe('NoteListStore', () => {
     // then
     await vi.waitFor(() => {
       expect(lunaNote.GET).toHaveBeenLastCalledWith('/notes', {
-        params: { query: { page: 0, size: 20, status: 'ACTIVE', area: 'WORK' } },
+        params: { query: { page: 0, size: 20, status: 'ACTIVE', area: ['WORK'] } },
       });
     });
     expect(lunaNote.GET).toHaveBeenCalledTimes(2);

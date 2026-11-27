@@ -337,7 +337,7 @@ export interface operations {
                 page?: number;
                 size?: number;
                 period?: "UPCOMING" | "PAST" | "ALL";
-                area?: "PERSONAL" | "WORK";
+                area?: ("PERSONAL" | "WORK")[];
             };
             header?: never;
             path?: never;
@@ -375,7 +375,7 @@ export interface operations {
             query: {
                 from: string;
                 to: string;
-                area?: "PERSONAL" | "WORK";
+                area?: ("PERSONAL" | "WORK")[];
             };
             header?: never;
             path?: never;

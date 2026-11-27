@@ -274,7 +274,7 @@ export interface operations {
                 page?: number;
                 size?: number;
                 status?: ("OPEN" | "ACKNOWLEDGED" | "RESOLVED")[];
-                area?: "PERSONAL" | "WORK";
+                area?: ("PERSONAL" | "WORK")[];
             };
             header?: never;
             path?: never;

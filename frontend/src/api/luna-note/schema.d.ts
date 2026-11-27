@@ -306,7 +306,7 @@ export interface operations {
                 page?: number;
                 size?: number;
                 status?: "ACTIVE" | "ARCHIVED";
-                area?: "PERSONAL" | "WORK";
+                area?: ("PERSONAL" | "WORK")[];
             };
             header?: never;
             path?: never;

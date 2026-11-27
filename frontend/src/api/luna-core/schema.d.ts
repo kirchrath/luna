@@ -138,7 +138,7 @@ export interface operations {
             query?: {
                 page?: number;
                 size?: number;
-                area?: "PERSONAL" | "WORK";
+                area?: ("PERSONAL" | "WORK")[];
             };
             header?: never;
             path?: never;

@@ -313,7 +313,7 @@ describe('TaskListStore', () => {
 
     // then
     expect(lunaTask.GET).toHaveBeenCalledWith('/tasks', {
-      params: { query: { page: 0, size: 20, status: 'OPEN', area: 'WORK' } },
+      params: { query: { page: 0, size: 20, status: 'OPEN', area: ['WORK'] } },
     });
   });
 
@@ -330,7 +330,7 @@ describe('TaskListStore', () => {
     // then
     await vi.waitFor(() => {
       expect(lunaTask.GET).toHaveBeenLastCalledWith('/tasks', {
-        params: { query: { page: 0, size: 20, status: 'OPEN', area: 'WORK' } },
+        params: { query: { page: 0, size: 20, status: 'OPEN', area: ['WORK'] } },
       });
     });
     expect(lunaTask.GET).toHaveBeenCalledTimes(2);

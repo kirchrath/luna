@@ -345,7 +345,7 @@ describe('InboundEventStore', () => {
 
     // then
     expect(lunaCore.GET).toHaveBeenCalledWith('/inbound-events', {
-      params: { query: { page: 0, size: 10, area: 'WORK' } },
+      params: { query: { page: 0, size: 10, area: ['WORK'] } },
     });
   });
 
@@ -362,7 +362,7 @@ describe('InboundEventStore', () => {
     // then
     await vi.waitFor(() => {
       expect(lunaCore.GET).toHaveBeenLastCalledWith('/inbound-events', {
-        params: { query: { page: 0, size: 10, area: 'WORK' } },
+        params: { query: { page: 0, size: 10, area: ['WORK'] } },
       });
     });
     expect(lunaCore.GET).toHaveBeenCalledTimes(2);

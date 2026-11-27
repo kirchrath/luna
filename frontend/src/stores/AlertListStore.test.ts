@@ -317,7 +317,7 @@ describe('AlertListStore', () => {
 
     // then
     expect(lunaAlert.GET).toHaveBeenCalledWith('/alerts', {
-      params: { query: { page: 0, size: 20, status: ['OPEN', 'ACKNOWLEDGED'], area: 'WORK' } },
+      params: { query: { page: 0, size: 20, status: ['OPEN', 'ACKNOWLEDGED'], area: ['WORK'] } },
     });
   });
 
@@ -334,7 +334,7 @@ describe('AlertListStore', () => {
     // then
     await vi.waitFor(() => {
       expect(lunaAlert.GET).toHaveBeenLastCalledWith('/alerts', {
-        params: { query: { page: 0, size: 20, status: ['OPEN', 'ACKNOWLEDGED'], area: 'WORK' } },
+        params: { query: { page: 0, size: 20, status: ['OPEN', 'ACKNOWLEDGED'], area: ['WORK'] } },
       });
     });
     expect(lunaAlert.GET).toHaveBeenCalledTimes(2);

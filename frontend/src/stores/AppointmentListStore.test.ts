@@ -269,7 +269,7 @@ describe('AppointmentListStore', () => {
 
     // then
     expect(lunaAppointment.GET).toHaveBeenCalledWith('/appointments', {
-      params: { query: { page: 0, size: 20, period: 'UPCOMING', area: 'WORK' } },
+      params: { query: { page: 0, size: 20, period: 'UPCOMING', area: ['WORK'] } },
     });
   });
 
@@ -286,7 +286,7 @@ describe('AppointmentListStore', () => {
     // then
     await vi.waitFor(() => {
       expect(lunaAppointment.GET).toHaveBeenLastCalledWith('/appointments', {
-        params: { query: { page: 0, size: 20, period: 'UPCOMING', area: 'WORK' } },
+        params: { query: { page: 0, size: 20, period: 'UPCOMING', area: ['WORK'] } },
       });
     });
     expect(lunaAppointment.GET).toHaveBeenCalledTimes(2);

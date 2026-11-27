@@ -315,7 +315,7 @@ export interface operations {
                 page?: number;
                 size?: number;
                 status?: "OPEN" | "DONE";
-                area?: "PERSONAL" | "WORK";
+                area?: ("PERSONAL" | "WORK")[];
             };
             header?: never;
             path?: never;

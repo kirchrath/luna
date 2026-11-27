@@ -357,6 +357,8 @@
     "ALL": "All areas",
     "PERSONAL": "Personal",
     "WORK": "Work",
-    "detail": "Area: {{area}}"
+    "detail": "Area: {{area}}",
+    "deviceLabel": "Areas on this device",
+    "lastVisible": "At least one area stays visible."
   }
 }

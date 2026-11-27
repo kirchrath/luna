@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type SyntheticEvent } 
 import { useTranslation } from 'react-i18next';
 
 import { LIFE_AREA_ICONS } from '../lifeAreas';
-import { ALL_LIFE_AREAS, LIFE_AREAS, useStores } from '../stores';
+import { ALL_LIFE_AREAS, useStores } from '../stores';
 import { ChipGroup } from '../ui';
 import { AUTOMATIC, AUTOMATIC_ICON, ELEMENT_TYPE_ICONS, ELEMENT_TYPE_ORDER, type TypeChoice } from './elementTypes';
 import { InboundEventList } from './InboundEventList';
@@ -64,7 +64,7 @@ export const QuickInputPage = observer(function QuickInputPage() {
     }),
   ] as const;
 
-  const areaOptions = LIFE_AREAS.map((area) => {
+  const areaOptions = lifeAreaStore.visibleAreas.map((area) => {
     const Icon = LIFE_AREA_ICONS[area];
     return { value: area, label: t(`lifeArea.${area}`), icon: <Icon size={CHIP_ICON_SIZE} aria-hidden="true" /> };
   });

@@ -58,9 +58,9 @@ export class AlertListStore {
       wasConnected: false,
       latestRequest: false,
     });
-    // A list that is shown (connected) follows the chosen area at once; others load it when they are shown next.
+    // A list that is shown (connected) follows the shown areas at once; others load them when they are shown next.
     reaction(
-      () => this.lifeAreaStore.filter,
+      () => this.lifeAreaStore.query.area?.join(),
       () => {
         if (this.pushConnection !== null) {
           void this.reload();

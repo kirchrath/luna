@@ -4,6 +4,7 @@ export const STORAGE_KEYS = {
   appointmentView: 'luna.appointments.view',
   lifeAreaFilter: 'luna.lifeArea.filter',
   lifeAreaInput: 'luna.lifeArea.input',
+  lifeAreaHidden: 'luna.lifeArea.hidden',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
