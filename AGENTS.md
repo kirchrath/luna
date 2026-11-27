@@ -397,6 +397,9 @@ record TaskDataDto(String title, String description) {}
 - **Umgebungsvariablen aus der Shell** (z. B. `SPRING_AI_MODEL_CHAT`, für den Stack exportiert) gelten auch in Tests
   und überschreiben die `application.yml`. Tests von `luna-core` setzen daher `spring.ai.model.chat=none` in den
   `@SpringBootTest`-Properties (ein `DynamicPropertyRegistrar` greift für Auto-Konfigurationen zu spät).
+- **Zeitzone:** Tests dürfen nicht von der Zeitzone des Rechners abhängen (der Laptop läuft auf Europe/Berlin, CI und
+  Container oft auf UTC). Erwartete Zeitpunkte in der Server-Zeitzone berechnen (`ZoneId.systemDefault()`) oder als
+  Instant vergleichen; prüfen mit `JAVA_TOOL_OPTIONS=-Duser.timezone=Europe/Berlin ./mvnw verify`.
 - Jeder Test folgt den drei Sektionen **given / when / then**, jeweils als Kommentar markiert:
 
 ```java
