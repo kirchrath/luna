@@ -32,6 +32,7 @@ import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
@@ -49,7 +50,9 @@ import de.kirchrath.luna.core.services.ClassificationScheduler;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "app.classification.interval=1h",
         // A provider exported in the shell (e.g. SPRING_AI_MODEL_CHAT for the stack) must not replace the mock.
-        "spring.ai.model.chat=none"})
+        "spring.ai.model.chat=none",
+        // As in the prod profile, behind Traefik.
+        "app.cors.allowed-origins=https://luna.internal"})
 @Import({TestcontainersConfig.class, ChatModelTestConfig.class})
 class InboundEventNotificationIntegrationTest {
 
@@ -121,6 +124,24 @@ class InboundEventNotificationIntegrationTest {
 
         // when / then
         assertThatThrownBy(() -> connect(url)).isInstanceOf(ExecutionException.class).hasStackTraceContaining("401");
+    }
+
+    @Test
+    void thatAHandshakeForwardedByTraefikFromTheAllowedOriginShouldResultIntoAConnectedSession() throws Exception {
+        // given
+        // Traefik forwards the WebSocket handshake with X-Forwarded-Proto wss, which never matches the https origin.
+        var headers = new WebSocketHttpHeaders();
+        headers.setOrigin("https://luna.internal");
+        headers.add("X-Forwarded-Proto", "wss");
+        headers.add("X-Forwarded-Host", "luna.internal");
+
+        // when
+        var session = stompClient.connectAsync("ws://localhost:" + port + "/ws?access_token=" + TOKEN, headers,
+                new StompSessionHandlerAdapter() {
+                }).get(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+        // then
+        assertThat(session.isConnected()).isTrue();
     }
 
     private StompSession connect(String url) throws Exception {

@@ -14,3 +14,9 @@ spring:
         jwt:
           issuer-uri: https://luna.internal/auth/realms/luna
           jwk-set-uri: http://keycloak:8080/auth/realms/luna/protocol/openid-connect/certs
+
+app:
+  cors:
+    # Traefik forwards the WebSocket handshake with X-Forwarded-Proto wss, so the own origin never matches the computed
+    # URL; it is therefore allowed explicitly.
+    allowed-origins: https://luna.internal

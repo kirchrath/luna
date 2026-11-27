@@ -68,7 +68,7 @@ services:
       SPRING_KAFKA_SSL_TRUST_STORE_TYPE: ''
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:7180/auth/realms/luna
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/luna/protocol/openid-connect/certs
-      APP_CORS_ALLOWED_ORIGINS: ''
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:7180
       APP_CLASSIFICATION_INTERVAL: 1s
       SPRING_AI_MODEL_CHAT: openai
       SPRING_AI_OPENAI_BASE_URL: http://ai-stub:8000
@@ -90,7 +90,7 @@ services:
       SPRING_KAFKA_SSL_TRUST_STORE_TYPE: ''
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:7180/auth/realms/luna
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/luna/protocol/openid-connect/certs
-      APP_CORS_ALLOWED_ORIGINS: ''
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:7180
 
   luna-alert:
     image: luna-alert:e2e
@@ -107,7 +107,7 @@ services:
       SPRING_KAFKA_SSL_TRUST_STORE_TYPE: ''
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:7180/auth/realms/luna
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/luna/protocol/openid-connect/certs
-      APP_CORS_ALLOWED_ORIGINS: ''
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:7180
 
   luna-note:
     image: luna-note:e2e
@@ -124,7 +124,7 @@ services:
       SPRING_KAFKA_SSL_TRUST_STORE_TYPE: ''
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:7180/auth/realms/luna
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/luna/protocol/openid-connect/certs
-      APP_CORS_ALLOWED_ORIGINS: ''
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:7180
 
   luna-appointment:
     image: luna-appointment:e2e
@@ -141,7 +141,7 @@ services:
       SPRING_KAFKA_SSL_TRUST_STORE_TYPE: ''
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:7180/auth/realms/luna
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/luna/protocol/openid-connect/certs
-      APP_CORS_ALLOWED_ORIGINS: ''
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:7180
 
   # Test mail server: the tests send emails via SMTP, luna-mail fetches them via IMAP (TLS, self-signed).
   greenmail:
