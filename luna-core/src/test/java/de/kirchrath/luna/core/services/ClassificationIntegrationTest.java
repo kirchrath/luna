@@ -40,7 +40,10 @@ import de.kirchrath.luna.core.data.repository.TaskElementRepository;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import tools.jackson.databind.json.JsonMapper;
 
-@SpringBootTest(properties = "app.classification.interval=1h")
+@SpringBootTest(properties = {
+        "app.classification.interval=1h",
+        // A provider exported in the shell (e.g. SPRING_AI_MODEL_CHAT for the stack) must not replace the mock.
+        "spring.ai.model.chat=none"})
 @Import({TestcontainersConfig.class, ChatModelTestConfig.class})
 class ClassificationIntegrationTest {
 

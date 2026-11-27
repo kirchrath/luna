@@ -36,7 +36,11 @@ import de.kirchrath.luna.core.dto.mail.EmailEventDataDto;
 import tools.jackson.databind.json.JsonMapper;
 
 @SpringBootTest(properties = {
-    "app.classification.interval=1h", "app.kafka.retry.retries=1", "app.kafka.retry.delay=100ms"})
+        "app.classification.interval=1h",
+        "app.kafka.retry.retries=1",
+        "app.kafka.retry.delay=100ms",
+        // A provider exported in the shell (e.g. SPRING_AI_MODEL_CHAT for the stack) must not replace the mock.
+        "spring.ai.model.chat=none"})
 @Import({TestcontainersConfig.class, ChatModelTestConfig.class})
 class MailEmailEventIntegrationTest {
 

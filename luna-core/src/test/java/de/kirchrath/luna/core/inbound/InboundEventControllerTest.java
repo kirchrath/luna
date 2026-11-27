@@ -50,7 +50,10 @@ import de.kirchrath.luna.core.services.TimeProvider;
 import de.kirchrath.luna.core.services.UuidProvider;
 import tools.jackson.databind.json.JsonMapper;
 
-@SpringBootTest(properties = "app.classification.interval=1h")
+@SpringBootTest(properties = {
+        "app.classification.interval=1h",
+        // A provider exported in the shell (e.g. SPRING_AI_MODEL_CHAT for the stack) must not replace the mock.
+        "spring.ai.model.chat=none"})
 @AutoConfigureMockMvc
 @Import({TestcontainersConfig.class, ChatModelTestConfig.class})
 class InboundEventControllerTest {

@@ -412,6 +412,9 @@ record TaskDataDto(String title, String description) {}
   `mail.imaps.ssl.trust=*` und `mail.imaps.ssl.checkserveridentity=false` (über `app.mail.session`). Scheduler, die
   Integrationstests stören könnten, starten mit `initialDelay` (z. B. `MailScheduler`). Zeitpunkte aus JSON-Events
   kommen in UTC an; für relative Angaben vorher per `TimeProvider.atServerOffset` in die Server-Zeitzone bringen.
+- **Umgebungsvariablen aus der Shell** (z. B. `SPRING_AI_MODEL_CHAT`, für den Stack exportiert) gelten auch in Tests
+  und überschreiben die `application.yml`. Tests von `luna-core` setzen daher `spring.ai.model.chat=none` in den
+  `@SpringBootTest`-Properties (ein `DynamicPropertyRegistrar` greift für Auto-Konfigurationen zu spät).
 - Jeder Test folgt den drei Sektionen **given / when / then**, jeweils als Kommentar markiert:
 
 ```java
