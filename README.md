@@ -77,11 +77,18 @@ docker secret create mail_accounts_v1 mail-accounts.yml && rm mail-accounts.yml
 > startet dann nicht. Vor dem Deploy eine neue Version mit `area` anlegen und `LUNA_MAIL_ACCOUNTS_VERSION` erhöhen.
 > Bestehende Eingaben, E-Mails und Elemente ordnen die Migrationen dem Bereich `WORK` zu.
 
-Den API-Key des KI-Anbieters für `luna-core` selbst eintragen (bei Ollama einen beliebigen Platzhalter):
+Die API-Keys der KI-Anbieter je Lebensbereich für `luna-core` selbst eintragen (bei Ollama einen beliebigen
+Platzhalter); beide Secrets sind Pflicht, auch wenn beide Bereiche denselben Anbieter nutzen:
 
 ```bash
-printf '%s' '<api-key>' | docker secret create luna_core_ai_api_key -
+printf '%s' '<api-key>' | docker secret create luna_core_ai_personal_api_key -
+printf '%s' '<api-key>' | docker secret create luna_core_ai_work_api_key -
 ```
+
+> [!IMPORTANT]
+> **Update auf KI je Lebensbereich:** `SPRING_AI_MODEL_CHAT`, die `SPRING_AI_*`-Variablen, `LUNA_AI_API_KEY_PROPERTY`
+> und das Secret `luna_core_ai_api_key` entfallen. Vor dem Deploy die beiden neuen Secrets anlegen und die
+> Variablen `LUNA_AI_<BEREICH>_*` setzen (Schritt 4); das alte Secret danach mit `docker secret rm` entfernen.
 
 Das Keycloak-Admin-Passwort vorher notieren bzw. selbst wählen, z. B.:
 
@@ -99,7 +106,7 @@ printf '%s' 'mein-passwort' | docker secret create keycloak_admin_password -
 | `kafka_admin_password` | Kafka-Superuser `admin` (wird nur beim allerersten Start von Kafka übernommen) |
 | `kafka_<service>_password` | Kafka-Benutzer je Service, z. B. `kafka_luna_core_password` für `luna-core` |
 | `kafka_keystore_v<n>`, `kafka_keystore_password_v<n>` | TLS-Zertifikat von Kafka in Version `<n>` – erzeugt das Skript in Schritt 8 |
-| `luna_core_ai_api_key` | API-Key des KI-Anbieters für `luna-core` (bei Ollama ein Platzhalter) |
+| `luna_core_ai_personal_api_key`, `luna_core_ai_work_api_key` | API-Key des KI-Anbieters je Lebensbereich für `luna-core` (bei Ollama ein Platzhalter) |
 
 #### 4. Umgebungsvariablen setzen
 
@@ -133,20 +140,17 @@ export LUNA_MAIL_ACCOUNTS_VERSION=1
 # Frontend: Version des lokal gebauten Images (siehe frontend/package.json). Pflicht.
 export LUNA_FRONTEND_VERSION=0.0.1
 
-# luna-core: KI-Anbieter (ollama, anthropic oder openai) und Property, unter der das Secret
-# luna_core_ai_api_key eingebunden wird. Beides Pflicht.
-export SPRING_AI_MODEL_CHAT=anthropic
-export LUNA_AI_API_KEY_PROPERTY=spring.ai.anthropic.api-key
-
-# luna-core: optionale Einstellungen des Anbieters, z. B.:
-export SPRING_AI_ANTHROPIC_CHAT_MODEL=<modell>
-# export SPRING_AI_OLLAMA_BASE_URL=http://<ollama-host>:11434
-# export SPRING_AI_OLLAMA_CHAT_MODEL=<modell>
-# export SPRING_AI_OPENAI_BASE_URL=<url>
-# export SPRING_AI_OPENAI_CHAT_MODEL=<modell>
+# luna-core: KI-Anbieter je Lebensbereich: Typ (ollama, anthropic oder openai) und Modell Pflicht,
+# Basis-URL optional (sonst die Standard-Adresse des Typs). Jede Eingabe nutzt nur den Anbieter ihres Bereichs.
+export LUNA_AI_PERSONAL_TYPE=anthropic
+export LUNA_AI_PERSONAL_MODEL=<modell>
+export LUNA_AI_WORK_TYPE=ollama
+export LUNA_AI_WORK_MODEL=<modell>
+export LUNA_AI_WORK_BASE_URL=http://<ollama-host>:11434
+# export LUNA_AI_PERSONAL_BASE_URL=<url>
 ```
 
-Nicht gesetzte optionale Variablen werden nicht an den Container übergeben.
+Nicht gesetzte Basis-URLs kommen leer im Container an; dann gilt die Standard-Adresse des Anbieter-Typs.
 
 Die aktuell verwendete Zertifikat-Version zeigt `docker secret ls --filter name=kafka_keystore_v`
 (höchste Version verwenden).

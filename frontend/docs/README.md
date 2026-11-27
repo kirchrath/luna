@@ -202,7 +202,12 @@ Visuelle Planung der Seiten für `luna-task`.
 - **Anzeige:** In Listen ein kleines Icon mit Tooltip, auf Detailseiten in der Karte „Herkunft“ „Bereich: …“.
 - **Unveränderlich:** Der Bereich wird bei der Eingabe festgelegt (bzw. am E-Mail-Konto) und lässt sich an Elementen
   nicht ändern; die Formulare haben kein Feld dafür.
-- **Technik:** `LifeAreaStore` (MobX) hält Filter und Bereich neuer Eingaben; die Listen-Stores hängen `area` an ihre
+- **Bereiche je Gerät ausblenden:** Im Benutzermenü „Bereiche auf diesem Gerät“ mit Häkchen je Bereich; nur im Browser
+  gespeichert (`luna.lifeArea.hidden`), kein Zugriffsschutz. Ausgeblendete Bereiche erscheinen nirgends (Umschalter,
+  Listen, Letzte Eingaben, Monat, Schnelleingabe); mindestens einer bleibt sichtbar. Ist nur ein Bereich sichtbar,
+  entfällt der Umschalter, und alles gehört zu diesem Bereich. Die Listen fragen dann die sichtbaren Bereiche ab
+  (`?area=A&area=B`).
+- **Technik:** `LifeAreaStore` (MobX) hält Filter, ausgeblendete Bereiche und den Bereich neuer Eingaben; die Listen-Stores hängen `area` an ihre
   Anfragen und laden per `reaction` neu, solange sie verbunden (sichtbar) sind.
 
 ## Offen (_TODO_)

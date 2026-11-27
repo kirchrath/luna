@@ -74,9 +74,11 @@ Noch offen (bitte hier eintragen, sobald entschieden):
      (Namen, Felder und Endpunkte je Service vor der Umsetzung klären).
   10. **Lebensbereiche** (siehe [Lebensbereiche](#lebensbereiche)):
       - 10a Bereich an Eingabe und allen Elementen, Weitergabe über Kafka, Anzeige und globaler Filter (erledigt)
-      - _TODO_ weitere Wirkungen, je ein eigener Schritt: KI-Anbieter je Bereich (z. B. beruflich nur ein lokales
-        Modell), Zugriff/Sichtbarkeit, Priorisierung/Benachrichtigungen; weitere Bereiche (z. B. Familie,
-        Hochprivat, Beruflich-Vertraulich, Beruflich-Privat).
+      - 10b KI-Anbieter je Bereich (`app.ai.providers` + `app.ai.areas`, im Stack `personal`/`work`) (erledigt)
+      - 10c Bereiche je Gerät ausblenden (Benutzermenü, nur im Browser gespeichert, kein Zugriffsschutz) (erledigt)
+      - _TODO_ Priorisierung/Benachrichtigungen je Bereich: zurückgestellt, bis es ein Konzept für Benachrichtigungen
+        gibt (Kanal: Browser-Push, E-Mail, Handy-App?).
+      - _TODO_ weitere Bereiche (z. B. Familie, Hochprivat, Beruflich-Vertraulich, Beruflich-Privat).
 
   Keiner dieser Schritte ist ohne ausdrücklichen Auftrag umzusetzen.
 
@@ -134,7 +136,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | Container-Image | **Jib** (Maven-Plugin), Basis-Image **`amazoncorretto:25`**, nur **`linux/amd64`** |
 | Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak, Kafka, GreenMail `greenmail/standalone:2.1.15` für IMAP/SMTP) |
 | Service-Kommunikation | **Kafka** – Kommunikation zwischen Services **ausschließlich** über Kafka |
-| KI / Event-Analyse | **Spring AI 2.1.0** (in `luna-core`); Anbieter konfigurierbar über `spring.ai.model.chat` (Ollama, Anthropic Claude, OpenAI-kompatibel), kein Standard; nicht genutzte Modellarten mit `none` abgeschaltet |
+| KI / Event-Analyse | **Spring AI 2.1.0** (in `luna-core`); **ein Anbieter je Lebensbereich** (Ollama, Anthropic Claude, OpenAI-kompatibel) über `app.ai.providers.<name>` (`type`, `base-url`, `model`, `api-key`) und `app.ai.areas.<BEREICH>`, kein Standard; die Modelle baut `luna-core` selbst (`ChatModelFactory`), die Auto-Konfiguration ist für alle Modellarten mit `none` abgeschaltet |
 | Mapping | **MapStruct 1.6.3** (Mapper in `converter`); nicht gemappte Ziele brechen den Build ab (`-Amapstruct.unmappedTargetPolicy=ERROR` im `maven-compiler-plugin`), außer sie sind per `@Mapping(target = …, ignore = true)` ausdrücklich ausgenommen – z. B. `withId` aus `EntityWithId`, das MapStruct für einen Fluent-Setter hält |
 | E-Mail | **Jakarta Mail** (`spring-boot-starter-mail`, Version von Spring Boot) und **jsoup 1.24.1** (HTML → Text) in `luna-mail` |
 | Lombok | Version von Spring Boot verwaltet; **nur** `@Slf4j`, `@Builder(toBuilder = true)` und `@With` |
@@ -213,8 +215,9 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   (manuell Pflichtfeld, E-Mail-Konten Pflichtangabe `area` im Secret) und ist danach **unveränderlich**: Element-
   Services setzen ihn nur beim Anlegen aus dem Core-Event, weder Update-Endpunkte noch neuere Core-Versionen ändern ihn.
   `luna-core` veröffentlicht ihn als `area` im Element-Event (nicht in `…EventDataDto`, das ist auch das KI-Schema),
-  Element-Services in `data`. Alle List-Endpunkte filtern optional per `?area=` (Repository-Methoden mit
-  `…AreaIn(Collection<LifeArea>)`; ohne Filter alle Werte). Bestand vor der Einführung: `WORK`.
+  Element-Services in `data`. Alle List-Endpunkte filtern optional nach einem oder mehreren Bereichen
+  (`?area=A&area=B`; Repository-Methoden mit `…AreaIn(Collection<LifeArea>)`; ohne Filter alle Werte). Bestand vor der
+  Einführung: `WORK`. `luna-core` analysiert jede Eingabe nur mit dem KI-Anbieter ihres Bereichs (`AreaChatClients`).
 - **Quell-Services** (z. B. `luna-mail`): liefern Rohdaten an `luna-core` (`luna_<quelle>_<inhalt>`); `luna-core`
   speichert sie als `InboundEvent` mit `source` und `source_id` (ID des Quell-Events, doppelte werden ignoriert) und
   analysiert sie wie manuelle Eingaben. Die Analyse-Eingabe je Quelle baut `InboundEventReader`.
@@ -438,9 +441,10 @@ record TaskDataDto(String title, String description) {}
   `mail.imaps.ssl.trust=*` und `mail.imaps.ssl.checkserveridentity=false` (über `app.mail.session`). Scheduler, die
   Integrationstests stören könnten, starten mit `initialDelay` (z. B. `MailScheduler`). Zeitpunkte aus JSON-Events
   kommen in UTC an; für relative Angaben vorher per `TimeProvider.atServerOffset` in die Server-Zeitzone bringen.
-- **Umgebungsvariablen aus der Shell** (z. B. `SPRING_AI_MODEL_CHAT`, für den Stack exportiert) gelten auch in Tests
+- **Umgebungsvariablen aus der Shell** (z. B. ein früher exportiertes `SPRING_AI_MODEL_CHAT`) gelten auch in Tests
   und überschreiben die `application.yml`. Tests von `luna-core` setzen daher `spring.ai.model.chat=none` in den
-  `@SpringBootTest`-Properties (ein `DynamicPropertyRegistrar` greift für Auto-Konfigurationen zu spät).
+  `@SpringBootTest`-Properties (ein `DynamicPropertyRegistrar` greift für Auto-Konfigurationen zu spät). Die
+  KI-Anbieter liefert in Tests `ChatModelTestConfig` (ein gemocktes `ChatModel` für alle Bereiche).
 - **Zeitzone:** Tests dürfen nicht von der Zeitzone des Rechners abhängen (der Laptop läuft auf Europe/Berlin, CI und
   Container oft auf UTC). Erwartete Zeitpunkte in der Server-Zeitzone berechnen (`ZoneId.systemDefault()`) oder als
   Instant vergleichen; prüfen mit `JAVA_TOOL_OPTIONS=-Duser.timezone=Europe/Berlin ./mvnw verify`.
@@ -498,8 +502,8 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
     Komponenten rufen den API-Wrapper nie direkt auf, sondern lesen Daten und Ladezustand aus Stores
     (`observer`) und lösen Aktionen über Store-Methoden aus. Alle Stores erzeugt der `RootStore`.
   - Reiner UI-Zustand (z. B. Sprache, eingeklappte Navigation) bleibt in React-State bzw. i18next. Ausnahme: der
-    globale Lebensbereich (`LifeAreaStore`), da er die Anfragen aller Listen-Stores bestimmt; diese laden per MobX-
-    `reaction` neu, solange sie verbunden (sichtbar) sind.
+    globale Lebensbereich und die auf dem Gerät ausgeblendeten Bereiche (`LifeAreaStore`), da sie die Anfragen aller
+    Listen-Stores bestimmen; diese laden per MobX-`reaction` neu, solange sie verbunden (sichtbar) sind.
   - MobX läuft mit **`enforceActions: 'always'`**. Zustand eines Stores liegt in **privaten `_`-Feldern** mit
     öffentlichem Getter und **privatem Setter** (`makeAutoObservable` macht Setter zu Actions); Änderungen laufen
     immer über den Setter, auch nach `await`. **`runInAction` wird nie verwendet** (leicht vergessen); ESLint
