@@ -394,6 +394,9 @@ record TaskDataDto(String title, String description) {}
   im Test-Quellbaum, `@ServiceConnection`, Image `postgres:18.7`). Der Container setzt wie die echte Konfiguration
   `currentSchema=<schema>` in der JDBC-URL (`withUrlParam`), sonst findet Spring Data JDBC die Tabellen nicht. Kafka-Integrationstests nutzen ebenso
   **Testcontainers** (Image `apache/kafka:4.4.0`, `@ServiceConnection`), kein Embedded Kafka.
+- **Umgebungsvariablen aus der Shell** (z. B. `SPRING_AI_MODEL_CHAT`, für den Stack exportiert) gelten auch in Tests
+  und überschreiben die `application.yml`. Tests von `luna-core` setzen daher `spring.ai.model.chat=none` in den
+  `@SpringBootTest`-Properties (ein `DynamicPropertyRegistrar` greift für Auto-Konfigurationen zu spät).
 - Jeder Test folgt den drei Sektionen **given / when / then**, jeweils als Kommentar markiert:
 
 ```java
