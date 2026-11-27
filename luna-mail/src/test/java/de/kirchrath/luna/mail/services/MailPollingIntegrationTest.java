@@ -25,6 +25,7 @@ import org.testcontainers.containers.GenericContainer;
 
 import de.kirchrath.luna.mail.config.GreenMailConfig;
 import de.kirchrath.luna.mail.config.TestcontainersConfig;
+import de.kirchrath.luna.mail.data.entity.LifeArea;
 import de.kirchrath.luna.mail.data.entity.MailboxStatus;
 import de.kirchrath.luna.mail.data.repository.EmailRepository;
 import de.kirchrath.luna.mail.data.repository.MailboxRepository;
@@ -140,6 +141,7 @@ class MailPollingIntegrationTest {
         var mailbox = mailboxRepository.findByAccount("other").orElseThrow();
         var email = emailRepository.findByMailboxId(mailbox.id()).getFirst();
         assertThat(email.subject()).isEqualTo("Invoice 4711");
+        assertThat(email.area()).isEqualTo(LifeArea.WORK);
         assertThat(email.sender()).isEqualTo("Sender <sender@luna.test>");
         assertThat(email.recipients()).containsExactly(GreenMailConfig.OTHER_ADDRESS);
         assertThat(email.text()).isEqualTo("Please pay the invoice by Friday.");
@@ -151,6 +153,7 @@ class MailPollingIntegrationTest {
         assertThat(event.get("id").asString()).isEqualTo(email.id().toString());
         assertThat(event.get("data").get("account").asString()).isEqualTo("other");
         assertThat(event.get("data").get("address").asString()).isEqualTo(GreenMailConfig.OTHER_ADDRESS);
+        assertThat(event.get("data").get("area").asString()).isEqualTo("WORK");
         assertThat(event.get("data").get("subject").asString()).isEqualTo("Invoice 4711");
         assertThat(event.get("data").get("from").asString()).isEqualTo("Sender <sender@luna.test>");
         assertThat(event.get("data").get("text").asString()).isEqualTo("Please pay the invoice by Friday.");

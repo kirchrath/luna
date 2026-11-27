@@ -41,6 +41,11 @@ components:
           type: string
         address:
           type: string
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         messageId:
           type: string
         from:
@@ -68,6 +73,7 @@ components:
       required:
       - account
       - address
+      - area
       - attachments
       - receivedDate
       - text
