@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -211,5 +212,22 @@ class NoteControllerTest {
                 .status(status)
                 .edited(false)
                 .build());
+    }
+
+    @Test
+    void thatARequestForwardedByTraefikFromTheOwnHttpsOriginShouldResultIntoNoCorsRejection() throws Exception {
+        // given
+        // Behind Traefik the service is called via http, while the browser sends its https origin.
+        var request = post("/notes/{id}/archive", UUID.randomUUID())
+                .with(jwt())
+                .header(HttpHeaders.ORIGIN, "https://luna.internal")
+                .header("X-Forwarded-Proto", "https")
+                .header("X-Forwarded-Host", "luna.internal");
+
+        // when
+        var result = mockMvc.perform(request);
+
+        // then
+        result.andExpect(status().isNotFound());
     }
 }

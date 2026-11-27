@@ -222,6 +222,10 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
   Schemaänderungen ausschließlich über neue Flyway-Migrationen; bestehende Migrationen nie ändern.
 - **CORS:** Lokal ruft das Frontend die Backends direkt auf; die Backends erlauben daher lokal CORS für
   `http://localhost:5173`. In Produktion ist kein CORS nötig (gleiche Origin über Traefik).
+  Damit Spring die gleiche Origin hinter Traefik erkennt, werten alle Backends die `X-Forwarded-*`-Header aus
+  (`server.forward-headers-strategy: framework`); sonst gilt jedes POST/PUT und der WebSocket-Handshake von
+  `https://luna.internal` als fremde Origin (`403`). Jeder Controller-Test sichert das mit einem weitergeleiteten
+  Request ab (`thatARequestForwardedByTraefikFromTheOwnHttpsOriginShouldResultIntoNoCorsRejection`).
 
 ### Regeln für Java-Services
 

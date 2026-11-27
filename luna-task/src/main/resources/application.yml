@@ -56,6 +56,9 @@ spring:
 
 server:
   port: 7082
+  # Traefik terminates TLS and calls the service via http; its X-Forwarded-* headers give the original https URL,
+  # without them every POST/PUT and the WebSocket handshake from https://luna.internal counts as foreign origin (403).
+  forward-headers-strategy: framework
 
 app:
   cors:

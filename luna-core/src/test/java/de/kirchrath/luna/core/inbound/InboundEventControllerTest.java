@@ -26,6 +26,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -335,5 +336,22 @@ class InboundEventControllerTest {
 
         // then
         result.andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void thatARequestForwardedByTraefikFromTheOwnHttpsOriginShouldResultIntoNoCorsRejection() throws Exception {
+        // given
+        // Behind Traefik the service is called via http, while the browser sends its https origin.
+        var request = post("/inbound-events/manual").contentType(MediaType.APPLICATION_JSON).content("{\"text\": \"Milk is empty\"}")
+                .with(jwt())
+                .header(HttpHeaders.ORIGIN, "https://luna.internal")
+                .header("X-Forwarded-Proto", "https")
+                .header("X-Forwarded-Host", "luna.internal");
+
+        // when
+        var result = mockMvc.perform(request);
+
+        // then
+        result.andExpect(status().isAccepted());
     }
 }
