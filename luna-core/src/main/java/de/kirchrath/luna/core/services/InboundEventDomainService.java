@@ -1,8 +1,10 @@
 package de.kirchrath.luna.core.services;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -17,11 +19,14 @@ import de.kirchrath.luna.core.data.entity.InboundEventStatus;
 import de.kirchrath.luna.core.data.entity.OutboundEvent;
 import de.kirchrath.luna.core.data.repository.InboundEventRepository;
 import de.kirchrath.luna.core.data.repository.OutboundEventRepository;
-import de.kirchrath.luna.core.dto.ManualInboundEventListDto;
+import de.kirchrath.luna.core.dto.InboundEventListDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.ResourceReferenceDto;
+import de.kirchrath.luna.core.dto.mail.EmailEventDto;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.json.JsonMapper;
 
+@Slf4j
 @Service
 @Transactional
 public class InboundEventDomainService {
@@ -29,46 +34,67 @@ public class InboundEventDomainService {
     private final InboundEventRepository inboundEventRepository;
     private final OutboundEventRepository outboundEventRepository;
     private final InboundEventConverter inboundEventConverter;
+    private final InboundEventReader inboundEventReader;
     private final JsonMapper jsonMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public InboundEventDomainService(
             InboundEventRepository inboundEventRepository,
             OutboundEventRepository outboundEventRepository,
             InboundEventConverter inboundEventConverter,
-            JsonMapper jsonMapper) {
+            InboundEventReader inboundEventReader,
+            JsonMapper jsonMapper,
+            ApplicationEventPublisher eventPublisher) {
         this.inboundEventRepository = inboundEventRepository;
         this.outboundEventRepository = outboundEventRepository;
         this.inboundEventConverter = inboundEventConverter;
+        this.inboundEventReader = inboundEventReader;
         this.jsonMapper = jsonMapper;
+        this.eventPublisher = eventPublisher;
     }
 
     public ResourceReferenceDto createManualInboundEvent(ManualInputDataDto input) {
-        var inboundEvent = new InboundEvent(
-                null,
-                EventSource.MANUAL,
-                new EventData(jsonMapper.writeValueAsString(input)),
-                InboundEventStatus.RECEIVED,
-                0,
-                null,
-                null,
-                null);
-        return new ResourceReferenceDto(inboundEventRepository.save(inboundEvent).id());
+        return new ResourceReferenceDto(inboundEventRepository.save(received(EventSource.MANUAL, null, input)).id());
+    }
+
+    /** Stores a fetched email once; the same email again (e.g. after a retry) is ignored. */
+    public void createMailInboundEvent(EmailEventDto email) {
+        if (inboundEventRepository.existsBySourceAndSourceId(EventSource.MAIL, email.getId())) {
+            log.debug("Email {} is already known", email.getId());
+            return;
+        }
+        var inboundEvent = inboundEventRepository.save(received(EventSource.MAIL, email.getId(), email.getData()));
+        eventPublisher.publishEvent(new InboundEventStatusChangedEvent(inboundEvent.id()));
     }
 
     @Transactional(readOnly = true)
-    public ManualInboundEventListDto listManualInboundEvents(Pageable pageable) {
-        var inboundEvents = inboundEventRepository.findBySource(EventSource.MANUAL, PageRequest.of(
+    public InboundEventListDto listInboundEvents(Pageable pageable) {
+        var inboundEvents = inboundEventRepository.findAll(PageRequest.of(
                 pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Order.desc(InboundEvent::createdDate))));
         var outboundEvents = outboundEventRepository
                 .findByInboundEventIdIn(inboundEvents.map(InboundEvent::id).getContent())
                 .stream()
                 .collect(Collectors.groupingBy(OutboundEvent::inboundEventId));
         var items = inboundEvents
-                .map(inboundEvent -> inboundEventConverter.toManualListItemDto(
+                .map(inboundEvent -> inboundEventConverter.toListItemDto(
                         inboundEvent,
-                        jsonMapper.readValue(inboundEvent.data().json(), ManualInputDataDto.class),
+                        inboundEventReader.manualInput(inboundEvent),
+                        inboundEventReader.email(inboundEvent),
                         outboundEvents.getOrDefault(inboundEvent.id(), List.<OutboundEvent>of())))
                 .getContent();
-        return new ManualInboundEventListDto(items, inboundEvents.getTotalPages(), inboundEvents.getTotalElements());
+        return new InboundEventListDto(items, inboundEvents.getTotalPages(), inboundEvents.getTotalElements());
+    }
+
+    private InboundEvent received(EventSource source, UUID sourceId, Object data) {
+        return new InboundEvent(
+                null,
+                source,
+                sourceId,
+                new EventData(jsonMapper.writeValueAsString(data)),
+                InboundEventStatus.RECEIVED,
+                0,
+                null,
+                null,
+                null);
     }
 }

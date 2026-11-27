@@ -10,7 +10,7 @@ import type {
   LunaCoreClient,
   LunaNoteClient,
   LunaTaskClient,
-  ManualInboundEventListDto,
+  InboundEventListDto,
   NoteDto,
   NoteListDto,
   PushConnector,
@@ -20,7 +20,7 @@ import type {
 } from '../api';
 import { RootStore } from '../stores';
 
-const EMPTY_LIST: ManualInboundEventListDto = { items: [], totalPages: 0, totalCount: 0 };
+const EMPTY_LIST: InboundEventListDto = { items: [], totalPages: 0, totalCount: 0 };
 const EMPTY_PAGE = { items: [], totalPages: 0, totalCount: 0 };
 
 export const TASK: TaskDto = {
@@ -66,7 +66,7 @@ function respond<T>(data: T | undefined, status = 200) {
   return Promise.resolve({ data, error: undefined, response: new Response(null, { status }) });
 }
 
-export function fakeLunaCoreClient(list: ManualInboundEventListDto = EMPTY_LIST) {
+export function fakeLunaCoreClient(list: InboundEventListDto = EMPTY_LIST) {
   const GET = vi.fn(() => respond(list));
   const POST = vi.fn(() => respond({ id: 'new-id' }, 202));
   return { GET, POST, client: { GET, POST } as unknown as LunaCoreClient };
@@ -145,7 +145,7 @@ interface FakeRootStoreOptions {
 }
 
 export function fakeRootStore(
-  list?: ManualInboundEventListDto,
+  list?: InboundEventListDto,
   { taskList, task, alertList, alert, noteList, note, appointmentList, appointment }: FakeRootStoreOptions = {},
 ) {
   const lunaCore = fakeLunaCoreClient(list);

@@ -59,7 +59,7 @@ class ClassificationDomainServiceTest {
             elementClassificationClient,
             List.copyOf(processors),
             new LunaElementTypeConverter(new LunaElementTypeMapperImpl()),
-            jsonMapper,
+            new InboundEventReader(jsonMapper, new TimeProvider()),
             new ClassificationProperties(Duration.ofSeconds(30), 10, 3),
             eventPublisher);
 
@@ -228,7 +228,7 @@ class ClassificationDomainServiceTest {
     }
 
     private InboundEvent inboundEvent(ManualInputDataDto input, int attempts) {
-        return new InboundEvent(INBOUND_EVENT_ID, EventSource.MANUAL, new EventData(jsonMapper.writeValueAsString(input)),
+        return new InboundEvent(INBOUND_EVENT_ID, EventSource.MANUAL, null, new EventData(jsonMapper.writeValueAsString(input)),
                 InboundEventStatus.RECEIVED, attempts, RECEIVED_AT, RECEIVED_AT, 0L);
     }
 

@@ -13,6 +13,7 @@ import lombok.With;
 public record InboundEvent(
         @With @Id UUID id,
         EventSource source,
+        UUID sourceId,
         EventData data,
         @With InboundEventStatus status,
         @With int attempts,

@@ -17,10 +17,10 @@ class InboundEventNotifierTest {
     private final SimpMessageSendingOperations messagingTemplate = mock(SimpMessageSendingOperations.class);
     private final InboundEventNotifier inboundEventNotifier = new InboundEventNotifier(
             messagingTemplate,
-            new WebSocketProperties("/ws", "/topic", new WebSocketProperties.Topics("/topic/inbound-events/manual")));
+            new WebSocketProperties("/ws", "/topic", new WebSocketProperties.Topics("/topic/inbound-events")));
 
     @Test
-    void thatAStatusChangeShouldResultIntoASignalOnTheTopicOfManualInboundEvents() {
+    void thatAStatusChangeShouldResultIntoASignalOnTheTopicOfInboundEvents() {
         // given
         var id = UUID.fromString("3f2b9c1d-7e6a-4b5c-9d8e-1a2b3c4d5e6f");
 
@@ -28,6 +28,6 @@ class InboundEventNotifierTest {
         inboundEventNotifier.notifyStatusChanged(new InboundEventStatusChangedEvent(id));
 
         // then
-        verify(messagingTemplate).convertAndSend("/topic/inbound-events/manual", new InboundEventChangedDto(id));
+        verify(messagingTemplate).convertAndSend("/topic/inbound-events", new InboundEventChangedDto(id));
     }
 }

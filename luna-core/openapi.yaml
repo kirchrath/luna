@@ -6,31 +6,6 @@ servers:
 - url: /api/luna-core
 paths:
   /inbound-events/manual:
-    get:
-      tags:
-      - Inbound events
-      operationId: listManualInboundEvents
-      parameters:
-      - name: page
-        in: query
-        schema:
-          type: integer
-          default: 0
-          minimum: 0
-      - name: size
-        in: query
-        schema:
-          type: integer
-          minimum: 1
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ManualInboundEventListDto"
-        "401":
-          description: Unauthorized
     post:
       tags:
       - Inbound events
@@ -50,6 +25,32 @@ paths:
                 $ref: "#/components/schemas/ResourceReferenceDto"
         "400":
           description: Bad Request
+        "401":
+          description: Unauthorized
+  /inbound-events:
+    get:
+      tags:
+      - Inbound events
+      operationId: listInboundEvents
+      parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InboundEventListDto"
         "401":
           description: Unauthorized
 components:
@@ -98,13 +99,13 @@ components:
       required:
       - id
       - type
-    ManualInboundEventListDto:
+    InboundEventListDto:
       type: object
       properties:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/ManualInboundEventListItemDto"
+            $ref: "#/components/schemas/InboundEventListItemDto"
         totalPages:
           type: integer
           format: int32
@@ -115,12 +116,17 @@ components:
       - items
       - totalCount
       - totalPages
-    ManualInboundEventListItemDto:
+    InboundEventListItemDto:
       type: object
       properties:
         id:
           type: string
           format: uuid
+        source:
+          type: string
+          enum:
+          - MANUAL
+          - MAIL
         text:
           type: string
         typeHint:
@@ -132,6 +138,10 @@ components:
           - INVOICE
           - CONTRACT
           - NOTE
+        subject:
+          type: string
+        from:
+          type: string
         status:
           type: string
           enum:
@@ -149,8 +159,8 @@ components:
       - createdDate
       - elements
       - id
+      - source
       - status
-      - text
     InboundEventChangedDto:
       type: object
       properties:

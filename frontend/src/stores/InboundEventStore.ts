@@ -4,7 +4,7 @@ import type {
   LunaCoreClient,
   LunaCorePushConnector,
   LunaElementTypeDto,
-  ManualInboundEventListItemDto,
+  InboundEventListItemDto,
   PushConnection,
 } from '../api';
 
@@ -12,17 +12,18 @@ export const PAGE_SIZE = 10;
 /** Largest page luna-core returns; a refresh of more visible entries is limited to it. */
 export const MAX_PAGE_SIZE = 100;
 const HTTP_BAD_REQUEST = 400;
-const LIST_PATH = '/inbound-events/manual';
+const LIST_PATH = '/inbound-events';
+const MANUAL_PATH = '/inbound-events/manual';
 
 export type ConnectionState = 'idle' | 'connected' | 'disconnected';
 export type SubmitError = 'invalid' | 'failed';
 
 /**
- * Manual inputs of the user: submitting, the list of recent inputs and its live updates.
+ * Inputs of the user: submitting manual inputs, the list of recent inputs of all sources and its live updates.
  * State lives in private `_` fields; every change goes through a setter, which MobX turns into an action.
  */
 export class InboundEventStore {
-  private _items: ManualInboundEventListItemDto[] = [];
+  private _items: InboundEventListItemDto[] = [];
   private _totalCount = 0;
   private _loading = false;
   private _loadError = false;
@@ -46,11 +47,11 @@ export class InboundEventStore {
     });
   }
 
-  get items(): ManualInboundEventListItemDto[] {
+  get items(): InboundEventListItemDto[] {
     return this._items;
   }
 
-  private set items(items: ManualInboundEventListItemDto[]) {
+  private set items(items: InboundEventListItemDto[]) {
     this._items = items;
   }
 
@@ -124,7 +125,7 @@ export class InboundEventStore {
     this.submitting = true;
     this.submitError = null;
     try {
-      const { response } = await this.client.POST(LIST_PATH, {
+      const { response } = await this.client.POST(MANUAL_PATH, {
         body: typeHint === undefined ? { text } : { text, typeHint },
       });
       if (!response.ok) {
@@ -186,7 +187,7 @@ export class InboundEventStore {
   }
 
   /** New inputs shift the pages, so entries already shown are skipped. */
-  private appendNew(items: ManualInboundEventListItemDto[]): ManualInboundEventListItemDto[] {
+  private appendNew(items: InboundEventListItemDto[]): InboundEventListItemDto[] {
     const known = new Set(this.items.map((item) => item.id));
     return [...this.items, ...items.filter((item) => !known.has(item.id))];
   }

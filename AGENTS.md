@@ -27,7 +27,8 @@ solange sie nicht ausdrücklich beauftragt sind.
 
 Bisher existieren die Dokumentation, die Infrastruktur (`swarm/`), `luna-core` (manuelle Eingabe, Analyse per
 Spring AI, Veröffentlichung der Elemente auf Kafka, Liste der letzten Eingaben mit Push-Signal), die Element-Services
-`luna-task`, `luna-alert`, `luna-note` und `luna-appointment` (Verarbeitung der Core-Events, REST-Endpunkte), das
+`luna-task`, `luna-alert`, `luna-note` und `luna-appointment` (Verarbeitung der Core-Events, REST-Endpunkte),
+`luna-mail` (E-Mail als zweite Quelle), das
 Frontend (Layout, Anmeldung, Schnelleingabe, Aufgaben, Notizen, Warnungen, Termine; weitere Bereiche als Platzhalter) und die E2E-Tests (`e2e/`).
 
 Noch offen (bitte hier eintragen, sobald entschieden):
@@ -60,7 +61,15 @@ Noch offen (bitte hier eintragen, sobald entschieden):
        (erledigt; Planung in [frontend/docs](frontend/docs/README.md#warnungen-und-notizen-schritt-7b))
      - 7c `luna-appointment` mit Stack, Frontend-Bereich „Termine“ (Liste und Monat) und E2E-Tests (erledigt;
        Planung in [frontend/docs](frontend/docs/README.md#termine-schritt-7c))
-  8. Danach weitere Quellen (z. B. E-Mail); `luna-core` ordnet nur ein und verteilt weiter.
+  8. Weitere Quellen; `luna-core` ordnet nur ein und verteilt weiter:
+     - 8a **E-Mail per IMAP** (erledigt): ein Service `luna-mail` für alle Anbieter (Adapter je Zugriffsart statt eines
+       Services je Anbieter); Konten mit App-Passwort im Secret `mail_accounts_v<n>`, Host/Port je Konto (Standard
+       Gmail); Abruf jede Minute, nur neue E-Mails im Posteingang (kein Nachholen); Kopf, Text und Anhangsnamen;
+       `luna-core` liest `luna_mail_email`, „Letzte Eingaben“ zeigt alle Quellen (`GET /inbound-events`).
+     - _TODO_ **Outlook (Microsoft-365-Arbeitskonto):** zurückgestellt. IMAP mit Passwort geht nicht mehr, OAuth braucht
+       eine App-Registrierung, die nur die IT anlegen kann; Weiterleiten ist gesperrt. Optionen: IT registriert eine
+       App (Microsoft Graph, `Mail.Read` delegiert, Gerätecode-Anmeldung) oder Chrome-Erweiterung „An Luna senden“, die
+       nur liest, was Outlook im Web anzeigt (nie dessen Anmeldung nutzen).
   9. **Zurückgestellt bis zum Schluss:** `luna-invoice` und `luna-contract` nach demselben Muster
      (Namen, Felder und Endpunkte je Service vor der Umsetzung klären).
 
@@ -79,6 +88,7 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | `luna-alert` | **Warnungen:** verarbeitet die Alert-Events von `luna-core` (`luna_core_alert`); Status offen/bestätigt/behoben, Inhalte nicht bearbeitbar; veröffentlicht jede Änderung auf `luna_alert_alert`. | [luna-alert/README.md](luna-alert/README.md) |
 | `luna-note` | **Notizen:** verarbeitet die Notiz-Events von `luna-core` (`luna_core_note`); bearbeiten, archivieren, wiederherstellen; veröffentlicht jede Änderung auf `luna_note_note`. | [luna-note/README.md](luna-note/README.md) |
 | `luna-appointment` | **Termine:** verarbeitet die Termin-Events von `luna-core` (`luna_core_appointment`); bearbeiten, absagen, wiederherstellen; Listen nach Zeitraum und Monat; veröffentlicht jede Änderung auf `luna_appointment_appointment`. | [luna-appointment/README.md](luna-appointment/README.md) |
+| `luna-mail` | **Quelle E-Mail:** holt neue E-Mails der konfigurierten IMAP-Konten (TLS, nur lesend) und veröffentlicht sie auf `luna_mail_email`; keine REST-Endpunkte. | [luna-mail/README.md](luna-mail/README.md) |
 
 ## Grundprinzipien
 
@@ -112,10 +122,11 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
 | Authentifizierung | **OIDC** mit **Keycloak** als IdP; Backend ist Spring-Security-**Resource-Server** (JWT) |
 | API-Dokumentation | **springdoc-openapi** (Code-first) |
 | Container-Image | **Jib** (Maven-Plugin), Basis-Image **`amazoncorretto:25`**, nur **`linux/amd64`** |
-| Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak, Kafka) |
+| Tests | **JUnit 5**, **Spring Boot Test**, **Testcontainers** (PostgreSQL, Keycloak, Kafka, GreenMail `greenmail/standalone:2.1.15` für IMAP/SMTP) |
 | Service-Kommunikation | **Kafka** – Kommunikation zwischen Services **ausschließlich** über Kafka |
 | KI / Event-Analyse | **Spring AI 2.1.0** (in `luna-core`); Anbieter konfigurierbar über `spring.ai.model.chat` (Ollama, Anthropic Claude, OpenAI-kompatibel), kein Standard; nicht genutzte Modellarten mit `none` abgeschaltet |
 | Mapping | **MapStruct 1.6.3** (Mapper in `converter`) |
+| E-Mail | **Jakarta Mail** (`spring-boot-starter-mail`, Version von Spring Boot) und **jsoup 1.24.1** (HTML → Text) in `luna-mail` |
 | Lombok | Version von Spring Boot verwaltet; **nur** `@Slf4j`, `@Builder(toBuilder = true)` und `@With` |
 | Architekturtests | **ArchUnit 1.5.1** (`archunit-junit5`) |
 | Testabdeckung | **JaCoCo**, **100 % in allen Zählern** (Instruction, Line, Branch, Complexity, Method, Class), Build bricht bei Unterschreitung ab |
@@ -186,6 +197,9 @@ Bei offenen Punkten keine Entscheidungen eigenmächtig treffen, sondern Vorschl�
     Ganztägige Termine beginnen um 00:00 Ortszeit, `end` ist der letzte Tag. Eine zusätzliche Spalte `effective_end`
     (Ende, ohne Ende der Beginn, ganztägig das Ende des letzten Tages) trennt kommende von vergangenen Terminen
     (laufende zählen als kommend) und dient der Abfrage eines Zeitraums (`GET /appointments/range`).
+- **Quell-Services** (z. B. `luna-mail`): liefern Rohdaten an `luna-core` (`luna_<quelle>_<inhalt>`); `luna-core`
+  speichert sie als `InboundEvent` mit `source` und `source_id` (ID des Quell-Events, doppelte werden ignoriert) und
+  analysiert sie wie manuelle Eingaben. Die Analyse-Eingabe je Quelle baut `InboundEventReader`.
 - **Push an das Frontend:** Backends melden Änderungen per **STOMP über WebSocket** (Spring
   `@EnableWebSocketMessageBroker`, einfacher Broker, Endpunkt `/ws`, Topics unter `/topic/…`; Pfade aus der
   `application.yml`). Nachrichten sind **Signale** (DTO mit ID), die Daten lädt der Client per REST.
@@ -394,6 +408,10 @@ record TaskDataDto(String title, String description) {}
   im Test-Quellbaum, `@ServiceConnection`, Image `postgres:18.7`). Der Container setzt wie die echte Konfiguration
   `currentSchema=<schema>` in der JDBC-URL (`withUrlParam`), sonst findet Spring Data JDBC die Tabellen nicht. Kafka-Integrationstests nutzen ebenso
   **Testcontainers** (Image `apache/kafka:4.4.0`, `@ServiceConnection`), kein Embedded Kafka.
+- **Fallstricke:** GreenMail hat ein selbstsigniertes Zertifikat ohne passenden Namen; nur in Tests/E2E daher
+  `mail.imaps.ssl.trust=*` und `mail.imaps.ssl.checkserveridentity=false` (über `app.mail.session`). Scheduler, die
+  Integrationstests stören könnten, starten mit `initialDelay` (z. B. `MailScheduler`). Zeitpunkte aus JSON-Events
+  kommen in UTC an; für relative Angaben vorher per `TimeProvider.atServerOffset` in die Server-Zeitzone bringen.
 - **Umgebungsvariablen aus der Shell** (z. B. `SPRING_AI_MODEL_CHAT`, für den Stack exportiert) gelten auch in Tests
   und überschreiben die `application.yml`. Tests von `luna-core` setzen daher `spring.ai.model.chat=none` in den
   `@SpringBootTest`-Properties (ein `DynamicPropertyRegistrar` greift für Auto-Konfigurationen zu spät).
@@ -512,7 +530,8 @@ void thatCreatingATaskShouldResultIntoAPersistedTask() {
   `@playwright/test` exakt gepinnt, ESLint/Prettier, Testnamen und given/when/then wie überall).
 - Getestet wird gegen eine **eigene Test-Umgebung** (`e2e/docker-compose.yml`, Projekt `luna-e2e`,
   `http://localhost:7180`): Traefik mit demselben Routing wie im Stack (ohne TLS), Frontend-Image (`MODE=e2e`,
-  `frontend/.env.e2e`), die Images von `luna-core`, `luna-task`, `luna-alert`, `luna-note` und `luna-appointment`, Keycloak mit Realm-Import, PostgreSQL, Kafka ohne TLS und ein
+  `frontend/.env.e2e`), die Images von `luna-core`, `luna-task`, `luna-alert`, `luna-note`, `luna-appointment` und `luna-mail`, Keycloak mit Realm-Import, PostgreSQL, Kafka ohne TLS, ein
+  Test-Mailserver (**GreenMail**, Tests senden per SMTP, `luna-mail` liest per IMAP) und ein
   **OpenAI-kompatibler KI-Stub** mit festen Antworten (deterministisch).
 - `npm test` baut die Images, startet die Umgebung, bereitet Keycloak vor (Weiterleitung auf Port 7180 und
   Testbenutzer per Admin-API – der Realm im Repo bleibt unverändert), testet und räumt auf.
@@ -535,7 +554,8 @@ Ports für Backends werden **ab 7080 fortlaufend** vergeben (7080 ist durch Keyc
 | `luna-alert` | 7083 | `/api/luna-alert` |
 | `luna-note` | 7084 | `/api/luna-note` |
 | `luna-appointment` | 7085 | `/api/luna-appointment` |
-| _nächstes Backend_ | 7086 | `/api/<backend-name>` |
+| `luna-mail` | 7086 | `/api/luna-mail` |
+| _nächstes Backend_ | 7087 | `/api/<backend-name>` |
 
 ## Betrieb
 
@@ -559,8 +579,8 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
   `swarm/infrastructure.yml` (Traefik, step-ca, PostgreSQL, Keycloak), `swarm/kafka.yml` (Kafka und `kafka-init`),
   `swarm/luna-core.yml` (Backend `luna-core`), `swarm/luna-task.yml`, `swarm/luna-alert.yml`, `swarm/luna-note.yml`,
   `swarm/luna-appointment.yml`
-  (Element-Services), `swarm/frontend.yml` (Frontend), weitere Backends je eine Datei `swarm/<backend>.yml`.
-  Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/luna-task.yml -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/luna-appointment.yml -c swarm/frontend.yml [-c …] luna`
+  (Element-Services), `swarm/luna-mail.yml` (E-Mail-Abruf), `swarm/frontend.yml` (Frontend), weitere Backends je eine Datei `swarm/<backend>.yml`.
+  Deploy gemeinsam: `docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/luna-task.yml -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/luna-appointment.yml -c swarm/luna-mail.yml -c swarm/frontend.yml [-c …] luna`
   (Pflichtvariablen siehe README).
   Kafka steht in einer eigenen Datei, weil sein Zertifikat erst erzeugt werden kann, wenn step-ca läuft.
 - **Image-Versionen** sind **exakt gepinnt** (aktuell Traefik `v3.7.19`, step-ca `0.30.2`, PostgreSQL `18.7`,
@@ -573,7 +593,9 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
   Pflichtvariablen als `${VAR:?Meldung}` – die Meldung **ohne Bindestrich**, sonst liest Docker ihn als
   Standardwert-Operator. Mit `docker stack config -c …` prüfen.
 - Die Infrastruktur-Datei dient **auch der lokalen Entwicklung**; PostgreSQL (7432) und Keycloak (7080) sind
-  daher auch auf dem Server veröffentlicht. Die Keycloak-URL (Issuer) ist über `LUNA_KEYCLOAK_URL` umschaltbar.
+  daher auch auf dem Server veröffentlicht. Die Keycloak-URL (Issuer) ist über `LUNA_KEYCLOAK_URL` umschaltbar – **nur** für den Vite-Dev-Server auf
+  `http://localhost:7080/auth`; mit dem Frontend-Image im Stack (auch lokal unter `luna.internal`) bleibt sie auf dem
+  Standard, sonst schlägt die Anmeldung nach dem Login fehl (Issuer passt nicht).
 - **Kafka** (`apache/kafka`, KRaft-Modus, ein Knoten) läuft in `swarm/kafka.yml`, ist wie PostgreSQL und
   Keycloak auch auf dem Server unter **7094** veröffentlicht (lokale Entwicklung) und speichert seine Daten im
   Volume `kafka-data`. Backends im Stack nutzen `kafka:9094`; die für externe Clients mitgeteilte Adresse ist über
@@ -642,6 +664,7 @@ Monorepo mit mehreren Backends (je ein Top-Level-Ordner) und einem Frontend:
 ├── luna-alert/      # Warnungen: verarbeitet Alert-Events von luna-core, Port 7083
 ├── luna-note/       # Notizen: verarbeitet Notiz-Events von luna-core, Port 7084
 ├── luna-appointment/ # Termine: verarbeitet Termin-Events von luna-core, Port 7085
+├── luna-mail/       # Quelle E-Mail: holt neue E-Mails per IMAP, Port 7086
 ├── <backend-name>/  # Weitere Backends nach demselben Muster
 ├── e2e/             # E2E-Tests (Playwright) mit eigener Test-Umgebung (Docker Compose)
 └── frontend/        # React-Frontend (Vite, npm, nginx-Image: Dockerfile, nginx/)
@@ -656,6 +679,9 @@ Bei neuen Top-Level-Verzeichnissen diese Übersicht aktualisieren.
 ## Entwicklungsablauf
 
 ### Setup, Build, Test
+
+Alle Projekte und ihre Images auf einmal: `./build.sh [--skip-tests] [projekt …]` (Wurzelverzeichnis; neue Backends
+dort in `BACKENDS` eintragen).
 
 Backends (Beispiel `luna-core`, benötigt Java 25 und Docker für Testcontainers):
 

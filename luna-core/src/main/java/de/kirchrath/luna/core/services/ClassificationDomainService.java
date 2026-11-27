@@ -22,10 +22,8 @@ import de.kirchrath.luna.core.data.entity.OutboundEvent;
 import de.kirchrath.luna.core.data.entity.OutboundEventStatus;
 import de.kirchrath.luna.core.data.repository.InboundEventRepository;
 import de.kirchrath.luna.core.data.repository.OutboundEventRepository;
-import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.outbound.ElementClassificationClient;
 import lombok.extern.slf4j.Slf4j;
-import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 @Service
@@ -37,7 +35,7 @@ public class ClassificationDomainService {
     private final ElementClassificationClient elementClassificationClient;
     private final Map<LunaElementType, ElementProcessor<?, ?, ?>> elementProcessors;
     private final LunaElementTypeConverter lunaElementTypeConverter;
-    private final JsonMapper jsonMapper;
+    private final InboundEventReader inboundEventReader;
     private final ClassificationProperties classificationProperties;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -47,7 +45,7 @@ public class ClassificationDomainService {
             ElementClassificationClient elementClassificationClient,
             List<ElementProcessor<?, ?, ?>> elementProcessors,
             LunaElementTypeConverter lunaElementTypeConverter,
-            JsonMapper jsonMapper,
+            InboundEventReader inboundEventReader,
             ClassificationProperties classificationProperties,
             ApplicationEventPublisher eventPublisher) {
         this.inboundEventRepository = inboundEventRepository;
@@ -56,7 +54,7 @@ public class ClassificationDomainService {
         this.elementProcessors = new EnumMap<>(LunaElementType.class);
         elementProcessors.forEach(processor -> this.elementProcessors.put(processor.type(), processor));
         this.lunaElementTypeConverter = lunaElementTypeConverter;
-        this.jsonMapper = jsonMapper;
+        this.inboundEventReader = inboundEventReader;
         this.classificationProperties = classificationProperties;
         this.eventPublisher = eventPublisher;
     }
@@ -73,9 +71,9 @@ public class ClassificationDomainService {
         var inboundEvent = inboundEventRepository.findById(inboundEventId).orElseThrow();
         List<QualifiedElement<?>> elements;
         try {
-            var input = jsonMapper.readValue(inboundEvent.data().json(), ManualInputDataDto.class);
+            var input = inboundEventReader.analysisInput(inboundEvent);
             elements = determineTypes(input).stream()
-                    .flatMap(type -> qualify(elementProcessors.get(type), input.text(), inboundEvent.createdDate()).stream())
+                    .flatMap(type -> qualify(elementProcessors.get(type), input.text(), input.referenceTime()).stream())
                     .toList();
         } catch (RuntimeException e) {
             recordFailedAttempt(inboundEvent, e);
@@ -88,7 +86,7 @@ public class ClassificationDomainService {
         log.debug("Published {} element(s) for inbound event {}", elements.size(), inboundEvent.id());
     }
 
-    private Set<LunaElementType> determineTypes(ManualInputDataDto input) {
+    private Set<LunaElementType> determineTypes(AnalysisInput input) {
         var result = elementClassificationClient.classify(input.text(), input.typeHint());
         var types = new LinkedHashSet<LunaElementType>();
         if (input.typeHint() != null) {

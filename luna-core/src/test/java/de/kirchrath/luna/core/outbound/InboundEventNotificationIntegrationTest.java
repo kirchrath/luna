@@ -54,7 +54,7 @@ import de.kirchrath.luna.core.services.ClassificationScheduler;
 class InboundEventNotificationIntegrationTest {
 
     private static final String TOKEN = "test-token";
-    private static final String TOPIC = "/topic/inbound-events/manual";
+    private static final String TOPIC = "/topic/inbound-events";
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     @LocalServerPort
@@ -100,7 +100,7 @@ class InboundEventNotificationIntegrationTest {
     void thatAFinallyFailedClassificationShouldResultIntoASignalToSubscribedClients() throws Exception {
         // given
         var inboundEvent = inboundEventRepository.save(new InboundEvent(
-                null, EventSource.MANUAL, new EventData("{\"text\": \"Something\"}"), InboundEventStatus.RECEIVED, 2,
+                null, EventSource.MANUAL, null, new EventData("{\"text\": \"Something\"}"), InboundEventStatus.RECEIVED, 2,
                 null, null, null));
         when(chatModel.call(any(Prompt.class))).thenThrow(new IllegalStateException("provider unavailable"));
         var session = connect("ws://localhost:" + port + "/ws?access_token=" + TOKEN);

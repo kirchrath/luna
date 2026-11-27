@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: luna-mail
+    version: @project.version@
+  profiles:
+    default: local
+  datasource:
+    url:
+    username:
+    password:
+  flyway:
+    schemas: luna_mail
+    default-schema: luna_mail
+  kafka:
+    bootstrap-servers:
+    security:
+      protocol: SASL_SSL
+    ssl:
+      trust-store-type: PEM
+      trust-store-location:
+    properties:
+      "[sasl.mechanism]": SCRAM-SHA-512
+      "[sasl.jaas.config]": org.apache.kafka.common.security.scram.ScramLoginModule required username="${spring.application.name}" password="${app.kafka.password}";
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        "[spring.json.add.type.headers]": false
+  jackson:
+    # Optional fields are left out instead of sent as null, as the OpenAPI specification describes them.
+    default-property-inclusion: non_null
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri:
+          jwk-set-uri:
+
+server:
+  port: 7086
+
+app:
+  kafka:
+    password:
+    topics:
+      email: luna_mail_email
+  mail:
+    poll-interval: 1m
+    max-text-length: 10000
+    session:
+      "[mail.imaps.connectiontimeout]": "10000"
+      "[mail.imaps.timeout]": "30000"
+    defaults:
+      host: imap.gmail.com
+      port: 993
+      folder: INBOX
+    # Accounts by name, each with username, password and optionally host, port and folder; set by the profile.
+    accounts:

@@ -18,8 +18,10 @@ import de.kirchrath.luna.core.data.entity.OutboundEventStatus;
 import de.kirchrath.luna.core.dto.ElementReferenceDto;
 import de.kirchrath.luna.core.dto.InboundEventStatusDto;
 import de.kirchrath.luna.core.dto.LunaElementTypeDto;
-import de.kirchrath.luna.core.dto.ManualInboundEventListItemDto;
+import de.kirchrath.luna.core.dto.InboundEventListItemDto;
+import de.kirchrath.luna.core.dto.InboundEventSourceDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
+import de.kirchrath.luna.core.dto.mail.EmailEventDataDto;
 
 class InboundEventConverterTest {
 
@@ -33,7 +35,7 @@ class InboundEventConverterTest {
     @Test
     void thatConvertingAnAnalyzedManualInboundEventShouldResultIntoAListItemWithItsElements() {
         // given
-        var inboundEvent = new InboundEvent(INBOUND_ID, EventSource.MANUAL, new EventData("{}"),
+        var inboundEvent = new InboundEvent(INBOUND_ID, EventSource.MANUAL, null, new EventData("{}"),
                 InboundEventStatus.ANALYZED, 1, NOW, NOW, 1L);
         var input = new ManualInputDataDto("Dentist on Tuesday, bring the bonus booklet", LunaElementTypeDto.APPOINTMENT);
         var outboundEvents = List.of(
@@ -41,13 +43,16 @@ class InboundEventConverterTest {
                 new OutboundEvent(TASK_ID, INBOUND_ID, LunaElementType.TASK, OutboundEventStatus.PUBLISHED, NOW, NOW, 0L));
 
         // when
-        var item = inboundEventConverter.toManualListItemDto(inboundEvent, input, outboundEvents);
+        var item = inboundEventConverter.toListItemDto(inboundEvent, input, null, outboundEvents);
 
         // then
-        assertThat(item).isEqualTo(new ManualInboundEventListItemDto(
+        assertThat(item).isEqualTo(new InboundEventListItemDto(
                 INBOUND_ID,
+                InboundEventSourceDto.MANUAL,
                 "Dentist on Tuesday, bring the bonus booklet",
                 LunaElementTypeDto.APPOINTMENT,
+                null,
+                null,
                 InboundEventStatusDto.ANALYZED,
                 NOW,
                 List.of(new ElementReferenceDto(APPOINTMENT_ID, LunaElementTypeDto.APPOINTMENT),
@@ -57,16 +62,34 @@ class InboundEventConverterTest {
     @Test
     void thatConvertingAReceivedManualInboundEventShouldResultIntoAListItemWithoutElements() {
         // given
-        var inboundEvent = new InboundEvent(INBOUND_ID, EventSource.MANUAL, new EventData("{}"),
+        var inboundEvent = new InboundEvent(INBOUND_ID, EventSource.MANUAL, null, new EventData("{}"),
                 InboundEventStatus.RECEIVED, 0, NOW, NOW, 0L);
         var input = new ManualInputDataDto("Milk is empty", null);
 
         // when
-        var item = inboundEventConverter.toManualListItemDto(inboundEvent, input, List.of());
+        var item = inboundEventConverter.toListItemDto(inboundEvent, input, null, List.of());
 
         // then
         assertThat(item.typeHint()).isNull();
         assertThat(item.status()).isEqualTo(InboundEventStatusDto.RECEIVED);
         assertThat(item.elements()).isEmpty();
+    }
+
+    @Test
+    void thatConvertingAMailInboundEventShouldResultIntoAListItemWithSubjectAndSender() {
+        // given
+        var inboundEvent = new InboundEvent(INBOUND_ID, EventSource.MAIL, UUID.randomUUID(), new EventData("{}"),
+                InboundEventStatus.RECEIVED, 0, NOW, NOW, 0L);
+        var email = new EmailEventDataDto().subject("Invoice 4711").from("Power company <billing@power.test>");
+
+        // when
+        var item = inboundEventConverter.toListItemDto(inboundEvent, null, email, List.of());
+
+        // then
+        assertThat(item.source()).isEqualTo(InboundEventSourceDto.MAIL);
+        assertThat(item.subject()).isEqualTo("Invoice 4711");
+        assertThat(item.from()).isEqualTo("Power company <billing@power.test>");
+        assertThat(item.text()).isNull();
+        assertThat(item.typeHint()).isNull();
     }
 }

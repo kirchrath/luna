@@ -9,8 +9,8 @@ Die Infrastruktur-Services (Traefik, step-ca, PostgreSQL, Keycloak) stehen in
 [`swarm/infrastructure.yml`](swarm/infrastructure.yml), Kafka in [`swarm/kafka.yml`](swarm/kafka.yml),
 `luna-core` in [`swarm/luna-core.yml`](swarm/luna-core.yml), die Element-Services in
 [`swarm/luna-task.yml`](swarm/luna-task.yml), [`swarm/luna-alert.yml`](swarm/luna-alert.yml),
-[`swarm/luna-note.yml`](swarm/luna-note.yml) und [`swarm/luna-appointment.yml`](swarm/luna-appointment.yml)
-und das Frontend in
+[`swarm/luna-note.yml`](swarm/luna-note.yml) und [`swarm/luna-appointment.yml`](swarm/luna-appointment.yml),
+`luna-mail` (E-Mail-Abruf) in [`swarm/luna-mail.yml`](swarm/luna-mail.yml) und das Frontend in
 [`swarm/frontend.yml`](swarm/frontend.yml). Alle werden im selben Stack `luna` deployt.
 
 | Service | Image | Ports (veröffentlicht) |
@@ -25,6 +25,7 @@ und das Frontend in
 | `luna-alert` | `luna-alert:${LUNA_ALERT_VERSION}` (lokal gebaut) | – (über Traefik unter `/api/luna-alert`) |
 | `luna-note` | `luna-note:${LUNA_NOTE_VERSION}` (lokal gebaut) | – (über Traefik unter `/api/luna-note`) |
 | `luna-appointment` | `luna-appointment:${LUNA_APPOINTMENT_VERSION}` (lokal gebaut) | – (über Traefik unter `/api/luna-appointment`) |
+| `luna-mail` | `luna-mail:${LUNA_MAIL_VERSION}` (lokal gebaut) | – (über Traefik unter `/api/luna-mail`) |
 | Frontend | `luna-frontend:${LUNA_FRONTEND_VERSION}` (lokal gebaut, nginx) | – (über Traefik unter `/`) |
 
 ### Schritt-für-Schritt: Infrastruktur starten
@@ -56,9 +57,18 @@ Beispiel mit zufälligen Passwörtern:
 ```bash
 for secret in step_ca_password postgres_password keycloak_db_password luna_db_password keycloak_admin_password \
               kafka_admin_password kafka_luna_core_password kafka_luna_task_password \
-              kafka_luna_alert_password kafka_luna_note_password kafka_luna_appointment_password; do
+              kafka_luna_alert_password kafka_luna_note_password kafka_luna_appointment_password \
+              kafka_luna_mail_password; do
   openssl rand -base64 24 | tr -d '\n' | docker secret create "$secret" -
 done
+```
+
+Die E-Mail-Konten für `luna-mail` als YAML-Datei mit App-Passwörtern anlegen (Aufbau und Einrichtung des
+Gmail-App-Passworts siehe [luna-mail/README.md](luna-mail/README.md)) und als versioniertes Secret
+`mail_accounts_v<n>` speichern; die Datei danach löschen:
+
+```bash
+docker secret create mail_accounts_v1 mail-accounts.yml && rm mail-accounts.yml
 ```
 
 Den API-Key des KI-Anbieters für `luna-core` selbst eintragen (bei Ollama einen beliebigen Platzhalter):
@@ -94,8 +104,10 @@ export LUNA_KAFKA_CERT_VERSION=1
 # Nur auf dem Server: Adresse, die Kafka externen Clients mitteilt (Standard: localhost:7094).
 export LUNA_KAFKA_HOST=luna.internal:7094
 
-# Nur lokal: Issuer der Tokens passend zur lokalen Keycloak-URL (Standard: https://luna.internal/auth).
-export LUNA_KEYCLOAK_URL=http://localhost:7080/auth
+# Nur für die Frontend-Entwicklung mit `npm run dev` (http://localhost:5173), wenn nur Infrastruktur und Backends im
+# Stack laufen: Issuer der Tokens passend zu http://localhost:7080/auth. Im kompletten Stack mit Frontend
+# (https://luna.internal, auch auf dem Laptop) NICHT setzen – sonst schlägt die Anmeldung nach dem Login fehl.
+# export LUNA_KEYCLOAK_URL=http://localhost:7080/auth
 
 # luna-core: Version des lokal gebauten Images (siehe luna-core/pom.xml). Pflicht.
 export LUNA_CORE_VERSION=0.0.1-SNAPSHOT
@@ -107,6 +119,10 @@ export LUNA_TASK_VERSION=0.0.1-SNAPSHOT
 export LUNA_ALERT_VERSION=0.0.1-SNAPSHOT
 export LUNA_NOTE_VERSION=0.0.1-SNAPSHOT
 export LUNA_APPOINTMENT_VERSION=0.0.1-SNAPSHOT
+
+# luna-mail: Version des lokal gebauten Images und aktuelle Version des Secrets mail_accounts_v<n>. Pflicht.
+export LUNA_MAIL_VERSION=0.0.1-SNAPSHOT
+export LUNA_MAIL_ACCOUNTS_VERSION=1
 
 # Frontend: Version des lokal gebauten Images (siehe frontend/package.json). Pflicht.
 export LUNA_FRONTEND_VERSION=0.0.1
@@ -168,32 +184,26 @@ erzeugt die Secrets `kafka_keystore_v<n>` und `kafka_keystore_password_v<n>`.
 
 #### 9. Images der Backends und des Frontends bauen
 
-Immer, wenn sich `luna-core` geändert hat (Java 25 nötig):
+Immer, wenn sich etwas geändert hat, mit [`build.sh`](build.sh) (Docker nötig; für die Backends Java 25, für die
+Tests des Frontends Node 24):
 
 ```bash
-(cd luna-core && ./mvnw package jib:dockerBuild)
+./build.sh --skip-tests                 # alle Images, ohne Tests (z. B. auf dem Server nach git pull)
+./build.sh --skip-tests luna-core       # nur die genannten Projekte
+./build.sh                              # alle Projekte mit Tests (Backends ./mvnw verify, Frontend Lint und Coverage)
 ```
 
-Ebenso für die Element-Services, wenn sie sich geändert haben:
-
-```bash
-(cd luna-task && ./mvnw package jib:dockerBuild)
-(cd luna-alert && ./mvnw package jib:dockerBuild)
-(cd luna-note && ./mvnw package jib:dockerBuild)
-(cd luna-appointment && ./mvnw package jib:dockerBuild)
-```
-
-Immer, wenn sich das Frontend geändert hat (nur Docker nötig, Node läuft im Build-Container):
-
-```bash
-docker build --platform linux/amd64 -t "luna-frontend:$LUNA_FRONTEND_VERSION" frontend
-```
+Projekte: `luna-core`, `luna-task`, `luna-alert`, `luna-note`, `luna-appointment`, `luna-mail`, `frontend`.
+Getaggt wird mit der Version aus der jeweiligen `pom.xml` (zusätzlich `latest`) bzw. aus `frontend/package.json`;
+diese Versionen gehören in die Variablen aus Schritt 4. Das Frontend-Image baut Node im Build-Container, ohne Tests
+ist auf dem Server also kein Node nötig.
 
 #### 10. Gesamten Stack deployen
 
 ```bash
 docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/luna-task.yml \
-  -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/luna-appointment.yml -c swarm/frontend.yml luna
+  -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/luna-appointment.yml \
+  -c swarm/luna-mail.yml -c swarm/frontend.yml luna
 ```
 
 Beim ersten Start von Kafka legt das Startskript ([`swarm/kafka/start.sh`](swarm/kafka/start.sh)) den Superuser
@@ -210,13 +220,14 @@ docker service logs luna_luna-task
 docker service logs luna_luna-alert
 docker service logs luna_luna-note
 docker service logs luna_luna-appointment
+docker service logs luna_luna-mail
 docker service ps luna_frontend
 ```
 
 - Alle Services zeigen `1/1`. Ausnahme: `kafka-init` beendet sich nach getaner Arbeit und zeigt dann `0/1`.
 - Das Log von `kafka-init` endet mit `Kafka users and ACLs are up to date.`
 - Das Log von `luna-core` enthält `Started Application`; `https://luna.internal/api/luna-core/actuator/health`
-  meldet `UP`. Ebenso `luna-task`, `luna-alert`, `luna-note` und `luna-appointment` unter
+  meldet `UP`. Ebenso `luna-task`, `luna-alert`, `luna-note`, `luna-appointment` und `luna-mail` unter
   `https://luna.internal/api/<service>/actuator/health`.
 - `https://luna.internal/` leitet zur Anmeldung bei Keycloak weiter und zeigt danach Luna.
 
@@ -251,21 +262,24 @@ Lokal: PostgreSQL unter `localhost:7432`, Keycloak unter `http://localhost:7080/
 export LUNA_KAFKA_CERT_VERSION=2
 swarm/kafka/create-certificate.sh "$LUNA_KAFKA_CERT_VERSION"
 docker stack deploy -c swarm/infrastructure.yml -c swarm/kafka.yml -c swarm/luna-core.yml -c swarm/luna-task.yml \
-  -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/luna-appointment.yml -c swarm/frontend.yml luna
+  -c swarm/luna-alert.yml -c swarm/luna-note.yml -c swarm/luna-appointment.yml \
+  -c swarm/luna-mail.yml -c swarm/frontend.yml luna
 ```
 
 Alte Versionen können danach mit `docker secret rm kafka_keystore_v1 kafka_keystore_password_v1` entfernt werden.
 
-**Bestehende Installation um einen Element-Service erweitern** (`luna-task`, `luna-alert`, `luna-note`, `luna-appointment`): einmalig
+**Bestehende Installation um einen Service erweitern** (`luna-task`, `luna-alert`, `luna-note`, `luna-appointment`, `luna-mail`): einmalig
 das Secret anlegen, die Versions-Variable setzen (Schritt 4), das Image bauen (Schritt 9) und neu deployen
 (Schritt 10), z. B.:
 
 ```bash
-for service in task alert note appointment; do
+for service in task alert note appointment mail; do
   docker secret inspect "kafka_luna_${service}_password" > /dev/null 2>&1 ||
     openssl rand -base64 24 | tr -d '\n' | docker secret create "kafka_luna_${service}_password" -
 done
 ```
+
+Für `luna-mail` zusätzlich das Secret `mail_accounts_v<n>` mit den Konten anlegen (Schritt 3).
 
 **Neuen Service an Kafka anbinden:**
 
@@ -286,7 +300,7 @@ done
 | Secrets | alle extern, siehe oben |
 | Netzwerk | Overlay-Netz `luna`, `attachable` – auch Container außerhalb des Stacks können sich verbinden |
 | Keycloak-Realm | `luna` aus `swarm/keycloak/luna-realm.json`: Anmeldeseite Deutsch (Standard) und Englisch, „Angemeldet bleiben“, keine Registrierung. Client `luna-frontend`: öffentlich, Authorization Code mit PKCE (S256), Weiterleitungen nur an `https://luna.internal/*` und `http://localhost:5173/*`. Keine Benutzer im Import (siehe Schritt 13) |
-| Keycloak-URL | Variable `LUNA_KEYCLOAK_URL` setzt den Issuer der Tokens. Standard: `https://luna.internal/auth`; lokal `http://localhost:7080/auth` |
+| Keycloak-URL | Variable `LUNA_KEYCLOAK_URL` setzt den Issuer der Tokens. Standard: `https://luna.internal/auth` – passend zum Frontend-Image, auch wenn der Stack auf dem Laptop läuft. `http://localhost:7080/auth` nur für den Vite-Dev-Server (`npm run dev`); passt der Issuer nicht zur Adresse, unter der das Frontend Keycloak erwartet, meldet Luna nach dem Login „Anmeldung fehlgeschlagen“ |
 | Kafka-Adresse | Backends im Stack nutzen `kafka:9094`. Für Clients außerhalb des Stacks (Port 7094) teilt Kafka die Adresse aus `LUNA_KAFKA_HOST` mit. Standard: `localhost:7094`; auf dem Server z. B. `LUNA_KAFKA_HOST=luna.internal:7094` setzen, damit Entwicklungsrechner zugreifen können |
 | Kafka | ein Knoten im KRaft-Modus (ohne ZooKeeper), feste `CLUSTER_ID` in der Stack-Datei, Daten im Volume `kafka-data` |
 | Kafka-Sicherheit | TLS und SASL/SCRAM-SHA-512 auf `kafka:9094` und Port 7094; der Controller-Listener lauscht nur auf `localhost` im Container (ohne TLS). Zertifikat von step-ca (SANs `kafka`, `localhost`, `luna.internal`, 1 Jahr) über den Provisioner `kafka`, dessen Schlüssel mit `step_ca_password` geschützt ist |

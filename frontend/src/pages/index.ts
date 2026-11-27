@@ -6,6 +6,7 @@ export * from './AppointmentsPage';
 export * from './ComingSoonPage';
 export * from './elementTypes';
 export * from './InboundEventList';
+export * from './InboundEventText';
 export * from './NoteDetailPage';
 export * from './NoteListPage';
 export * from './QuickInputPage';

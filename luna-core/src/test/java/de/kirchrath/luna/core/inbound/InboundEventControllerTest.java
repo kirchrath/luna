@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,7 @@ import de.kirchrath.luna.core.data.repository.InboundEventRepository;
 import de.kirchrath.luna.core.data.repository.OutboundEventRepository;
 import de.kirchrath.luna.core.dto.LunaElementTypeDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
+import de.kirchrath.luna.core.dto.mail.EmailEventDataDto;
 import de.kirchrath.luna.core.services.InboundEventApplicationService;
 import de.kirchrath.luna.core.services.TimeProvider;
 import de.kirchrath.luna.core.services.UuidProvider;
@@ -194,7 +196,7 @@ class InboundEventControllerTest {
     }
 
     @Test
-    void thatListingManualInputsShouldResultIntoAPageNewestFirstWithStatusAndElements() throws Exception {
+    void thatListingInputsShouldResultIntoAPageNewestFirstWithStatusAndElements() throws Exception {
         // given
         var oldestId = UUID.fromString("0b8f3a52-5a0e-4d7f-9f43-2f1c7f0f4a11");
         var middleId = UUID.fromString("9a4c2e1b-8d7f-4e3a-b2c1-0f9e8d7c6b5a");
@@ -211,8 +213,8 @@ class InboundEventControllerTest {
                 null, oldestId, LunaElementType.TASK, OutboundEventStatus.PUBLISHED, null, null, null));
 
         // when
-        var firstPage = mockMvc.perform(get("/inbound-events/manual").param("page", "0").param("size", "2").with(jwt()));
-        var secondPage = mockMvc.perform(get("/inbound-events/manual").param("page", "1").param("size", "2").with(jwt()));
+        var firstPage = mockMvc.perform(get("/inbound-events").param("page", "0").param("size", "2").with(jwt()));
+        var secondPage = mockMvc.perform(get("/inbound-events").param("page", "1").param("size", "2").with(jwt()));
 
         // then
         firstPage.andExpect(status().isOk())
@@ -220,6 +222,7 @@ class InboundEventControllerTest {
                 .andExpect(jsonPath("$.totalPages").value(2))
                 .andExpect(jsonPath("$.items.length()").value(2))
                 .andExpect(jsonPath("$.items[0].id").value(newestId.toString()))
+                .andExpect(jsonPath("$.items[0].source").value("MANUAL"))
                 .andExpect(jsonPath("$.items[0].text").value("Milk is empty"))
                 .andExpect(jsonPath("$.items[0].typeHint").doesNotExist())
                 .andExpect(content().string(not(containsString(":null"))))
@@ -238,9 +241,9 @@ class InboundEventControllerTest {
     }
 
     @Test
-    void thatListingManualInputsWithoutPagingParametersShouldResultIntoTheFirstPageWithTheDefaultSize() throws Exception {
+    void thatListingInputsWithoutPagingParametersShouldResultIntoTheFirstPageWithTheDefaultSize() throws Exception {
         // given
-        var request = get("/inbound-events/manual").with(jwt());
+        var request = get("/inbound-events").with(jwt());
 
         // when
         var result = mockMvc.perform(request);
@@ -249,26 +252,26 @@ class InboundEventControllerTest {
         result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isEmpty())
                 .andExpect(jsonPath("$.totalCount").value(0));
-        verify(inboundEventApplicationService).listManualInboundEvents(PageRequest.of(0, 20));
+        verify(inboundEventApplicationService).listInboundEvents(PageRequest.of(0, 20));
     }
 
     @Test
-    void thatListingManualInputsWithATooLargePageSizeShouldResultIntoTheMaximumPageSize() throws Exception {
+    void thatListingInputsWithATooLargePageSizeShouldResultIntoTheMaximumPageSize() throws Exception {
         // given
-        var request = get("/inbound-events/manual").param("size", "500").with(jwt());
+        var request = get("/inbound-events").param("size", "500").with(jwt());
 
         // when
         var result = mockMvc.perform(request);
 
         // then
         result.andExpect(status().isOk());
-        verify(inboundEventApplicationService).listManualInboundEvents(PageRequest.of(0, 100));
+        verify(inboundEventApplicationService).listInboundEvents(PageRequest.of(0, 100));
     }
 
     @Test
-    void thatListingManualInputsWithoutTokenShouldResultIntoUnauthorized() throws Exception {
+    void thatListingInputsWithoutTokenShouldResultIntoUnauthorized() throws Exception {
         // given
-        var request = get("/inbound-events/manual");
+        var request = get("/inbound-events");
 
         // when
         var result = mockMvc.perform(request);
@@ -277,10 +280,43 @@ class InboundEventControllerTest {
         result.andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void thatListingAMailInputShouldResultIntoItsSubjectAndSenderWithoutText() throws Exception {
+        // given
+        when(uuidProvider.randomUuid()).thenReturn(UUID.fromString("0b8f3a52-5a0e-4d7f-9f43-2f1c7f0f4a11"));
+        when(timeProvider.now()).thenReturn(NOW);
+        when(timeProvider.atServerOffset(any(Instant.class)))
+                .thenAnswer(invocation -> invocation.<Instant>getArgument(0).atOffset(ZoneOffset.ofHours(1)));
+        var email = new EmailEventDataDto()
+                .account("private")
+                .address("luna@luna.test")
+                .from("Power company <billing@power.test>")
+                .to(List.of("luna@luna.test"))
+                .subject("Invoice 4711")
+                .receivedDate(NOW)
+                .text("Please pay")
+                .textTruncated(false)
+                .attachments(List.of());
+        inboundEventRepository.save(new InboundEvent(null, EventSource.MAIL, UUID.randomUUID(),
+                new EventData(jsonMapper.writeValueAsString(email)), InboundEventStatus.RECEIVED, 0, null, null, null));
+
+        // when
+        var result = mockMvc.perform(get("/inbound-events").with(jwt()));
+
+        // then
+        result.andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].source").value("MAIL"))
+                .andExpect(jsonPath("$.items[0].subject").value("Invoice 4711"))
+                .andExpect(jsonPath("$.items[0].from").value("Power company <billing@power.test>"))
+                .andExpect(jsonPath("$.items[0].text").doesNotExist())
+                .andExpect(content().string(not(containsString(":null"))));
+    }
+
     private void saveManualInput(String text, LunaElementTypeDto typeHint, InboundEventStatus status) {
         inboundEventRepository.save(new InboundEvent(
                 null,
                 EventSource.MANUAL,
+                null,
                 new EventData(jsonMapper.writeValueAsString(new ManualInputDataDto(text, typeHint))),
                 status,
                 0,
@@ -290,9 +326,9 @@ class InboundEventControllerTest {
     }
 
     @Test
-    void thatListingManualInputsWithATokenAsQueryParameterShouldResultIntoUnauthorized() throws Exception {
+    void thatListingInputsWithATokenAsQueryParameterShouldResultIntoUnauthorized() throws Exception {
         // given
-        var request = get("/inbound-events/manual").param("access_token", "some-token");
+        var request = get("/inbound-events").param("access_token", "some-token");
 
         // when
         var result = mockMvc.perform(request);

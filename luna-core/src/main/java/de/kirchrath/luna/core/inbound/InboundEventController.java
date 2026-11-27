@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import de.kirchrath.luna.core.dto.ManualInboundEventListDto;
+import de.kirchrath.luna.core.dto.InboundEventListDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.ResourceReferenceDto;
 import de.kirchrath.luna.core.services.InboundEventApplicationService;
@@ -36,9 +36,9 @@ public class InboundEventController {
         this.inboundEventApplicationService = inboundEventApplicationService;
     }
 
-    @GetMapping(path = MANUAL, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
-            operationId = "listManualInboundEvents",
+            operationId = "listInboundEvents",
             parameters = {
                 @Parameter(name = "page", in = ParameterIn.QUERY,
                         schema = @Schema(type = "integer", minimum = "0", defaultValue = "0")),
@@ -48,8 +48,8 @@ public class InboundEventController {
                 @ApiResponse(responseCode = "200"),
                 @ApiResponse(responseCode = "401", content = @Content)
             })
-    public ManualInboundEventListDto listManualInboundEvents(@Parameter(hidden = true) Pageable pageable) {
-        return inboundEventApplicationService.listManualInboundEvents(pageable);
+    public InboundEventListDto listInboundEvents(@Parameter(hidden = true) Pageable pageable) {
+        return inboundEventApplicationService.listInboundEvents(pageable);
     }
 
     @PostMapping(

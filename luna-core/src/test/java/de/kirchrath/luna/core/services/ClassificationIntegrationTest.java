@@ -9,9 +9,9 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -22,7 +22,8 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.kafka.core.ConsumerFactory;
+import org.springframework.boot.kafka.autoconfigure.KafkaConnectionDetails;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 
 import de.kirchrath.luna.core.config.ChatModelTestConfig;
@@ -65,7 +66,7 @@ class ClassificationIntegrationTest {
     private AppointmentElementRepository appointmentElementRepository;
 
     @Autowired
-    private ConsumerFactory<String, String> consumerFactory;
+    private KafkaConnectionDetails kafkaConnectionDetails;
 
     @Autowired
     private JsonMapper jsonMapper;
@@ -154,9 +155,12 @@ class ClassificationIntegrationTest {
     }
 
     private Map<String, String> consumeRecords(int count, String... topics) {
-        var overrides = new Properties();
-        overrides.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        try (var consumer = consumerFactory.createConsumer("integration-test", null, null, overrides)) {
+        var consumerProps = KafkaTestUtils.consumerProps(
+                String.join(",", kafkaConnectionDetails.getBootstrapServers()), "integration-test");
+        consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        var consumerFactory = new DefaultKafkaConsumerFactory<>(
+                consumerProps, new StringDeserializer(), new StringDeserializer());
+        try (var consumer = consumerFactory.createConsumer()) {
             consumer.subscribe(List.of(topics));
             var records = KafkaTestUtils.getRecords(consumer, Duration.ofSeconds(10), count);
             var byKey = new java.util.HashMap<String, String>();

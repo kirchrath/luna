@@ -3,9 +3,10 @@ import type { components } from './schema';
 type Schemas = components['schemas'];
 
 export type ManualInputDataDto = Schemas['ManualInputDataDto'];
-export type ManualInboundEventListDto = Schemas['ManualInboundEventListDto'];
-export type ManualInboundEventListItemDto = Schemas['ManualInboundEventListItemDto'];
+export type InboundEventListDto = Schemas['InboundEventListDto'];
+export type InboundEventListItemDto = Schemas['InboundEventListItemDto'];
 export type ElementReferenceDto = Schemas['ElementReferenceDto'];
 export type InboundEventChangedDto = Schemas['InboundEventChangedDto'];
 export type LunaElementTypeDto = ElementReferenceDto['type'];
-export type InboundEventStatusDto = ManualInboundEventListItemDto['status'];
+export type InboundEventStatusDto = InboundEventListItemDto['status'];
+export type InboundEventSourceDto = InboundEventListItemDto['source'];

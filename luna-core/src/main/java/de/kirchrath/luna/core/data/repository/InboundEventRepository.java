@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Limit;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
@@ -18,5 +16,5 @@ public interface InboundEventRepository
 
     List<InboundEvent> findByStatusOrderByCreatedDateAsc(InboundEventStatus status, Limit limit);
 
-    Page<InboundEvent> findBySource(EventSource source, Pageable pageable);
+    boolean existsBySourceAndSourceId(EventSource source, UUID sourceId);
 }

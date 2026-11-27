@@ -143,5 +143,38 @@ services:
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/luna/protocol/openid-connect/certs
       APP_CORS_ALLOWED_ORIGINS: ''
 
+  # Test mail server: the tests send emails via SMTP, luna-mail fetches them via IMAP (TLS, self-signed).
+  greenmail:
+    image: greenmail/standalone:2.1.15
+    environment:
+      GREENMAIL_OPTS: >-
+        -Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0
+        -Dgreenmail.users=luna:luna-e2e@luna.test -Dgreenmail.users.login=email
+    ports:
+      - '7125:3025'
+
+  luna-mail:
+    image: luna-mail:e2e
+    depends_on:
+      - postgres
+      - kafka
+      - greenmail
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/luna?currentSchema=luna_mail
+      SPRING_DATASOURCE_USERNAME: luna
+      SPRING_DATASOURCE_PASSWORD: luna-e2e
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_SECURITY_PROTOCOL: PLAINTEXT
+      SPRING_KAFKA_SSL_TRUST_STORE_TYPE: ''
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:7180/auth/realms/luna
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/luna/protocol/openid-connect/certs
+      APP_MAIL_POLL_INTERVAL: 1s
+      APP_MAIL_DEFAULTS_HOST: greenmail
+      APP_MAIL_DEFAULTS_PORT: 3993
+      APP_MAIL_SESSION_MAIL_IMAPS_SSL_TRUST: '*'
+      APP_MAIL_SESSION_MAIL_IMAPS_SSL_CHECKSERVERIDENTITY: 'false'
+      APP_MAIL_ACCOUNTS_E2E_USERNAME: luna@luna.test
+      APP_MAIL_ACCOUNTS_E2E_PASSWORD: luna-e2e
+
   frontend:
     image: luna-frontend:e2e

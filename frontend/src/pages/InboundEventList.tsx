@@ -5,6 +5,7 @@ import type { InboundEventStatusDto } from '../api';
 import type { InboundEventStore } from '../stores';
 import { RelativeTime } from '../ui';
 import { ELEMENT_TYPE_ICONS } from './elementTypes';
+import { InboundEventText } from './InboundEventText';
 
 const TAG_ICON_SIZE = 13;
 const STATUS_CLASSES: Record<InboundEventStatusDto, string> = {
@@ -44,9 +45,7 @@ export const InboundEventList = observer(function InboundEventList({ store }: In
       <ul className="inbound-events">
         {store.items.map((item) => (
           <li key={item.id} className="inbound-event">
-            <span className="inbound-event-text" title={item.text}>
-              {item.text}
-            </span>
+            <InboundEventText item={item} />
             <span className="inbound-event-time has-text-grey">
               <RelativeTime dateTime={item.createdDate} locale={i18n.language} />
             </span>

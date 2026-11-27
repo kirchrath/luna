@@ -1,7 +1,8 @@
 # Luna E2E-Tests
 
 Ende-zu-Ende-Tests mit Playwright gegen eine eigene Test-Umgebung (Docker Compose), die alle Teile von Luna so
-verbindet wie der Stack: Traefik, Frontend (nginx-Image), `luna-core`, `luna-task`, `luna-alert`, `luna-note` und `luna-appointment` (Jib-Images), Keycloak, PostgreSQL
+verbindet wie der Stack: Traefik, Frontend (nginx-Image), `luna-core`, `luna-task`, `luna-alert`, `luna-note`, `luna-appointment` und `luna-mail` (Jib-Images), ein
+Test-Mailserver (GreenMail), Keycloak, PostgreSQL
 und Kafka.
 Statt eines KI-Anbieters antwortet ein Stub mit festen Antworten (jede Eingabe wird zu einer Aufgabe).
 
@@ -34,13 +35,13 @@ starten. Der HTML-Report liegt danach in `playwright-report/`.
 
 ## Aufbau
 
-| Pfad                  | Inhalt                                                                                                                                                                  |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docker-compose.yml`  | Test-Umgebung (Projekt `luna-e2e`, erreichbar unter `http://localhost:7180`)                                                                                            |
-| `traefik/dynamic.yml` | Routing wie im Stack, ohne TLS: `/api/<backend>` (mit StripPrefix), `/auth`, Rest ans Frontend                                                                          |
-| `ai-stub/stub.py`     | OpenAI-kompatibler Stub für `luna-core`                                                                                                                                 |
-| `environment/`        | Bauen, Starten, Warten und Vorbereiten von Keycloak (Weiterleitung auf Port 7180, Testbenutzer)                                                                         |
-| `tests/`              | Szenarien: Anmelden/Abmelden, Schnelleingabe mit Push-Signal, Aufgaben, Notizen, Warnungen und Termine (Push, Bearbeiten, Statuswechsel, Monat), Navigation und Sprache |
+| Pfad                  | Inhalt                                                                                                                                                                                                                  |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docker-compose.yml`  | Test-Umgebung (Projekt `luna-e2e`, erreichbar unter `http://localhost:7180`)                                                                                                                                            |
+| `traefik/dynamic.yml` | Routing wie im Stack, ohne TLS: `/api/<backend>` (mit StripPrefix), `/auth`, Rest ans Frontend                                                                                                                          |
+| `ai-stub/stub.py`     | OpenAI-kompatibler Stub für `luna-core`                                                                                                                                                                                 |
+| `environment/`        | Bauen, Starten, Warten und Vorbereiten von Keycloak (Weiterleitung auf Port 7180, Testbenutzer)                                                                                                                         |
+| `tests/`              | Szenarien: Anmelden/Abmelden, Schnelleingabe mit Push-Signal, Aufgaben, Notizen, Warnungen und Termine (Push, Bearbeiten, Statuswechsel, Monat), E-Mail (SMTP an GreenMail → „Letzte Eingaben“), Navigation und Sprache |
 
 - Das Frontend-Image wird mit `--build-arg MODE=e2e` gebaut und nutzt `frontend/.env.e2e`.
 - Alle Backends laufen mit und müssen bereit sein (`/api/<backend>/actuator/health`).
