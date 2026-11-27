@@ -9,6 +9,7 @@ import { ID_PARAMETER, PATHS } from '../navigation';
 import { useStores } from '../stores';
 import { formatDay, formatTime, fromDateInput, toDateInput } from './appointmentDates';
 import { formatDateTime } from './taskDates';
+import { LifeAreaDetail } from './LifeArea';
 
 export const MAX_APPOINTMENT_TITLE_LENGTH = 500;
 export const MAX_LOCATION_LENGTH = 500;
@@ -151,6 +152,7 @@ const AppointmentDetail = observer(function AppointmentDetail({ appointment }: {
           <Sparkles size={ICON_SIZE} aria-hidden="true" />
           <span>{t(`appointmentDetail.source.${data.source}`)}</span>
         </p>
+        <LifeAreaDetail area={data.area} />
         <p className="is-size-7 has-text-grey">
           {t(data.edited ? 'appointmentDetail.editedHint' : 'appointmentDetail.uneditedHint')}
         </p>

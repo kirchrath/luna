@@ -97,6 +97,8 @@ export interface components {
             source: "CORE";
             /** Format: uuid */
             sourceId?: string;
+            /** @enum {string} */
+            area: "PERSONAL" | "WORK";
             edited: boolean;
         };
         NoteDto: {
@@ -113,6 +115,8 @@ export interface components {
         NoteListItemDto: {
             /** Format: uuid */
             id: string;
+            /** @enum {string} */
+            area: "PERSONAL" | "WORK";
             title: string;
             summary: string;
             /** @enum {string} */
@@ -302,6 +306,7 @@ export interface operations {
                 page?: number;
                 size?: number;
                 status?: "ACTIVE" | "ARCHIVED";
+                area?: "PERSONAL" | "WORK";
             };
             header?: never;
             path?: never;

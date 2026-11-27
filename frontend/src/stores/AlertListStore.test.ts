@@ -1,13 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { AlertListDto, AlertListItemDto } from '../api';
 import { fakeLunaAlertClient, fakePushConnector } from '../test';
+import { LifeAreaStore } from './LifeAreaStore';
 import { AlertListStore } from './AlertListStore';
 
 type ListResponse = Awaited<ReturnType<ReturnType<typeof fakeLunaAlertClient>['GET']>>;
 
 function item(id: string, status: AlertListItemDto['status'] = 'OPEN'): AlertListItemDto {
-  return { id, title: `Alert ${id}`, severity: 'WARNING', status, createdDate: '2026-11-26T10:00:00Z' };
+  return {
+    area: 'PERSONAL',
+    id,
+    title: `Alert ${id}`,
+    severity: 'WARNING',
+    status,
+    createdDate: '2026-11-26T10:00:00Z',
+  };
 }
 
 function items(count: number, prefix = 'alert'): AlertListItemDto[] {
@@ -23,8 +31,17 @@ function failedResponse(status: number): ListResponse {
   return { data: undefined, error: undefined, response: new Response(null, { status }) };
 }
 
-function createStore(lunaAlert = fakeLunaAlertClient(), push = fakePushConnector()) {
-  return { store: new AlertListStore(lunaAlert.client, push.connect), lunaAlert, push };
+function createStore(
+  lunaAlert = fakeLunaAlertClient(),
+  push = fakePushConnector(),
+  lifeAreaStore = new LifeAreaStore(),
+) {
+  return {
+    store: new AlertListStore(lunaAlert.client, push.connect, lifeAreaStore),
+    lunaAlert,
+    push,
+    lifeAreaStore,
+  };
 }
 
 function deferred() {
@@ -288,5 +305,49 @@ describe('AlertListStore', () => {
     // then
     expect(push.close).toHaveBeenCalledTimes(1);
     expect(store.connection).toBe('idle');
+  });
+
+  it('that a chosen life area should result into requests of this area only', async () => {
+    // given
+    const { store, lunaAlert, lifeAreaStore } = createStore();
+    lifeAreaStore.changeFilter('WORK');
+
+    // when
+    await store.loadInitial();
+
+    // then
+    expect(lunaAlert.GET).toHaveBeenCalledWith('/alerts', {
+      params: { query: { page: 0, size: 20, status: ['OPEN', 'ACKNOWLEDGED'], area: 'WORK' } },
+    });
+  });
+
+  it('that another life area while the list is shown should result into reloading it for this area', async () => {
+    // given
+    const { store, lunaAlert, lifeAreaStore } = createStore();
+    lunaAlert.GET.mockResolvedValueOnce(listResponse(items(3), 3));
+    await store.loadInitial();
+    store.connect();
+
+    // when
+    lifeAreaStore.changeFilter('WORK');
+
+    // then
+    await vi.waitFor(() => {
+      expect(lunaAlert.GET).toHaveBeenLastCalledWith('/alerts', {
+        params: { query: { page: 0, size: 20, status: ['OPEN', 'ACKNOWLEDGED'], area: 'WORK' } },
+      });
+    });
+    expect(lunaAlert.GET).toHaveBeenCalledTimes(2);
+  });
+
+  it('that another life area while the list is not shown should result into no request', () => {
+    // given
+    const { lunaAlert, lifeAreaStore } = createStore();
+
+    // when
+    lifeAreaStore.changeFilter('WORK');
+
+    // then
+    expect(lunaAlert.GET).not.toHaveBeenCalled();
   });
 });

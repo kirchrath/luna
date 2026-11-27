@@ -6,6 +6,7 @@ import type { InboundEventStore } from '../stores';
 import { RelativeTime } from '../ui';
 import { ELEMENT_TYPE_ICONS } from './elementTypes';
 import { InboundEventText } from './InboundEventText';
+import { LifeAreaIcon } from './LifeArea';
 
 const TAG_ICON_SIZE = 13;
 const STATUS_CLASSES: Record<InboundEventStatusDto, string> = {
@@ -50,6 +51,7 @@ export const InboundEventList = observer(function InboundEventList({ store }: In
               <RelativeTime dateTime={item.createdDate} locale={i18n.language} />
             </span>
             <span className="inbound-event-status">
+              <LifeAreaIcon area={item.area} />
               <span className={`tag is-rounded ${STATUS_CLASSES[item.status]}`}>
                 {t(`quickInput.status.${item.status}`)}
               </span>

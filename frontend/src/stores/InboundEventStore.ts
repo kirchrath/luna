@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, reaction } from 'mobx';
 
 import type {
   LunaCoreClient,
@@ -7,6 +7,7 @@ import type {
   InboundEventListItemDto,
   PushConnection,
 } from '../api';
+import type { LifeAreaStore } from './LifeAreaStore';
 
 export const PAGE_SIZE = 10;
 /** Largest page luna-core returns; a refresh of more visible entries is limited to it. */
@@ -33,18 +34,36 @@ export class InboundEventStore {
 
   private readonly client: LunaCoreClient;
   private readonly connectPush: LunaCorePushConnector;
+  private readonly lifeAreaStore: LifeAreaStore;
   private pushConnection: PushConnection | null = null;
   private wasConnected = false;
+  /** Only the response of the latest request is shown, e.g. after switching the life area quickly. */
+  private latestRequest = 0;
 
-  constructor(client: LunaCoreClient, connectPush: LunaCorePushConnector) {
+  constructor(client: LunaCoreClient, connectPush: LunaCorePushConnector, lifeAreaStore: LifeAreaStore) {
     this.client = client;
     this.connectPush = connectPush;
-    makeAutoObservable<InboundEventStore, 'client' | 'connectPush' | 'pushConnection' | 'wasConnected'>(this, {
+    this.lifeAreaStore = lifeAreaStore;
+    makeAutoObservable<
+      InboundEventStore,
+      'client' | 'connectPush' | 'lifeAreaStore' | 'pushConnection' | 'wasConnected' | 'latestRequest'
+    >(this, {
       client: false,
       connectPush: false,
+      lifeAreaStore: false,
       pushConnection: false,
       wasConnected: false,
+      latestRequest: false,
     });
+    // A list that is shown (connected) follows the chosen area at once; others load it when they are shown next.
+    reaction(
+      () => this.lifeAreaStore.filter,
+      () => {
+        if (this.pushConnection !== null) {
+          void this.reload();
+        }
+      },
+    );
   }
 
   get items(): InboundEventListItemDto[] {
@@ -120,13 +139,20 @@ export class InboundEventStore {
     await this.load(0, Math.min(Math.max(this.items.length, PAGE_SIZE), MAX_PAGE_SIZE), 'replace');
   }
 
+  /** Starts again with the first page, e.g. for another life area. */
+  private async reload(): Promise<void> {
+    this.items = [];
+    this.totalCount = 0;
+    await this.loadInitial();
+  }
+
   /** Returns whether the input was accepted. */
   async submit(text: string, typeHint: LunaElementTypeDto | undefined): Promise<boolean> {
     this.submitting = true;
     this.submitError = null;
     try {
       const { response } = await this.client.POST(MANUAL_PATH, {
-        body: typeHint === undefined ? { text } : { text, typeHint },
+        body: { text, area: this.lifeAreaStore.inputArea, ...(typeHint === undefined ? {} : { typeHint }) },
       });
       if (!response.ok) {
         this.submitError = response.status === HTTP_BAD_REQUEST ? 'invalid' : 'failed';
@@ -169,9 +195,15 @@ export class InboundEventStore {
   }
 
   private async load(page: number, size: number, mode: 'replace' | 'append'): Promise<void> {
+    const request = ++this.latestRequest;
     this.loading = true;
     try {
-      const { data } = await this.client.GET(LIST_PATH, { params: { query: { page, size } } });
+      const { data } = await this.client.GET(LIST_PATH, {
+        params: { query: { page, size, ...this.lifeAreaStore.query } },
+      });
+      if (request !== this.latestRequest) {
+        return;
+      }
       if (data === undefined) {
         this.loadError = true;
         return;
@@ -180,9 +212,13 @@ export class InboundEventStore {
       this.totalCount = data.totalCount;
       this.items = mode === 'replace' ? data.items : this.appendNew(data.items);
     } catch {
-      this.loadError = true;
+      if (request === this.latestRequest) {
+        this.loadError = true;
+      }
     } finally {
-      this.loading = false;
+      if (request === this.latestRequest) {
+        this.loading = false;
+      }
     }
   }
 

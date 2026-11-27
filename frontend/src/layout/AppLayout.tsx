@@ -8,6 +8,7 @@ import { changeLanguage, LANGUAGES, type Language } from '../i18n';
 import { AREAS, PATHS, QUICK_INPUT_ICON } from '../navigation';
 import { readPreference, STORAGE_KEYS, writePreference } from '../services';
 import { AppShell, LanguageSwitch, Logo, UserMenu } from '../ui';
+import { LifeAreaSwitch } from './LifeAreaSwitch';
 
 const ICON_SIZE = 20;
 const COLLAPSED = 'true';
@@ -38,6 +39,7 @@ export function AppLayout() {
       brand={brand}
       headerEnd={
         <>
+          <LifeAreaSwitch />
           <LanguageSwitch
             label={t('language.label')}
             options={languageOptions}

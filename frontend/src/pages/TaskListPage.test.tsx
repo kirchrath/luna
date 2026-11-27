@@ -12,6 +12,7 @@ const LIST: TaskListDto = {
   totalCount: 21,
   items: [
     {
+      area: 'PERSONAL',
       id: 'overdue',
       title: 'Pay the electricity bill',
       dueDate: new Date(2026, 10, 24).toISOString(),
@@ -20,6 +21,7 @@ const LIST: TaskListDto = {
       edited: false,
     },
     {
+      area: 'PERSONAL',
       id: 'timed',
       title: 'Get the bonus booklet stamped',
       dueDate: new Date(2026, 11, 1, 10).toISOString(),
@@ -27,7 +29,7 @@ const LIST: TaskListDto = {
       status: 'OPEN',
       edited: true,
     },
-    { id: 'someday', title: 'Plant the balcony', priority: 'LOW', status: 'OPEN', edited: false },
+    { area: 'PERSONAL', id: 'someday', title: 'Plant the balcony', priority: 'LOW', status: 'OPEN', edited: false },
   ],
 };
 
@@ -61,6 +63,7 @@ describe('TaskListPage', () => {
 
     // then
     expect(screen.getByRole('heading', { level: 1, name: 'Aufgaben' })).toBeInTheDocument();
+    expect(screen.getAllByRole('img', { name: 'Privat' })).not.toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Offen' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('21 offen')).toBeInTheDocument();
     expect(lunaTask.GET).toHaveBeenCalledWith('/tasks', { params: { query: { page: 0, size: 20, status: 'OPEN' } } });
@@ -96,6 +99,7 @@ describe('TaskListPage', () => {
         totalCount: 1,
         items: [
           {
+            area: 'PERSONAL',
             id: 'done',
             title: 'Renew the passport',
             dueDate: new Date(2026, 10, 1).toISOString(),

@@ -105,6 +105,8 @@ export interface components {
             source: "CORE";
             /** Format: uuid */
             sourceId?: string;
+            /** @enum {string} */
+            area: "PERSONAL" | "WORK";
             edited: boolean;
         };
         TaskDto: {
@@ -121,6 +123,8 @@ export interface components {
         TaskListItemDto: {
             /** Format: uuid */
             id: string;
+            /** @enum {string} */
+            area: "PERSONAL" | "WORK";
             title: string;
             /** Format: date-time */
             dueDate?: string;
@@ -311,6 +315,7 @@ export interface operations {
                 page?: number;
                 size?: number;
                 status?: "OPEN" | "DONE";
+                area?: "PERSONAL" | "WORK";
             };
             header?: never;
             path?: never;

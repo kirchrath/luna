@@ -13,6 +13,7 @@ function local(month: number, day: number, hours = 0, minutes = 0): string {
 }
 
 const DENTIST: AppointmentListItemDto = {
+  area: 'PERSONAL',
   id: 'dentist',
   title: 'Dentist',
   start: local(11, 26, 14),
@@ -23,6 +24,7 @@ const DENTIST: AppointmentListItemDto = {
   edited: false,
 };
 const YOGA: AppointmentListItemDto = {
+  area: 'PERSONAL',
   id: 'yoga',
   title: 'Yoga',
   start: local(11, 27, 18),
@@ -31,6 +33,7 @@ const YOGA: AppointmentListItemDto = {
   edited: true,
 };
 const TRIP: AppointmentListItemDto = {
+  area: 'PERSONAL',
   id: 'trip',
   title: 'Trip to the coast',
   start: local(11, 28),
@@ -40,6 +43,7 @@ const TRIP: AppointmentListItemDto = {
   edited: false,
 };
 const CONFERENCE: AppointmentListItemDto = {
+  area: 'PERSONAL',
   id: 'conference',
   title: 'Conference',
   start: local(12, 2, 9),
@@ -87,6 +91,7 @@ describe('AppointmentsPage', () => {
 
     // then
     expect(screen.getByRole('heading', { level: 1, name: 'Termine' })).toBeInTheDocument();
+    expect(screen.getAllByRole('img', { name: 'Privat' })).not.toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Kommend' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Liste' })).toHaveAttribute('aria-pressed', 'true');
     expect(lunaAppointment.GET).toHaveBeenCalledWith('/appointments', {

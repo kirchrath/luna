@@ -38,6 +38,7 @@ describe('AlertDetailPage', () => {
     expect(screen.getByText('Volume 1 is 94 % full')).toBeInTheDocument();
     expect(screen.getByText('nas01')).toBeInTheDocument();
     expect(screen.getByText('Aus der Schnelleingabe erkannt')).toBeInTheDocument();
+    expect(screen.getByText('Bereich: Privat')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Bestätigen' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Als behoben' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Wieder öffnen' })).toBeNull();
@@ -92,6 +93,7 @@ describe('AlertDetailPage', () => {
   it('that an alert without affected system should result into no system section', async () => {
     // given
     const data: AlertDto['data'] = {
+      area: 'PERSONAL',
       title: ALERT.data.title,
       message: ALERT.data.message,
       severity: 'INFO',

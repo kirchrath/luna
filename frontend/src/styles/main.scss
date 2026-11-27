@@ -68,6 +68,17 @@ html {
   }
 }
 
+// The life area switch shows icons with labels; on small screens only the icons (see the media query below).
+.life-area-switch .button {
+  gap: 0.375rem;
+}
+
+.life-area-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
 .brand {
   display: inline-flex;
   align-items: center;
@@ -779,6 +790,14 @@ html {
 }
 
 @media screen and (max-width: $mobile) {
+  .life-area-switch .segment-label {
+    display: none;
+  }
+
+  .app-header-end {
+    gap: 0.5rem;
+  }
+
   .appointment-link {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;

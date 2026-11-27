@@ -1,13 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { TaskListDto, TaskListItemDto } from '../api';
 import { fakeLunaTaskClient, fakePushConnector } from '../test';
+import { LifeAreaStore } from './LifeAreaStore';
 import { TaskListStore } from './TaskListStore';
 
 type ListResponse = Awaited<ReturnType<ReturnType<typeof fakeLunaTaskClient>['GET']>>;
 
 function item(id: string, status: TaskListItemDto['status'] = 'OPEN'): TaskListItemDto {
-  return { id, title: `Task ${id}`, priority: 'NORMAL', status, edited: false };
+  return { area: 'PERSONAL', id, title: `Task ${id}`, priority: 'NORMAL', status, edited: false };
 }
 
 function items(count: number, prefix = 'task'): TaskListItemDto[] {
@@ -23,8 +24,13 @@ function failedResponse(status: number): ListResponse {
   return { data: undefined, error: undefined, response: new Response(null, { status }) };
 }
 
-function createStore(lunaTask = fakeLunaTaskClient(), push = fakePushConnector()) {
-  return { store: new TaskListStore(lunaTask.client, push.connect), lunaTask, push };
+function createStore(lunaTask = fakeLunaTaskClient(), push = fakePushConnector(), lifeAreaStore = new LifeAreaStore()) {
+  return {
+    store: new TaskListStore(lunaTask.client, push.connect, lifeAreaStore),
+    lunaTask,
+    push,
+    lifeAreaStore,
+  };
 }
 
 function deferred() {
@@ -295,5 +301,49 @@ describe('TaskListStore', () => {
     // then
     expect(push.close).toHaveBeenCalledTimes(1);
     expect(store.connection).toBe('idle');
+  });
+
+  it('that a chosen life area should result into requests of this area only', async () => {
+    // given
+    const { store, lunaTask, lifeAreaStore } = createStore();
+    lifeAreaStore.changeFilter('WORK');
+
+    // when
+    await store.loadInitial();
+
+    // then
+    expect(lunaTask.GET).toHaveBeenCalledWith('/tasks', {
+      params: { query: { page: 0, size: 20, status: 'OPEN', area: 'WORK' } },
+    });
+  });
+
+  it('that another life area while the list is shown should result into reloading it for this area', async () => {
+    // given
+    const { store, lunaTask, lifeAreaStore } = createStore();
+    lunaTask.GET.mockResolvedValueOnce(listResponse(items(3), 3));
+    await store.loadInitial();
+    store.connect();
+
+    // when
+    lifeAreaStore.changeFilter('WORK');
+
+    // then
+    await vi.waitFor(() => {
+      expect(lunaTask.GET).toHaveBeenLastCalledWith('/tasks', {
+        params: { query: { page: 0, size: 20, status: 'OPEN', area: 'WORK' } },
+      });
+    });
+    expect(lunaTask.GET).toHaveBeenCalledTimes(2);
+  });
+
+  it('that another life area while the list is not shown should result into no request', () => {
+    // given
+    const { lunaTask, lifeAreaStore } = createStore();
+
+    // when
+    lifeAreaStore.changeFilter('WORK');
+
+    // then
+    expect(lunaTask.GET).not.toHaveBeenCalled();
   });
 });

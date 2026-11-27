@@ -10,6 +10,7 @@ const LIST: NoteListDto = {
   totalCount: 21,
   items: [
     {
+      area: 'PERSONAL',
       id: 'meeting',
       title: 'Owners meeting',
       summary: 'Roof will be renovated in May',
@@ -18,6 +19,7 @@ const LIST: NoteListDto = {
       createdDate: '2026-11-26T13:00:00Z',
     },
     {
+      area: 'PERSONAL',
       id: 'soup',
       title: 'Pumpkin soup',
       summary: 'Pumpkin, ginger, coconut milk',
@@ -50,6 +52,7 @@ describe('NoteListPage', () => {
 
     // then
     expect(screen.getByRole('heading', { level: 1, name: 'Notizen' })).toBeInTheDocument();
+    expect(screen.getAllByRole('img', { name: 'Privat' })).not.toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Aktiv' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('21 aktiv')).toBeInTheDocument();
     expect(lunaNote.GET).toHaveBeenCalledWith('/notes', { params: { query: { page: 0, size: 20, status: 'ACTIVE' } } });

@@ -46,6 +46,7 @@ describe('TaskDetailPage', () => {
     expect(screen.getByLabelText('Uhrzeit (optional)')).toHaveValue('10:00');
     expect(screen.getByRole('button', { name: 'Hoch' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('Aus der Schnelleingabe erkannt')).toBeInTheDocument();
+    expect(screen.getByText('Bereich: Privat')).toBeInTheDocument();
     expect(
       screen.getByText('Neue Analyse-Ergebnisse aktualisieren diese Aufgabe, bis du sie bearbeitest.'),
     ).toBeInTheDocument();
@@ -123,7 +124,14 @@ describe('TaskDetailPage', () => {
     // given
     const { lunaTask } = await renderLoaded({
       ...TASK,
-      data: { title: TASK.data.title, priority: 'HIGH', status: 'OPEN', source: 'CORE', edited: false },
+      data: {
+        area: 'PERSONAL',
+        title: TASK.data.title,
+        priority: 'HIGH',
+        status: 'OPEN',
+        source: 'CORE',
+        edited: false,
+      },
     });
 
     // when

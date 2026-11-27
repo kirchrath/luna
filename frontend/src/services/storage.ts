@@ -2,6 +2,8 @@ export const STORAGE_KEYS = {
   language: 'luna.language',
   navigationCollapsed: 'luna.navigation.collapsed',
   appointmentView: 'luna.appointments.view',
+  lifeAreaFilter: 'luna.lifeArea.filter',
+  lifeAreaInput: 'luna.lifeArea.input',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

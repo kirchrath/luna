@@ -2,26 +2,56 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { LunaCoreClient, InboundEventListItemDto } from '../api';
 import { fakeLunaCoreClient, fakePushConnector } from '../test';
+import { LifeAreaStore } from './LifeAreaStore';
 import { InboundEventStore } from './InboundEventStore';
 
 function item(id: string, status: InboundEventListItemDto['status'] = 'RECEIVED'): InboundEventListItemDto {
-  return { id, source: 'MANUAL', text: `Input ${id}`, status, createdDate: '2026-11-25T10:00:00+01:00', elements: [] };
+  return {
+    area: 'PERSONAL',
+    id,
+    source: 'MANUAL',
+    text: `Input ${id}`,
+    status,
+    createdDate: '2026-11-25T10:00:00+01:00',
+    elements: [],
+  };
 }
 
 function items(count: number, prefix = 'item'): InboundEventListItemDto[] {
   return Array.from({ length: count }, (_, index) => item(`${prefix}-${String(index)}`));
 }
 
-function createStore(lunaCore = fakeLunaCoreClient(), push = fakePushConnector()) {
-  return { store: new InboundEventStore(lunaCore.client, push.connect), lunaCore, push };
+function createStore(lunaCore = fakeLunaCoreClient(), push = fakePushConnector(), lifeAreaStore = new LifeAreaStore()) {
+  return {
+    store: new InboundEventStore(lunaCore.client, push.connect, lifeAreaStore),
+    lunaCore,
+    push,
+    lifeAreaStore,
+  };
 }
 
 function respondWith(lunaCore: ReturnType<typeof fakeLunaCoreClient>, list: InboundEventListItemDto[], total: number) {
-  lunaCore.GET.mockResolvedValueOnce({
+  lunaCore.GET.mockResolvedValueOnce(listResponse(list, total));
+}
+
+type ListResponse = Awaited<ReturnType<ReturnType<typeof fakeLunaCoreClient>['GET']>>;
+
+function listResponse(list: InboundEventListItemDto[], total: number): ListResponse {
+  return {
     data: { items: list, totalPages: Math.ceil(total / 10), totalCount: total },
     error: undefined,
     response: new Response(),
+  };
+}
+
+function deferred() {
+  let resolve: (value: ListResponse) => void = () => undefined;
+  let reject: (reason: Error) => void = () => undefined;
+  const promise = new Promise<ListResponse>((onResolve, onReject) => {
+    resolve = onResolve;
+    reject = onReject;
   });
+  return { promise, resolve, reject };
 }
 
 describe('InboundEventStore', () => {
@@ -156,7 +186,7 @@ describe('InboundEventStore', () => {
     // then
     expect(accepted).toBe(true);
     expect(lunaCore.POST).toHaveBeenCalledWith('/inbound-events/manual', {
-      body: { text: 'Pay the invoice', typeHint: 'TASK' },
+      body: { text: 'Pay the invoice', area: 'PERSONAL', typeHint: 'TASK' },
     });
     expect(lunaCore.GET).toHaveBeenCalledTimes(1);
     expect(store.submitting).toBe(false);
@@ -171,7 +201,9 @@ describe('InboundEventStore', () => {
     await store.submit('Milk is empty', undefined);
 
     // then
-    expect(lunaCore.POST).toHaveBeenCalledWith('/inbound-events/manual', { body: { text: 'Milk is empty' } });
+    expect(lunaCore.POST).toHaveBeenCalledWith('/inbound-events/manual', {
+      body: { text: 'Milk is empty', area: 'PERSONAL' },
+    });
   });
 
   it('that a rejected input should result into an invalid input error', async () => {
@@ -296,10 +328,105 @@ describe('InboundEventStore', () => {
     const client = { GET: vi.fn(), POST: vi.fn() } as unknown as LunaCoreClient;
 
     // when
-    const store = new InboundEventStore(client, fakePushConnector().connect);
+    const store = new InboundEventStore(client, fakePushConnector().connect, new LifeAreaStore());
 
     // then
     expect(store.items).toEqual([]);
     expect(store.connection).toBe('idle');
+  });
+
+  it('that a chosen life area should result into requests of this area only', async () => {
+    // given
+    const { store, lunaCore, lifeAreaStore } = createStore();
+    lifeAreaStore.changeFilter('WORK');
+
+    // when
+    await store.loadInitial();
+
+    // then
+    expect(lunaCore.GET).toHaveBeenCalledWith('/inbound-events', {
+      params: { query: { page: 0, size: 10, area: 'WORK' } },
+    });
+  });
+
+  it('that another life area while the list is shown should result into reloading it for this area', async () => {
+    // given
+    const { store, lunaCore, lifeAreaStore } = createStore();
+    lunaCore.GET.mockResolvedValueOnce(listResponse(items(3), 3));
+    await store.loadInitial();
+    store.connect();
+
+    // when
+    lifeAreaStore.changeFilter('WORK');
+
+    // then
+    await vi.waitFor(() => {
+      expect(lunaCore.GET).toHaveBeenLastCalledWith('/inbound-events', {
+        params: { query: { page: 0, size: 10, area: 'WORK' } },
+      });
+    });
+    expect(lunaCore.GET).toHaveBeenCalledTimes(2);
+  });
+
+  it('that another life area while the list is not shown should result into no request', () => {
+    // given
+    const { lunaCore, lifeAreaStore } = createStore();
+
+    // when
+    lifeAreaStore.changeFilter('WORK');
+
+    // then
+    expect(lunaCore.GET).not.toHaveBeenCalled();
+  });
+
+  it('that submitting while one life area is shown should result into an input of this area', async () => {
+    // given
+    const { store, lunaCore, lifeAreaStore } = createStore();
+    lifeAreaStore.changeFilter('WORK');
+
+    // when
+    await store.submit('Prepare the review', undefined);
+
+    // then
+    expect(lunaCore.POST).toHaveBeenCalledWith('/inbound-events/manual', {
+      body: { text: 'Prepare the review', area: 'WORK' },
+    });
+  });
+
+  it('that an outdated response should result into the list of the latest request', async () => {
+    // given
+    const { store, lunaCore } = createStore();
+    const first = deferred();
+    const second = deferred();
+    lunaCore.GET.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const firstLoad = store.loadInitial();
+    const secondLoad = store.loadInitial();
+
+    // when
+    second.resolve(listResponse([item('newer')], 1));
+    await secondLoad;
+    first.resolve(listResponse([item('older')], 1));
+    await firstLoad;
+
+    // then
+    expect(store.items.map(({ id }) => id)).toEqual(['newer']);
+    expect(store.loading).toBe(false);
+  });
+
+  it('that an outdated failure should result into no load error', async () => {
+    // given
+    const { store, lunaCore } = createStore();
+    const first = deferred();
+    lunaCore.GET.mockReturnValueOnce(first.promise).mockResolvedValueOnce(listResponse([item('newer')], 1));
+    const firstLoad = store.loadInitial();
+    await store.loadInitial();
+
+    // when
+    first.reject(new Error('network down'));
+    await firstLoad;
+
+    // then
+    expect(store.loadError).toBe(false);
+    expect(store.items).toHaveLength(1);
   });
 });

@@ -10,6 +10,7 @@ import { useStores } from '../stores';
 import { RelativeTime } from '../ui';
 import { SeverityTag } from './SeverityTag';
 import { formatDateTime } from './taskDates';
+import { LifeAreaDetail } from './LifeArea';
 
 const ICON_SIZE = 16;
 
@@ -133,6 +134,7 @@ const AlertDetail = observer(function AlertDetail({ alert }: { alert: AlertDto }
           <Sparkles size={ICON_SIZE} aria-hidden="true" />
           <span>{t(`alertDetail.source.${data.source}`)}</span>
         </p>
+        <LifeAreaDetail area={data.area} />
         <p className="is-size-7 has-text-grey">{dates.join(' · ')}</p>
       </section>
     </>

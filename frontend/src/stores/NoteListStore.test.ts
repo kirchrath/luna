@@ -1,13 +1,22 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { NoteListDto, NoteListItemDto } from '../api';
 import { fakeLunaNoteClient, fakePushConnector } from '../test';
+import { LifeAreaStore } from './LifeAreaStore';
 import { NoteListStore } from './NoteListStore';
 
 type ListResponse = Awaited<ReturnType<ReturnType<typeof fakeLunaNoteClient>['GET']>>;
 
 function item(id: string, status: NoteListItemDto['status'] = 'ACTIVE'): NoteListItemDto {
-  return { id, title: `Note ${id}`, summary: 'Summary', status, edited: false, createdDate: '2026-11-26T10:00:00Z' };
+  return {
+    area: 'PERSONAL',
+    id,
+    title: `Note ${id}`,
+    summary: 'Summary',
+    status,
+    edited: false,
+    createdDate: '2026-11-26T10:00:00Z',
+  };
 }
 
 function items(count: number, prefix = 'note'): NoteListItemDto[] {
@@ -23,8 +32,13 @@ function failedResponse(status: number): ListResponse {
   return { data: undefined, error: undefined, response: new Response(null, { status }) };
 }
 
-function createStore(lunaNote = fakeLunaNoteClient(), push = fakePushConnector()) {
-  return { store: new NoteListStore(lunaNote.client, push.connect), lunaNote, push };
+function createStore(lunaNote = fakeLunaNoteClient(), push = fakePushConnector(), lifeAreaStore = new LifeAreaStore()) {
+  return {
+    store: new NoteListStore(lunaNote.client, push.connect, lifeAreaStore),
+    lunaNote,
+    push,
+    lifeAreaStore,
+  };
 }
 
 function deferred() {
@@ -237,5 +251,49 @@ describe('NoteListStore', () => {
     // then
     expect(push.close).toHaveBeenCalledTimes(1);
     expect(store.connection).toBe('idle');
+  });
+
+  it('that a chosen life area should result into requests of this area only', async () => {
+    // given
+    const { store, lunaNote, lifeAreaStore } = createStore();
+    lifeAreaStore.changeFilter('WORK');
+
+    // when
+    await store.loadInitial();
+
+    // then
+    expect(lunaNote.GET).toHaveBeenCalledWith('/notes', {
+      params: { query: { page: 0, size: 20, status: 'ACTIVE', area: 'WORK' } },
+    });
+  });
+
+  it('that another life area while the list is shown should result into reloading it for this area', async () => {
+    // given
+    const { store, lunaNote, lifeAreaStore } = createStore();
+    lunaNote.GET.mockResolvedValueOnce(listResponse(items(3), 3));
+    await store.loadInitial();
+    store.connect();
+
+    // when
+    lifeAreaStore.changeFilter('WORK');
+
+    // then
+    await vi.waitFor(() => {
+      expect(lunaNote.GET).toHaveBeenLastCalledWith('/notes', {
+        params: { query: { page: 0, size: 20, status: 'ACTIVE', area: 'WORK' } },
+      });
+    });
+    expect(lunaNote.GET).toHaveBeenCalledTimes(2);
+  });
+
+  it('that another life area while the list is not shown should result into no request', () => {
+    // given
+    const { lunaNote, lifeAreaStore } = createStore();
+
+    // when
+    lifeAreaStore.changeFilter('WORK');
+
+    // then
+    expect(lunaNote.GET).not.toHaveBeenCalled();
   });
 });

@@ -10,3 +10,4 @@ export type InboundEventChangedDto = Schemas['InboundEventChangedDto'];
 export type LunaElementTypeDto = ElementReferenceDto['type'];
 export type InboundEventStatusDto = InboundEventListItemDto['status'];
 export type InboundEventSourceDto = InboundEventListItemDto['source'];
+export type LifeAreaDto = InboundEventListItemDto['area'];

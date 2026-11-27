@@ -120,4 +120,19 @@ describe('AppLayout', () => {
     // then
     expect(signoutRedirect).toHaveBeenCalledTimes(1);
   });
+
+  it('that choosing a life area should result into a remembered area and the quick input for it', async () => {
+    // given
+    await renderApp('/');
+    const areas = screen.getByRole('group', { name: 'Angezeigter Lebensbereich' });
+
+    // when
+    await userEvent.click(within(areas).getByRole('button', { name: 'Beruflich' }));
+
+    // then
+    expect(within(areas).getByRole('button', { name: 'Beruflich' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(areas).getByRole('button', { name: 'Alle Bereiche' })).toHaveAttribute('aria-pressed', 'false');
+    expect(readPreference(STORAGE_KEYS.lifeAreaFilter)).toBe('WORK');
+    expect(screen.queryByRole('group', { name: 'Lebensbereich' })).toBeNull();
+  });
 });

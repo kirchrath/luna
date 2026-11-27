@@ -16,6 +16,7 @@ import { AppointmentListStore } from './AppointmentListStore';
 import { AppointmentMonthStore } from './AppointmentMonthStore';
 import { AppointmentStore } from './AppointmentStore';
 import { InboundEventStore } from './InboundEventStore';
+import { LifeAreaStore } from './LifeAreaStore';
 import { NoteListStore } from './NoteListStore';
 import { NoteStore } from './NoteStore';
 import { TaskListStore } from './TaskListStore';
@@ -39,6 +40,7 @@ export interface RootStoreDependencies {
  * created here.
  */
 export class RootStore {
+  readonly lifeAreaStore: LifeAreaStore;
   readonly inboundEventStore: InboundEventStore;
   readonly taskListStore: TaskListStore;
   readonly taskStore: TaskStore;
@@ -62,15 +64,24 @@ export class RootStore {
     lunaAppointmentClient,
     connectLunaAppointmentPush,
   }: RootStoreDependencies) {
-    this.inboundEventStore = new InboundEventStore(lunaCoreClient, connectLunaCorePush);
-    this.taskListStore = new TaskListStore(lunaTaskClient, connectLunaTaskPush);
+    this.lifeAreaStore = new LifeAreaStore();
+    this.inboundEventStore = new InboundEventStore(lunaCoreClient, connectLunaCorePush, this.lifeAreaStore);
+    this.taskListStore = new TaskListStore(lunaTaskClient, connectLunaTaskPush, this.lifeAreaStore);
     this.taskStore = new TaskStore(lunaTaskClient);
-    this.alertListStore = new AlertListStore(lunaAlertClient, connectLunaAlertPush);
+    this.alertListStore = new AlertListStore(lunaAlertClient, connectLunaAlertPush, this.lifeAreaStore);
     this.alertStore = new AlertStore(lunaAlertClient);
-    this.noteListStore = new NoteListStore(lunaNoteClient, connectLunaNotePush);
+    this.noteListStore = new NoteListStore(lunaNoteClient, connectLunaNotePush, this.lifeAreaStore);
     this.noteStore = new NoteStore(lunaNoteClient);
-    this.appointmentListStore = new AppointmentListStore(lunaAppointmentClient, connectLunaAppointmentPush);
-    this.appointmentMonthStore = new AppointmentMonthStore(lunaAppointmentClient, connectLunaAppointmentPush);
+    this.appointmentListStore = new AppointmentListStore(
+      lunaAppointmentClient,
+      connectLunaAppointmentPush,
+      this.lifeAreaStore,
+    );
+    this.appointmentMonthStore = new AppointmentMonthStore(
+      lunaAppointmentClient,
+      connectLunaAppointmentPush,
+      this.lifeAreaStore,
+    );
     this.appointmentStore = new AppointmentStore(lunaAppointmentClient);
   }
 }

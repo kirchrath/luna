@@ -53,7 +53,8 @@
     "noSubject": "(no subject)",
     "source": {
       "MAIL": "Email"
-    }
+    },
+    "areaFromFilter": "Saved under “{{area}}” – change it with the life area at the top."
   },
   "tasks": {
     "title": "Tasks",
@@ -349,5 +350,13 @@
     "created": "Created {{date}}",
     "modified": "Modified {{date}}",
     "cancelledOn": "Cancelled {{date}}"
+  },
+  "lifeArea": {
+    "label": "Life area",
+    "filterLabel": "Shown life area",
+    "ALL": "All areas",
+    "PERSONAL": "Personal",
+    "WORK": "Work",
+    "detail": "Area: {{area}}"
   }
 }

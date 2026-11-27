@@ -1,7 +1,8 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, reaction } from 'mobx';
 
 import type { LunaNoteClient, LunaNotePushConnector, NoteListItemDto, NoteStatusDto, PushConnection } from '../api';
 import type { ConnectionState } from './InboundEventStore';
+import type { LifeAreaStore } from './LifeAreaStore';
 
 export const NOTE_PAGE_SIZE = 20;
 /** Largest page luna-note returns; a refresh of more visible entries is limited to it. */
@@ -25,17 +26,35 @@ export class NoteListStore {
 
   private readonly client: LunaNoteClient;
   private readonly connectPush: LunaNotePushConnector;
+  private readonly lifeAreaStore: LifeAreaStore;
   private pushConnection: PushConnection | null = null;
   private wasConnected = false;
   /** Only the response of the latest request is shown, e.g. after switching the filter quickly. */
   private latestRequest = 0;
 
-  constructor(client: LunaNoteClient, connectPush: LunaNotePushConnector) {
+  constructor(client: LunaNoteClient, connectPush: LunaNotePushConnector, lifeAreaStore: LifeAreaStore) {
     this.client = client;
     this.connectPush = connectPush;
-    makeAutoObservable<NoteListStore, 'client' | 'connectPush' | 'pushConnection' | 'wasConnected' | 'latestRequest'>(
-      this,
-      { client: false, connectPush: false, pushConnection: false, wasConnected: false, latestRequest: false },
+    this.lifeAreaStore = lifeAreaStore;
+    makeAutoObservable<
+      NoteListStore,
+      'client' | 'connectPush' | 'lifeAreaStore' | 'pushConnection' | 'wasConnected' | 'latestRequest'
+    >(this, {
+      client: false,
+      connectPush: false,
+      lifeAreaStore: false,
+      pushConnection: false,
+      wasConnected: false,
+      latestRequest: false,
+    });
+    // A list that is shown (connected) follows the chosen area at once; others load it when they are shown next.
+    reaction(
+      () => this.lifeAreaStore.filter,
+      () => {
+        if (this.pushConnection !== null) {
+          void this.reload();
+        }
+      },
     );
   }
 
@@ -109,6 +128,11 @@ export class NoteListStore {
       return;
     }
     this.filter = filter;
+    await this.reload();
+  }
+
+  /** Starts again with the first page, e.g. for another filter or life area. */
+  private async reload(): Promise<void> {
     this.items = [];
     this.totalCount = 0;
     await this.loadInitial();
@@ -142,7 +166,8 @@ export class NoteListStore {
 
   private async load(page: number, size: number, mode: 'replace' | 'append'): Promise<void> {
     const request = ++this.latestRequest;
-    const query = this.filter === ALL_NOTES ? { page, size } : { page, size, status: this.filter };
+    const area = this.lifeAreaStore.query;
+    const query = this.filter === ALL_NOTES ? { page, size, ...area } : { page, size, status: this.filter, ...area };
     this.loading = true;
     try {
       const { data } = await this.client.GET(LIST_PATH, { params: { query } });

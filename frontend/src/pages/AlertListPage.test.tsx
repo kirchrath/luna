@@ -10,6 +10,7 @@ const LIST: AlertListDto = {
   totalCount: 21,
   items: [
     {
+      area: 'PERSONAL',
       id: 'critical',
       title: 'NAS disk almost full',
       severity: 'CRITICAL',
@@ -18,6 +19,7 @@ const LIST: AlertListDto = {
       createdDate: '2026-11-26T16:00:00Z',
     },
     {
+      area: 'PERSONAL',
       id: 'warning',
       title: 'Mail undeliverable',
       severity: 'WARNING',
@@ -25,6 +27,7 @@ const LIST: AlertListDto = {
       createdDate: '2026-11-26T14:00:00Z',
     },
     {
+      area: 'PERSONAL',
       id: 'info',
       title: 'Backup done',
       severity: 'INFO',
@@ -57,6 +60,7 @@ describe('AlertListPage', () => {
 
     // then
     expect(screen.getByRole('heading', { level: 1, name: 'Warnungen' })).toBeInTheDocument();
+    expect(screen.getAllByRole('img', { name: 'Privat' })).not.toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Aktiv' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('21 aktiv')).toBeInTheDocument();
     expect(lunaAlert.GET).toHaveBeenCalledWith('/alerts', {

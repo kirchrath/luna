@@ -117,6 +117,8 @@ export interface components {
             source: "CORE";
             /** Format: uuid */
             sourceId?: string;
+            /** @enum {string} */
+            area: "PERSONAL" | "WORK";
             edited: boolean;
         };
         AppointmentDto: {
@@ -141,6 +143,8 @@ export interface components {
         AppointmentListItemDto: {
             /** Format: uuid */
             id: string;
+            /** @enum {string} */
+            area: "PERSONAL" | "WORK";
             title: string;
             /** Format: date-time */
             start: string;
@@ -333,6 +337,7 @@ export interface operations {
                 page?: number;
                 size?: number;
                 period?: "UPCOMING" | "PAST" | "ALL";
+                area?: "PERSONAL" | "WORK";
             };
             header?: never;
             path?: never;
@@ -370,6 +375,7 @@ export interface operations {
             query: {
                 from: string;
                 to: string;
+                area?: "PERSONAL" | "WORK";
             };
             header?: never;
             path?: never;

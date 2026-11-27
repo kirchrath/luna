@@ -8,6 +8,7 @@ import type { NoteListItemDto } from '../api';
 import { notePath } from '../navigation';
 import { ALL_NOTES, useStores, type NoteFilter } from '../stores';
 import { RelativeTime, SegmentedControl } from '../ui';
+import { LifeAreaIcon } from './LifeArea';
 
 const ICON_SIZE = 20;
 const CHEVRON_SIZE = 18;
@@ -85,6 +86,7 @@ const NoteListEntry = observer(function NoteListEntry({ item }: { item: NoteList
           <span className="element-title">{item.title}</span>
           <span className="element-summary has-text-grey">{item.summary}</span>
           <span className="element-meta has-text-grey">
+            <LifeAreaIcon area={item.area} />
             <RelativeTime dateTime={item.createdDate} locale={i18n.language} />
             {item.edited && <span>· {t('notes.edited')}</span>}
           </span>
