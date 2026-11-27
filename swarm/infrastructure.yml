@@ -103,7 +103,8 @@ services:
       KC_HTTP_RELATIVE_PATH: /auth
       KC_PROXY_HEADERS: xforwarded
       # Public URL of Keycloak (issuer of the tokens).
-      # In the home network https://luna.internal/auth; locally set LUNA_KEYCLOAK_URL=http://localhost:7080/auth.
+      # Must match where the frontend expects Keycloak: https://luna.internal/auth for the stack (also on a laptop);
+      # LUNA_KEYCLOAK_URL=http://localhost:7080/auth only for the Vite dev server (npm run dev).
       KC_HOSTNAME: ${LUNA_KEYCLOAK_URL:-https://luna.internal/auth}
     ports:
       - "7080:8080"

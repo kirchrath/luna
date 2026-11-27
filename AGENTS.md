@@ -590,7 +590,9 @@ Dienste im Stack: Traefik, step-ca, Frontend (nginx), alle Backends (Jib-Images)
   Pflichtvariablen als `${VAR:?Meldung}` – die Meldung **ohne Bindestrich**, sonst liest Docker ihn als
   Standardwert-Operator. Mit `docker stack config -c …` prüfen.
 - Die Infrastruktur-Datei dient **auch der lokalen Entwicklung**; PostgreSQL (7432) und Keycloak (7080) sind
-  daher auch auf dem Server veröffentlicht. Die Keycloak-URL (Issuer) ist über `LUNA_KEYCLOAK_URL` umschaltbar.
+  daher auch auf dem Server veröffentlicht. Die Keycloak-URL (Issuer) ist über `LUNA_KEYCLOAK_URL` umschaltbar – **nur** für den Vite-Dev-Server auf
+  `http://localhost:7080/auth`; mit dem Frontend-Image im Stack (auch lokal unter `luna.internal`) bleibt sie auf dem
+  Standard, sonst schlägt die Anmeldung nach dem Login fehl (Issuer passt nicht).
 - **Kafka** (`apache/kafka`, KRaft-Modus, ein Knoten) läuft in `swarm/kafka.yml`, ist wie PostgreSQL und
   Keycloak auch auf dem Server unter **7094** veröffentlicht (lokale Entwicklung) und speichert seine Daten im
   Volume `kafka-data`. Backends im Stack nutzen `kafka:9094`; die für externe Clients mitgeteilte Adresse ist über

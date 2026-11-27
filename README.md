@@ -104,8 +104,10 @@ export LUNA_KAFKA_CERT_VERSION=1
 # Nur auf dem Server: Adresse, die Kafka externen Clients mitteilt (Standard: localhost:7094).
 export LUNA_KAFKA_HOST=luna.internal:7094
 
-# Nur lokal: Issuer der Tokens passend zur lokalen Keycloak-URL (Standard: https://luna.internal/auth).
-export LUNA_KEYCLOAK_URL=http://localhost:7080/auth
+# Nur für die Frontend-Entwicklung mit `npm run dev` (http://localhost:5173), wenn nur Infrastruktur und Backends im
+# Stack laufen: Issuer der Tokens passend zu http://localhost:7080/auth. Im kompletten Stack mit Frontend
+# (https://luna.internal, auch auf dem Laptop) NICHT setzen – sonst schlägt die Anmeldung nach dem Login fehl.
+# export LUNA_KEYCLOAK_URL=http://localhost:7080/auth
 
 # luna-core: Version des lokal gebauten Images (siehe luna-core/pom.xml). Pflicht.
 export LUNA_CORE_VERSION=0.0.1-SNAPSHOT
@@ -298,7 +300,7 @@ Für `luna-mail` zusätzlich das Secret `mail_accounts_v<n>` mit den Konten anle
 | Secrets | alle extern, siehe oben |
 | Netzwerk | Overlay-Netz `luna`, `attachable` – auch Container außerhalb des Stacks können sich verbinden |
 | Keycloak-Realm | `luna` aus `swarm/keycloak/luna-realm.json`: Anmeldeseite Deutsch (Standard) und Englisch, „Angemeldet bleiben“, keine Registrierung. Client `luna-frontend`: öffentlich, Authorization Code mit PKCE (S256), Weiterleitungen nur an `https://luna.internal/*` und `http://localhost:5173/*`. Keine Benutzer im Import (siehe Schritt 13) |
-| Keycloak-URL | Variable `LUNA_KEYCLOAK_URL` setzt den Issuer der Tokens. Standard: `https://luna.internal/auth`; lokal `http://localhost:7080/auth` |
+| Keycloak-URL | Variable `LUNA_KEYCLOAK_URL` setzt den Issuer der Tokens. Standard: `https://luna.internal/auth` – passend zum Frontend-Image, auch wenn der Stack auf dem Laptop läuft. `http://localhost:7080/auth` nur für den Vite-Dev-Server (`npm run dev`); passt der Issuer nicht zur Adresse, unter der das Frontend Keycloak erwartet, meldet Luna nach dem Login „Anmeldung fehlgeschlagen“ |
 | Kafka-Adresse | Backends im Stack nutzen `kafka:9094`. Für Clients außerhalb des Stacks (Port 7094) teilt Kafka die Adresse aus `LUNA_KAFKA_HOST` mit. Standard: `localhost:7094`; auf dem Server z. B. `LUNA_KAFKA_HOST=luna.internal:7094` setzen, damit Entwicklungsrechner zugreifen können |
 | Kafka | ein Knoten im KRaft-Modus (ohne ZooKeeper), feste `CLUSTER_ID` in der Stack-Datei, Daten im Volume `kafka-data` |
 | Kafka-Sicherheit | TLS und SASL/SCRAM-SHA-512 auf `kafka:9094` und Port 7094; der Controller-Listener lauscht nur auf `localhost` im Container (ohne TLS). Zertifikat von step-ca (SANs `kafka`, `localhost`, `luna.internal`, 1 Jahr) über den Provisioner `kafka`, dessen Schlüssel mit `step_ca_password` geschützt ist |
