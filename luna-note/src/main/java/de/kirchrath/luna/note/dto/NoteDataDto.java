@@ -12,5 +12,6 @@ public record NoteDataDto(
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) OffsetDateTime archivedDate,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) NoteSourceDto source,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) UUID sourceId,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) LifeAreaDto area,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) boolean edited) {
 }

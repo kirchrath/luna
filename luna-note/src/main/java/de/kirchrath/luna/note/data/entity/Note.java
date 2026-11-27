@@ -16,6 +16,7 @@ public record Note(
         @With @Id UUID id,
         NoteSource source,
         UUID sourceId,
+        LifeArea area,
         String title,
         String summary,
         NoteStatus status,

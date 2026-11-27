@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 public record NoteListItemDto(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) LifeAreaDto area,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String title,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String summary,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) NoteStatusDto status,

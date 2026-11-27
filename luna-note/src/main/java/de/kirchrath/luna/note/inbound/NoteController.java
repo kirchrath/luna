@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import de.kirchrath.luna.note.dto.LifeAreaDto;
 import de.kirchrath.luna.note.dto.NoteDto;
 import de.kirchrath.luna.note.dto.NoteListDto;
 import de.kirchrath.luna.note.dto.NoteStatusDto;
@@ -54,8 +55,10 @@ public class NoteController {
                 @ApiResponse(responseCode = "401", content = @Content)
             })
     public NoteListDto listNotes(
-            @RequestParam(required = false) NoteStatusDto status, @Parameter(hidden = true) Pageable pageable) {
-        return noteApplicationService.listNotes(status, pageable);
+            @RequestParam(required = false) NoteStatusDto status,
+            @RequestParam(required = false) LifeAreaDto area,
+            @Parameter(hidden = true) Pageable pageable) {
+        return noteApplicationService.listNotes(status, area, pageable);
     }
 
     @GetMapping(path = ID, produces = MediaType.APPLICATION_JSON_VALUE)

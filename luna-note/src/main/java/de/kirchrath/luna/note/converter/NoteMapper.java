@@ -4,9 +4,11 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
+import de.kirchrath.luna.note.data.entity.LifeArea;
 import de.kirchrath.luna.note.data.entity.Note;
 import de.kirchrath.luna.note.data.entity.NoteStatus;
 import de.kirchrath.luna.note.dto.AuditDto;
+import de.kirchrath.luna.note.dto.LifeAreaDto;
 import de.kirchrath.luna.note.dto.NoteDataDto;
 import de.kirchrath.luna.note.dto.NoteDto;
 import de.kirchrath.luna.note.dto.NoteEventDto;
@@ -32,4 +34,8 @@ public interface NoteMapper {
 
     NoteStatus toEntity(NoteStatusDto status);
 
+
+    LifeArea toEntity(LifeAreaDto area);
+
+    LifeArea toEntity(de.kirchrath.luna.note.dto.core.NoteEventDto.AreaEnum area);
 }

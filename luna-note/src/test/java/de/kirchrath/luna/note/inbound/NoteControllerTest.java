@@ -25,6 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import de.kirchrath.luna.note.config.TestcontainersConfig;
+import de.kirchrath.luna.note.data.entity.LifeArea;
 import de.kirchrath.luna.note.data.entity.Note;
 import de.kirchrath.luna.note.data.entity.NoteSource;
 import de.kirchrath.luna.note.data.entity.NoteStatus;
@@ -62,6 +63,7 @@ class NoteControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[*].id").value(contains(newer.id().toString(), older.id().toString())))
                 .andExpect(jsonPath("$.items[0].title").value("Pumpkin soup"))
+                .andExpect(jsonPath("$.items[0].area").value("PERSONAL"))
                 .andExpect(jsonPath("$.items[0].summary").value("Roof will be renovated in May"))
                 .andExpect(jsonPath("$.items[0].status").value("ARCHIVED"))
                 .andExpect(jsonPath("$.items[0].edited").value(false))
@@ -80,6 +82,40 @@ class NoteControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[*].id").value(contains(active.id().toString())))
                 .andExpect(jsonPath("$.totalCount").value(1));
+    }
+
+    @Test
+    void thatListingNotesByAreaShouldResultIntoTheNotesOfThisAreaOnly() throws Exception {
+        // given
+        save("Pumpkin soup", NoteStatus.ACTIVE, LifeArea.PERSONAL);
+        var work = save("Team meeting", NoteStatus.ACTIVE, LifeArea.WORK);
+
+        // when / then
+        mockMvc.perform(get("/notes").param("area", "WORK").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[*].id").value(contains(work.id().toString())))
+                .andExpect(jsonPath("$.items[0].area").value("WORK"))
+                .andExpect(jsonPath("$.totalCount").value(1));
+    }
+
+    @Test
+    void thatListingNotesByStatusAndAreaShouldResultIntoTheNotesMatchingBoth() throws Exception {
+        // given
+        save("Pumpkin soup", NoteStatus.ARCHIVED, LifeArea.PERSONAL);
+        save("Team meeting", NoteStatus.ACTIVE, LifeArea.WORK);
+        var archivedWork = save("Old project", NoteStatus.ARCHIVED, LifeArea.WORK);
+
+        // when / then
+        mockMvc.perform(get("/notes").param("status", "ARCHIVED").param("area", "WORK").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[*].id").value(contains(archivedWork.id().toString())))
+                .andExpect(jsonPath("$.totalCount").value(1));
+    }
+
+    @Test
+    void thatListingNotesWithAnUnknownAreaShouldResultIntoABadRequest() throws Exception {
+        // when / then
+        mockMvc.perform(get("/notes").param("area", "UNKNOWN").with(jwt())).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -103,6 +139,7 @@ class NoteControllerTest {
                 .andExpect(content().string(not(containsString(":null"))))
                 .andExpect(jsonPath("$.data.source").value("CORE"))
                 .andExpect(jsonPath("$.data.sourceId").value(note.sourceId().toString()))
+                .andExpect(jsonPath("$.data.area").value("PERSONAL"))
                 .andExpect(jsonPath("$.data.edited").value(false))
                 .andExpect(jsonPath("$.audit.version").value(0));
     }
@@ -128,6 +165,20 @@ class NoteControllerTest {
                 .andExpect(jsonPath("$.data.edited").value(true))
                 .andExpect(jsonPath("$.audit.version").value(1));
         assertThat(noteRepository.findById(note.id())).get().extracting(Note::title).isEqualTo("Owners meeting 2026");
+    }
+
+    @Test
+    void thatUpdatingANoteWithAnotherAreaShouldResultIntoTheUnchangedArea() throws Exception {
+        // given
+        var note = save("Owners meeting", NoteStatus.ACTIVE);
+
+        // when / then
+        mockMvc.perform(put("/notes/{id}", note.id()).with(jwt()).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"title": "Owners meeting", "summary": "Roof", "area": "WORK", "version": 0}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.area").value("PERSONAL"));
+        assertThat(noteRepository.findById(note.id())).get().extracting(Note::area).isEqualTo(LifeArea.PERSONAL);
     }
 
     @Test
@@ -204,9 +255,14 @@ class NoteControllerTest {
     }
 
     private Note save(String title, NoteStatus status) {
+        return save(title, status, LifeArea.PERSONAL);
+    }
+
+    private Note save(String title, NoteStatus status, LifeArea area) {
         return noteRepository.save(Note.builder()
                 .source(NoteSource.CORE)
                 .sourceId(UUID.randomUUID())
+                .area(area)
                 .title(title)
                 .summary("Roof will be renovated in May")
                 .status(status)

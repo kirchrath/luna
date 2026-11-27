@@ -131,6 +131,14 @@ paths:
           enum:
           - ACTIVE
           - ARCHIVED
+      - name: area
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
       responses:
         "200":
           description: OK
@@ -200,9 +208,15 @@ components:
         sourceId:
           type: string
           format: uuid
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         edited:
           type: boolean
       required:
+      - area
       - edited
       - source
       - status
@@ -241,6 +255,11 @@ components:
         id:
           type: string
           format: uuid
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         title:
           type: string
         summary:
@@ -256,6 +275,7 @@ components:
           type: string
           format: date-time
       required:
+      - area
       - createdDate
       - edited
       - id

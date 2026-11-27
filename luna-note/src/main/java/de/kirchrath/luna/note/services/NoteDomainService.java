@@ -13,6 +13,7 @@ import de.kirchrath.luna.note.converter.NoteConverter;
 import de.kirchrath.luna.note.data.entity.Note;
 import de.kirchrath.luna.note.data.entity.NoteStatus;
 import de.kirchrath.luna.note.data.repository.NoteRepository;
+import de.kirchrath.luna.note.dto.LifeAreaDto;
 import de.kirchrath.luna.note.dto.NoteDto;
 import de.kirchrath.luna.note.dto.NoteListDto;
 import de.kirchrath.luna.note.dto.NoteStatusDto;
@@ -44,11 +45,12 @@ public class NoteDomainService {
     }
 
     @Transactional(readOnly = true)
-    public NoteListDto listNotes(NoteStatusDto status, Pageable pageable) {
+    public NoteListDto listNotes(NoteStatusDto status, LifeAreaDto area, Pageable pageable) {
         var pageRequest = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), LIST_ORDER);
+        var areas = noteConverter.toEntities(area);
         var notes = status == null
-                ? noteRepository.findAll(pageRequest)
-                : noteRepository.findByStatus(noteConverter.toEntity(status), pageRequest);
+                ? noteRepository.findByAreaIn(areas, pageRequest)
+                : noteRepository.findByStatusAndAreaIn(noteConverter.toEntity(status), areas, pageRequest);
         return new NoteListDto(
                 notes.map(noteConverter::toListItemDto).getContent(), notes.getTotalPages(), notes.getTotalElements());
     }

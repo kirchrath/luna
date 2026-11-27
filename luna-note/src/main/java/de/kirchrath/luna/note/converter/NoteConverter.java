@@ -1,10 +1,14 @@
 package de.kirchrath.luna.note.converter;
 
+import java.util.Set;
+
 import org.springframework.stereotype.Component;
 
+import de.kirchrath.luna.note.data.entity.LifeArea;
 import de.kirchrath.luna.note.data.entity.Note;
 import de.kirchrath.luna.note.data.entity.NoteSource;
 import de.kirchrath.luna.note.data.entity.NoteStatus;
+import de.kirchrath.luna.note.dto.LifeAreaDto;
 import de.kirchrath.luna.note.dto.NoteDto;
 import de.kirchrath.luna.note.dto.NoteEventDto;
 import de.kirchrath.luna.note.dto.NoteListItemDto;
@@ -26,6 +30,7 @@ public class NoteConverter {
         return applyCore(Note.builder()
                 .source(NoteSource.CORE)
                 .sourceId(event.getId())
+                .area(noteMapper.toEntity(event.getArea()))
                 .status(NoteStatus.ACTIVE)
                 .edited(false)
                 .build(), event);
@@ -63,5 +68,10 @@ public class NoteConverter {
 
     public NoteStatus toEntity(NoteStatusDto status) {
         return noteMapper.toEntity(status);
+    }
+
+    /** Only the given area, or all areas without one. */
+    public Set<LifeArea> toEntities(LifeAreaDto area) {
+        return area == null ? Set.of(LifeArea.values()) : Set.of(noteMapper.toEntity(area));
     }
 }

@@ -29,6 +29,7 @@ import org.springframework.kafka.test.utils.KafkaTestUtils;
 
 import de.kirchrath.luna.note.config.TestcontainersConfig;
 import de.kirchrath.luna.note.data.entity.Note;
+import de.kirchrath.luna.note.data.entity.LifeArea;
 import de.kirchrath.luna.note.data.entity.NoteSource;
 import de.kirchrath.luna.note.data.entity.NoteStatus;
 import de.kirchrath.luna.note.data.repository.CoreNoteProjectionRepository;
@@ -99,12 +100,14 @@ class CoreNoteEventIntegrationTest {
         assertThat(note.summary()).isEqualTo("Roof will be renovated in May");
         assertThat(note.status()).isEqualTo(NoteStatus.ACTIVE);
         assertThat(note.edited()).isFalse();
+        assertThat(note.area()).isEqualTo(LifeArea.WORK);
         assertThat(projectionRepository.findByCoreNoteId(coreNoteId).orElseThrow().version()).isZero();
         assertThat(event.get("id").asString()).isEqualTo(note.id().toString());
         assertThat(event.has("type")).isFalse();
         assertThat(event.get("data").get("title").asString()).isEqualTo("Owners meeting");
         assertThat(event.get("data").get("source").asString()).isEqualTo("CORE");
         assertThat(event.get("data").get("sourceId").asString()).isEqualTo(coreNoteId.toString());
+        assertThat(event.get("data").get("area").asString()).isEqualTo("WORK");
         assertThat(event.get("audit").get("version").asLong()).isZero();
     }
 
@@ -203,6 +206,7 @@ class CoreNoteEventIntegrationTest {
         var event = Map.of(
                 "type", "NOTE",
                 "id", coreNoteId,
+                "area", "WORK",
                 "audit", Map.of(
                         "createdDate", "2026-11-26T10:00:00+01:00",
                         "lastModifiedDate", "2026-11-26T10:00:00+01:00",
