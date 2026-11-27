@@ -34,7 +34,10 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.SpecVersion;
 import io.swagger.v3.oas.models.info.Info;
 
-@SpringBootTest(properties = "app.classification.interval=1h")
+@SpringBootTest(properties = {
+        "app.classification.interval=1h",
+        // A provider exported in the shell (e.g. SPRING_AI_MODEL_CHAT for the stack) must not replace the mock.
+        "spring.ai.model.chat=none"})
 @AutoConfigureMockMvc
 @Import({TestcontainersConfig.class, ChatModelTestConfig.class})
 class GenerateOpenApiTest {

@@ -46,7 +46,10 @@ import de.kirchrath.luna.core.data.repository.OutboundEventRepository;
 import de.kirchrath.luna.core.dto.InboundEventChangedDto;
 import de.kirchrath.luna.core.services.ClassificationScheduler;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "app.classification.interval=1h")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+        "app.classification.interval=1h",
+        // A provider exported in the shell (e.g. SPRING_AI_MODEL_CHAT for the stack) must not replace the mock.
+        "spring.ai.model.chat=none"})
 @Import({TestcontainersConfig.class, ChatModelTestConfig.class})
 class InboundEventNotificationIntegrationTest {
 
