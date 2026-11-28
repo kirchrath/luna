@@ -86,6 +86,8 @@ Betrieb: siehe Abschnitt [Betrieb](#betrieb) (Heimnetz, Docker Stack).
 
 Weitere offene Punkte (_TODO_, nicht ohne Auftrag umsetzen):
 
+- **Projekte:** Elemente (Aufgaben, Termine, Notizen usw.) sollen einem Projekt zugeordnet werden können. Alles
+  Weitere (Bedeutung, Pflege, Zuordnung, Anzeige) wird später besprochen.
 - **Firefox meldet „Nicht sicher“** für `https://luna.internal`, obwohl das Root-Zertifikat importiert ist und die
   Kette mit `openssl s_client` als `0 (ok)` geprüft wird. Ursache noch unklar.
 
