@@ -14,6 +14,7 @@ public interface EmailMapper {
 
     @Mapping(target = "account", source = "mailbox.account")
     @Mapping(target = "address", source = "mailbox.address")
+    @Mapping(target = "area", source = "email.area")
     @Mapping(target = "from", source = "email.sender")
     @Mapping(target = "to", source = "email.recipients")
     @Mapping(target = "messageId", source = "email.messageId")

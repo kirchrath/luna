@@ -20,6 +20,7 @@ public record Alert(
         @With @Id UUID id,
         AlertSource source,
         UUID sourceId,
+        LifeArea area,
         String title,
         String message,
         AlertSeverity severity,

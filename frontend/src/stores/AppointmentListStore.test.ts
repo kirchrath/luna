@@ -1,13 +1,22 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { AppointmentListDto, AppointmentListItemDto } from '../api';
 import { fakeLunaAppointmentClient, fakePushConnector } from '../test';
+import { LifeAreaStore } from './LifeAreaStore';
 import { AppointmentListStore } from './AppointmentListStore';
 
 type ListResponse = Awaited<ReturnType<ReturnType<typeof fakeLunaAppointmentClient>['GET']>>;
 
 function item(id: string, status: AppointmentListItemDto['status'] = 'SCHEDULED'): AppointmentListItemDto {
-  return { id, title: `Appointment ${id}`, start: '2026-12-01T09:00:00Z', allDay: false, status, edited: false };
+  return {
+    area: 'PERSONAL',
+    id,
+    title: `Appointment ${id}`,
+    start: '2026-12-01T09:00:00Z',
+    allDay: false,
+    status,
+    edited: false,
+  };
 }
 
 function items(count: number, prefix = 'appointment'): AppointmentListItemDto[] {
@@ -23,8 +32,17 @@ function failedResponse(status: number): ListResponse {
   return { data: undefined, error: undefined, response: new Response(null, { status }) };
 }
 
-function createStore(lunaAppointment = fakeLunaAppointmentClient(), push = fakePushConnector()) {
-  return { store: new AppointmentListStore(lunaAppointment.client, push.connect), lunaAppointment, push };
+function createStore(
+  lunaAppointment = fakeLunaAppointmentClient(),
+  push = fakePushConnector(),
+  lifeAreaStore = new LifeAreaStore(),
+) {
+  return {
+    store: new AppointmentListStore(lunaAppointment.client, push.connect, lifeAreaStore),
+    lunaAppointment,
+    push,
+    lifeAreaStore,
+  };
 }
 
 function deferred() {
@@ -239,5 +257,49 @@ describe('AppointmentListStore', () => {
     // then
     expect(push.close).toHaveBeenCalledTimes(1);
     expect(store.connection).toBe('idle');
+  });
+
+  it('that a chosen life area should result into requests of this area only', async () => {
+    // given
+    const { store, lunaAppointment, lifeAreaStore } = createStore();
+    lifeAreaStore.changeFilter('WORK');
+
+    // when
+    await store.loadInitial();
+
+    // then
+    expect(lunaAppointment.GET).toHaveBeenCalledWith('/appointments', {
+      params: { query: { page: 0, size: 20, period: 'UPCOMING', area: ['WORK'] } },
+    });
+  });
+
+  it('that another life area while the list is shown should result into reloading it for this area', async () => {
+    // given
+    const { store, lunaAppointment, lifeAreaStore } = createStore();
+    lunaAppointment.GET.mockResolvedValueOnce(listResponse(items(3), 3));
+    await store.loadInitial();
+    store.connect();
+
+    // when
+    lifeAreaStore.changeFilter('WORK');
+
+    // then
+    await vi.waitFor(() => {
+      expect(lunaAppointment.GET).toHaveBeenLastCalledWith('/appointments', {
+        params: { query: { page: 0, size: 20, period: 'UPCOMING', area: ['WORK'] } },
+      });
+    });
+    expect(lunaAppointment.GET).toHaveBeenCalledTimes(2);
+  });
+
+  it('that another life area while the list is not shown should result into no request', () => {
+    // given
+    const { lunaAppointment, lifeAreaStore } = createStore();
+
+    // when
+    lifeAreaStore.changeFilter('WORK');
+
+    // then
+    expect(lunaAppointment.GET).not.toHaveBeenCalled();
   });
 });

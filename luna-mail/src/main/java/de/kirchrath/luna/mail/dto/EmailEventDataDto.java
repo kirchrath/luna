@@ -12,6 +12,9 @@ public record EmailEventDataDto(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
         String address,
 
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+        LifeAreaDto area,
+
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         String messageId,
 

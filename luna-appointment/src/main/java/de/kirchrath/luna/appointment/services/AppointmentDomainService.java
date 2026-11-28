@@ -1,5 +1,6 @@
 package de.kirchrath.luna.appointment.services;
 
+import java.util.List;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -18,6 +19,7 @@ import de.kirchrath.luna.appointment.dto.AppointmentDto;
 import de.kirchrath.luna.appointment.dto.AppointmentListDto;
 import de.kirchrath.luna.appointment.dto.AppointmentPeriodDto;
 import de.kirchrath.luna.appointment.dto.AppointmentUpdateDto;
+import de.kirchrath.luna.appointment.dto.LifeAreaDto;
 import de.kirchrath.luna.appointment.exception.AppointmentEndBeforeStartException;
 import de.kirchrath.luna.appointment.exception.AppointmentNotFoundException;
 import de.kirchrath.luna.appointment.exception.AppointmentVersionConflictException;
@@ -48,12 +50,16 @@ public class AppointmentDomainService {
 
     /** Upcoming appointments earliest first, past ones latest first. */
     @Transactional(readOnly = true)
-    public AppointmentListDto listAppointments(AppointmentPeriodDto period, Pageable pageable) {
+    public AppointmentListDto listAppointments(
+            AppointmentPeriodDto period, List<LifeAreaDto> areas, Pageable pageable) {
         var now = timeProvider.now();
+        var lifeAreas = appointmentConverter.toAreas(areas);
         var appointments = switch (period) {
-            case UPCOMING -> appointmentRepository.findByEffectiveEndGreaterThanEqual(now, page(pageable, EARLIEST_FIRST));
-            case PAST -> appointmentRepository.findByEffectiveEndLessThan(now, page(pageable, LATEST_FIRST));
-            case ALL -> appointmentRepository.findAll(page(pageable, EARLIEST_FIRST));
+            case UPCOMING -> appointmentRepository.findByEffectiveEndGreaterThanEqualAndAreaIn(
+                    now, lifeAreas, page(pageable, EARLIEST_FIRST));
+            case PAST -> appointmentRepository.findByEffectiveEndLessThanAndAreaIn(
+                    now, lifeAreas, page(pageable, LATEST_FIRST));
+            case ALL -> appointmentRepository.findByAreaIn(lifeAreas, page(pageable, EARLIEST_FIRST));
         };
         return new AppointmentListDto(
                 appointments.map(appointmentConverter::toListItemDto).getContent(), appointments.getTotalPages(),
@@ -62,8 +68,11 @@ public class AppointmentDomainService {
 
     /** All appointments overlapping the range, e.g. a month of the calendar. */
     @Transactional(readOnly = true)
-    public AppointmentListDto listAppointmentsInRange(OffsetDateTime from, OffsetDateTime to) {
-        var items = appointmentRepository.findByStartLessThanAndEffectiveEndGreaterThan(to, from, EARLIEST_FIRST)
+    public AppointmentListDto listAppointmentsInRange(
+            OffsetDateTime from, OffsetDateTime to, List<LifeAreaDto> areas) {
+        var items = appointmentRepository
+                .findByStartLessThanAndEffectiveEndGreaterThanAndAreaIn(
+                        to, from, appointmentConverter.toAreas(areas), EARLIEST_FIRST)
                 .stream()
                 .map(appointmentConverter::toListItemDto)
                 .toList();

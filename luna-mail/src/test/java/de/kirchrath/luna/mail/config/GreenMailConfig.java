@@ -37,13 +37,16 @@ public class GreenMailConfig {
             registry.add("app.mail.defaults.port", () -> greenMailContainer.getMappedPort(IMAPS_PORT));
             registry.add("app.mail.accounts.test.username", () -> TEST_ADDRESS);
             registry.add("app.mail.accounts.test.password", () -> PASSWORD);
+            registry.add("app.mail.accounts.test.area", () -> "PERSONAL");
             registry.add("app.mail.accounts.other.username", () -> OTHER_ADDRESS);
             registry.add("app.mail.accounts.other.password", () -> PASSWORD);
             registry.add("app.mail.accounts.other.host", greenMailContainer::getHost);
             registry.add("app.mail.accounts.other.port", () -> greenMailContainer.getMappedPort(IMAPS_PORT));
             registry.add("app.mail.accounts.other.folder", () -> "INBOX");
+            registry.add("app.mail.accounts.other.area", () -> "WORK");
             registry.add("app.mail.accounts.broken.username", () -> TEST_ADDRESS);
             registry.add("app.mail.accounts.broken.password", () -> "wrong");
+            registry.add("app.mail.accounts.broken.area", () -> "PERSONAL");
         };
     }
 }

@@ -17,6 +17,7 @@ import de.kirchrath.luna.alert.data.repository.AlertRepository;
 import de.kirchrath.luna.alert.dto.AlertDto;
 import de.kirchrath.luna.alert.dto.AlertListDto;
 import de.kirchrath.luna.alert.dto.AlertStatusDto;
+import de.kirchrath.luna.alert.dto.LifeAreaDto;
 import de.kirchrath.luna.alert.exception.AlertNotFoundException;
 import de.kirchrath.luna.alert.exception.AlertTransitionException;
 
@@ -44,13 +45,15 @@ public class AlertDomainService {
         this.eventPublisher = eventPublisher;
     }
 
-    /** Without statuses all alerts are listed. */
+    /** Without statuses the alerts of all statuses are listed, without areas those of all areas. */
     @Transactional(readOnly = true)
-    public AlertListDto listAlerts(List<AlertStatusDto> statuses, Pageable pageable) {
+    public AlertListDto listAlerts(List<AlertStatusDto> statuses, List<LifeAreaDto> areas, Pageable pageable) {
         var pageRequest = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), LIST_ORDER);
+        var lifeAreas = alertConverter.toAreas(areas);
         var alerts = statuses.isEmpty()
-                ? alertRepository.findAll(pageRequest)
-                : alertRepository.findByStatusIn(alertConverter.toEntities(statuses), pageRequest);
+                ? alertRepository.findByAreaIn(lifeAreas, pageRequest)
+                : alertRepository.findByStatusInAndAreaIn(
+                        alertConverter.toEntities(statuses), lifeAreas, pageRequest);
         return new AlertListDto(
                 alerts.map(alertConverter::toListItemDto).getContent(), alerts.getTotalPages(),
                 alerts.getTotalElements());

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import de.kirchrath.luna.alert.dto.AlertDto;
 import de.kirchrath.luna.alert.dto.AlertListDto;
 import de.kirchrath.luna.alert.dto.AlertStatusDto;
+import de.kirchrath.luna.alert.dto.LifeAreaDto;
 import de.kirchrath.luna.alert.services.AlertApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,7 +30,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name = "Alerts")
 public class AlertController {
 
+
     private static final String ID = "/{id}";
+    private static final String AREA = "area";
 
     private final AlertApplicationService alertApplicationService;
 
@@ -52,8 +55,9 @@ public class AlertController {
             })
     public AlertListDto listAlerts(
             @RequestParam(required = false, defaultValue = "") List<AlertStatusDto> status,
+            @RequestParam(name = AREA, required = false, defaultValue = "") List<LifeAreaDto> areas,
             @Parameter(hidden = true) Pageable pageable) {
-        return alertApplicationService.listAlerts(status, pageable);
+        return alertApplicationService.listAlerts(status, areas, pageable);
     }
 
     @GetMapping(path = ID, produces = MediaType.APPLICATION_JSON_VALUE)

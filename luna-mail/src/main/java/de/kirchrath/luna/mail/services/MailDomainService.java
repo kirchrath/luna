@@ -71,7 +71,8 @@ public class MailDomainService {
                 log.warn("UIDVALIDITY of account {} changed, continuing with new emails only", accountName);
             }
             for (var fetched : result.emails()) {
-                var email = emailRepository.save(emailConverter.toEmail(mailbox.id(), result.uidValidity(), fetched));
+                var email = emailRepository.save(emailConverter.toEmail(
+                        mailbox.id(), mailProperties.accounts().get(accountName).area(), result.uidValidity(), fetched));
                 eventPublisher.publishEvent(new EmailSavedEvent(emailConverter.toEvent(email, mailbox)));
             }
             mailbox = mailbox.toBuilder()

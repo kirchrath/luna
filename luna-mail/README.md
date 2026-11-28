@@ -38,8 +38,9 @@ Veröffentlichte Events: [kafka-api.yaml](kafka-api.yaml) (Kopie für `luna-core
 
 ## Konten
 
-Konten stehen unter `app.mail.accounts.<name>` mit `username` (Adresse), `password` (App-Passwort) und optional
-`host`, `port` und `folder`; ohne diese gelten `app.mail.defaults` (`imap.gmail.com`, `993`, `INBOX`). So kommen auch
+Konten stehen unter `app.mail.accounts.<name>` mit `username` (Adresse), `password` (App-Passwort), `area`
+(Lebensbereich aller E-Mails des Kontos: `PERSONAL` oder `WORK`, **Pflicht** – ohne startet `luna-mail` nicht) und
+optional `host`, `port` und `folder`; ohne diese gelten `app.mail.defaults` (`imap.gmail.com`, `993`, `INBOX`). So kommen auch
 andere Anbieter mit IMAP ohne Codeänderung dazu.
 
 ```yaml
@@ -49,9 +50,11 @@ app:
       privat:
         username: vorname.nachname@gmail.com
         password: abcd efgh ijkl mnop
+        area: PERSONAL
       verein:
         username: kasse@verein.example
         password: <app-passwort>
+        area: WORK
         host: imap.example.net
 ```
 

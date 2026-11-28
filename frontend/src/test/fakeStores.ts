@@ -25,6 +25,7 @@ const EMPTY_PAGE = { items: [], totalPages: 0, totalCount: 0 };
 
 export const TASK: TaskDto = {
   data: {
+    area: 'PERSONAL',
     title: 'Pay the electricity bill',
     description: 'Customer number 4711',
     dueDate: '2026-11-30T09:00:00Z',
@@ -39,6 +40,7 @@ export const TASK: TaskDto = {
 
 export const ALERT: AlertDto = {
   data: {
+    area: 'PERSONAL',
     title: 'NAS disk almost full',
     message: 'Volume 1 is 94 % full',
     severity: 'CRITICAL',
@@ -52,6 +54,7 @@ export const ALERT: AlertDto = {
 
 export const NOTE: NoteDto = {
   data: {
+    area: 'PERSONAL',
     title: 'Owners meeting',
     summary: 'Roof will be renovated in May',
     status: 'ACTIVE',
@@ -93,6 +96,7 @@ export function fakeLunaAlertClient(list: AlertListDto = EMPTY_PAGE, alert: Aler
 
 export const APPOINTMENT: AppointmentDto = {
   data: {
+    area: 'PERSONAL',
     title: 'Dentist Dr. Weber',
     start: '2026-12-01T09:00:00Z',
     end: '2026-12-01T10:00:00Z',

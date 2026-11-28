@@ -36,6 +36,7 @@ describe('NoteDetailPage', () => {
     expect(
       screen.getByText('Neue Analyse-Ergebnisse aktualisieren diese Notiz, bis du sie bearbeitest.'),
     ).toBeInTheDocument();
+    expect(screen.getByText('Bereich: Privat')).toBeInTheDocument();
   });
 
   it('that saving changes should result into an update with the loaded version', async () => {

@@ -32,6 +32,7 @@ import de.kirchrath.luna.appointment.config.TestcontainersConfig;
 import de.kirchrath.luna.appointment.data.entity.Appointment;
 import de.kirchrath.luna.appointment.data.entity.AppointmentSource;
 import de.kirchrath.luna.appointment.data.entity.AppointmentStatus;
+import de.kirchrath.luna.appointment.data.entity.LifeArea;
 import de.kirchrath.luna.appointment.data.repository.CoreAppointmentProjectionRepository;
 import de.kirchrath.luna.appointment.data.repository.AppointmentRepository;
 import tools.jackson.databind.JsonNode;
@@ -106,12 +107,14 @@ class CoreAppointmentEventIntegrationTest {
         assertThat(appointment.effectiveEnd()).isEqualTo(END);
         assertThat(appointment.status()).isEqualTo(AppointmentStatus.SCHEDULED);
         assertThat(appointment.edited()).isFalse();
+        assertThat(appointment.area()).isEqualTo(LifeArea.WORK);
         assertThat(projectionRepository.findByCoreAppointmentId(coreAppointmentId).orElseThrow().version()).isZero();
         assertThat(event.get("id").asString()).isEqualTo(appointment.id().toString());
         assertThat(event.has("type")).isFalse();
         assertThat(event.get("data").get("title").asString()).isEqualTo("Dentist");
         assertThat(event.get("data").get("source").asString()).isEqualTo("CORE");
         assertThat(event.get("data").get("sourceId").asString()).isEqualTo(coreAppointmentId.toString());
+        assertThat(event.get("data").get("area").asString()).isEqualTo("WORK");
         assertThat(event.get("audit").get("version").asLong()).isZero();
     }
 
@@ -213,6 +216,7 @@ class CoreAppointmentEventIntegrationTest {
         var event = Map.of(
                 "type", "APPOINTMENT",
                 "id", coreAppointmentId,
+                "area", "WORK",
                 "audit", Map.of(
                         "createdDate", "2026-11-26T10:00:00+01:00",
                         "lastModifiedDate", "2026-11-26T10:00:00+01:00",

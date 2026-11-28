@@ -28,6 +28,7 @@ import de.kirchrath.luna.alert.data.entity.Alert;
 import de.kirchrath.luna.alert.data.entity.AlertSeverity;
 import de.kirchrath.luna.alert.data.entity.AlertSource;
 import de.kirchrath.luna.alert.data.entity.AlertStatus;
+import de.kirchrath.luna.alert.data.entity.LifeArea;
 import de.kirchrath.luna.alert.data.repository.AlertRepository;
 import de.kirchrath.luna.alert.data.repository.CoreAlertProjectionRepository;
 
@@ -67,6 +68,7 @@ class AlertControllerTest {
                 .andExpect(jsonPath("$.items[*].id").value(contains(newerCritical.id().toString(),
                         olderCritical.id().toString(), warning.id().toString(), info.id().toString())))
                 .andExpect(jsonPath("$.items[0].title").value("Disk full"))
+                .andExpect(jsonPath("$.items[0].area").value("PERSONAL"))
                 .andExpect(jsonPath("$.items[0].severity").value("CRITICAL"))
                 .andExpect(jsonPath("$.items[0].status").value("RESOLVED"))
                 .andExpect(jsonPath("$.items[0].affectedSystem").value("nas01"))
@@ -86,6 +88,52 @@ class AlertControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[*].id").value(contains(open.id().toString(), acknowledged.id().toString())))
                 .andExpect(jsonPath("$.totalCount").value(2));
+    }
+
+    @Test
+    void thatListingAlertsByAreaShouldResultIntoTheAlertsOfThisAreaOnly() throws Exception {
+        // given
+        save("Disk almost full", AlertSeverity.CRITICAL, 0, AlertStatus.OPEN, LifeArea.PERSONAL);
+        var work = save("Build server down", AlertSeverity.CRITICAL, 0, AlertStatus.OPEN, LifeArea.WORK);
+
+        // when / then
+        mockMvc.perform(get("/alerts").param("area", "WORK").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[*].id").value(contains(work.id().toString())))
+                .andExpect(jsonPath("$.items[0].area").value("WORK"))
+                .andExpect(jsonPath("$.totalCount").value(1));
+    }
+
+    @Test
+    void thatListingAlertsByStatusesAndAreaShouldResultIntoTheAlertsMatchingBoth() throws Exception {
+        // given
+        save("Disk almost full", AlertSeverity.CRITICAL, 0, AlertStatus.OPEN, LifeArea.PERSONAL);
+        save("Build server down", AlertSeverity.CRITICAL, 0, AlertStatus.RESOLVED, LifeArea.WORK);
+        var openWork = save("VPN certificate expires", AlertSeverity.WARNING, 1, AlertStatus.OPEN, LifeArea.WORK);
+
+        // when / then
+        mockMvc.perform(get("/alerts").param("status", "OPEN").param("area", "WORK").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[*].id").value(contains(openWork.id().toString())))
+                .andExpect(jsonPath("$.totalCount").value(1));
+    }
+
+    @Test
+    void thatListingAlertsOfSeveralAreasShouldResultIntoTheAlertsOfTheseAreas() throws Exception {
+        // given
+        save("Disk almost full", AlertSeverity.CRITICAL, 0, AlertStatus.OPEN, LifeArea.PERSONAL);
+        save("Build server down", AlertSeverity.CRITICAL, 0, AlertStatus.OPEN, LifeArea.WORK);
+
+        // when / then
+        mockMvc.perform(get("/alerts").param("area", "PERSONAL", "WORK").with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(2));
+    }
+
+    @Test
+    void thatListingAlertsWithAnUnknownAreaShouldResultIntoABadRequest() throws Exception {
+        // when / then
+        mockMvc.perform(get("/alerts").param("area", "UNKNOWN").with(jwt())).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -116,6 +164,7 @@ class AlertControllerTest {
                 .andExpect(jsonPath("$.data.acknowledgedDate").doesNotExist())
                 .andExpect(jsonPath("$.data.source").value("CORE"))
                 .andExpect(jsonPath("$.data.sourceId").value(alert.sourceId().toString()))
+                .andExpect(jsonPath("$.data.area").value("PERSONAL"))
                 .andExpect(jsonPath("$.data.severityRank").doesNotExist())
                 .andExpect(jsonPath("$.audit.version").value(0));
     }
@@ -211,9 +260,14 @@ class AlertControllerTest {
     }
 
     private Alert save(String title, AlertSeverity severity, int severityRank, AlertStatus status) {
+        return save(title, severity, severityRank, status, LifeArea.PERSONAL);
+    }
+
+    private Alert save(String title, AlertSeverity severity, int severityRank, AlertStatus status, LifeArea area) {
         return alertRepository.save(Alert.builder()
                 .source(AlertSource.CORE)
                 .sourceId(UUID.randomUUID())
+                .area(area)
                 .title(title)
                 .message("Volume 1 is 94 % full")
                 .severity(severity)

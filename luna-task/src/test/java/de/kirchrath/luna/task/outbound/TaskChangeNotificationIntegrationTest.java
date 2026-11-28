@@ -34,6 +34,7 @@ import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import de.kirchrath.luna.task.config.TestcontainersConfig;
+import de.kirchrath.luna.task.data.entity.LifeArea;
 import de.kirchrath.luna.task.data.entity.Task;
 import de.kirchrath.luna.task.data.entity.TaskPriority;
 import de.kirchrath.luna.task.data.entity.TaskSource;
@@ -87,6 +88,7 @@ class TaskChangeNotificationIntegrationTest {
         var task = taskRepository.save(Task.builder()
                 .source(TaskSource.CORE)
                 .sourceId(UUID.randomUUID())
+                .area(LifeArea.PERSONAL)
                 .title("Pay the electricity bill")
                 .priority(TaskPriority.NORMAL)
                 .status(TaskStatus.OPEN)

@@ -67,6 +67,7 @@ describe('AppointmentDetailPage', () => {
     expect(
       screen.getByText('Neue Analyse-Ergebnisse aktualisieren diesen Termin, bis du ihn bearbeitest.'),
     ).toBeInTheDocument();
+    expect(screen.getByText('Bereich: Privat')).toBeInTheDocument();
   });
 
   it.each([

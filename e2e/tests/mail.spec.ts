@@ -21,6 +21,8 @@ test('that a new email should result into an analyzed input with the email in th
   await expect(input).toBeVisible({ timeout: 30_000 });
   await expect(input.getByText('Power company <billing@power.test>')).toBeVisible();
   await expect(input.getByRole('img', { name: 'E-Mail' })).toBeVisible();
+  // The test account belongs to the work area.
+  await expect(input.getByRole('img', { name: 'Beruflich' })).toBeVisible();
   await expect(input.getByText('Analysiert')).toBeVisible();
   await expect(input.getByText('Aufgabe')).toBeVisible();
 });

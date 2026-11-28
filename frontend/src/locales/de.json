@@ -53,7 +53,8 @@
     "noSubject": "(ohne Betreff)",
     "source": {
       "MAIL": "E-Mail"
-    }
+    },
+    "areaFromFilter": "Wird unter „{{area}}“ gespeichert – umstellen über den Lebensbereich oben."
   },
   "tasks": {
     "title": "Aufgaben",
@@ -349,5 +350,15 @@
     "created": "Angelegt {{date}}",
     "modified": "Geändert {{date}}",
     "cancelledOn": "Abgesagt {{date}}"
+  },
+  "lifeArea": {
+    "label": "Lebensbereich",
+    "filterLabel": "Angezeigter Lebensbereich",
+    "ALL": "Alle Bereiche",
+    "PERSONAL": "Privat",
+    "WORK": "Beruflich",
+    "detail": "Bereich: {{area}}",
+    "deviceLabel": "Bereiche auf diesem Gerät",
+    "lastVisible": "Mindestens ein Bereich bleibt sichtbar."
   }
 }

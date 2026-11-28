@@ -17,6 +17,7 @@ import lombok.With;
 public record Email(
         @With @Id UUID id,
         UUID mailboxId,
+        LifeArea area,
         long uidValidity,
         long uid,
         String messageId,

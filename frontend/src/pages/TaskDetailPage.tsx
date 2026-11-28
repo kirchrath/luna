@@ -9,6 +9,7 @@ import { PATHS, ID_PARAMETER } from '../navigation';
 import { useStores } from '../stores';
 import { ChipGroup, RelativeTime } from '../ui';
 import { formatDateTime, fromDueDateInput, toDueDateInput } from './taskDates';
+import { LifeAreaDetail } from './LifeArea';
 
 export const MAX_TITLE_LENGTH = 500;
 export const MAX_DESCRIPTION_LENGTH = 10_000;
@@ -131,6 +132,7 @@ const TaskDetail = observer(function TaskDetail({ task }: { task: TaskDto }) {
           <Sparkles size={ICON_SIZE} aria-hidden="true" />
           <span>{t(`taskDetail.source.${data.source}`)}</span>
         </p>
+        <LifeAreaDetail area={data.area} />
         <p className="is-size-7 has-text-grey">
           {t(data.edited ? 'taskDetail.editedHint' : 'taskDetail.uneditedHint')}
         </p>

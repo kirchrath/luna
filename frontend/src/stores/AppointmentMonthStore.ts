@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, reaction } from 'mobx';
 
 import type {
   AppointmentListItemDto,
@@ -7,6 +7,7 @@ import type {
   PushConnection,
 } from '../api';
 import type { ConnectionState } from './InboundEventStore';
+import type { LifeAreaStore } from './LifeAreaStore';
 
 const RANGE_PATH = '/appointments/range';
 const FIRST_DAY = 1;
@@ -26,19 +27,42 @@ export class AppointmentMonthStore {
 
   private readonly client: LunaAppointmentClient;
   private readonly connectPush: LunaAppointmentPushConnector;
+  private readonly lifeAreaStore: LifeAreaStore;
   private pushConnection: PushConnection | null = null;
   private wasConnected = false;
   /** Only the response of the latest request is shown, e.g. after paging through months quickly. */
   private latestRequest = 0;
 
-  constructor(client: LunaAppointmentClient, connectPush: LunaAppointmentPushConnector, today: Date = new Date()) {
+  constructor(
+    client: LunaAppointmentClient,
+    connectPush: LunaAppointmentPushConnector,
+    lifeAreaStore: LifeAreaStore,
+    today: Date = new Date(),
+  ) {
     this.client = client;
     this.connectPush = connectPush;
+    this.lifeAreaStore = lifeAreaStore;
     this._month = new Date(today.getFullYear(), today.getMonth(), FIRST_DAY);
     makeAutoObservable<
       AppointmentMonthStore,
-      'client' | 'connectPush' | 'pushConnection' | 'wasConnected' | 'latestRequest'
-    >(this, { client: false, connectPush: false, pushConnection: false, wasConnected: false, latestRequest: false });
+      'client' | 'connectPush' | 'lifeAreaStore' | 'pushConnection' | 'wasConnected' | 'latestRequest'
+    >(this, {
+      client: false,
+      connectPush: false,
+      lifeAreaStore: false,
+      pushConnection: false,
+      wasConnected: false,
+      latestRequest: false,
+    });
+    // A list that is shown (connected) follows the shown areas at once; others load them when they are shown next.
+    reaction(
+      () => this.lifeAreaStore.query.area?.join(),
+      () => {
+        if (this.pushConnection !== null) {
+          void this.load();
+        }
+      },
+    );
   }
 
   get month(): Date {
@@ -114,7 +138,7 @@ export class AppointmentMonthStore {
     this.loading = true;
     try {
       const { data } = await this.client.GET(RANGE_PATH, {
-        params: { query: { from: from.toISOString(), to: to.toISOString() } },
+        params: { query: { from: from.toISOString(), to: to.toISOString(), ...this.lifeAreaStore.query } },
       });
       if (request !== this.latestRequest) {
         return;

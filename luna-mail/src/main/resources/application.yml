@@ -54,5 +54,6 @@ app:
       host: imap.gmail.com
       port: 993
       folder: INBOX
-    # Accounts by name, each with username, password and optionally host, port and folder; set by the profile.
+    # Accounts by name, each with username, password, area (required) and optionally host, port and folder; set by
+    # the profile.
     accounts:

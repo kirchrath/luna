@@ -46,6 +46,7 @@ Die Java-Typen der Core-Events werden beim Build aus `src/main/resources/kafka-a
 | `status` | `OPEN`, `DONE` | neu immer `OPEN` |
 | `completedDate` | Zeitpunkt | beim Erledigen |
 | `source`, `sourceId` | `CORE` + ID der Core-Aufgabe | Core-Event |
+| `area` | `PERSONAL`, `WORK` (Lebensbereich) | Core-Event, danach **unveränderlich** (kein Update-Endpunkt ändert ihn, neuere Core-Versionen auch nicht) |
 | `edited` | ja/nein | `true` nach jeder Änderung durch den Benutzer |
 
 ## REST-API
@@ -54,7 +55,7 @@ Spezifikation: [openapi.yaml](openapi.yaml). Veröffentlichte Events: [kafka-api
 
 | Methode und Pfad | Zweck |
 |---|---|
-| `GET /tasks?status=&page=&size=` | Liste, optional nach Status gefiltert; sortiert nach Fälligkeit (ohne Fälligkeit zuletzt), dann Eingang |
+| `GET /tasks?status=&area=&page=&size=` | Liste, optional nach Status und Lebensbereich gefiltert; sortiert nach Fälligkeit (ohne Fälligkeit zuletzt), dann Eingang |
 | `GET /tasks/{id}` | Details (`404`, wenn unbekannt) |
 | `PUT /tasks/{id}` | Titel, Beschreibung, Fälligkeit, Priorität ändern; mit `version` (`409` bei Konflikt) |
 | `POST /tasks/{id}/complete` | Erledigen (bereits erledigt: unverändert) |

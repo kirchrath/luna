@@ -14,5 +14,6 @@ public record TaskDataDto(
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) OffsetDateTime completedDate,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) TaskSourceDto source,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) UUID sourceId,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) LifeAreaDto area,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) boolean edited) {
 }

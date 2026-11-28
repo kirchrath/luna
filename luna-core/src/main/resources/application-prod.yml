@@ -20,3 +20,9 @@ app:
     # Traefik forwards the WebSocket handshake with X-Forwarded-Proto wss, so the own origin never matches the computed
     # URL; it is therefore allowed explicitly.
     allowed-origins: https://luna.internal
+  ai:
+    # One provider per life area. Type, base URL and model come from the environment (APP_AI_PROVIDERS_<AREA>_TYPE,
+    # _BASE_URL, _MODEL), the API key from the secret luna_core_ai_<area>_api_key.
+    areas:
+      PERSONAL: personal
+      WORK: work

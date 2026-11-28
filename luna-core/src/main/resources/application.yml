@@ -13,7 +13,8 @@ spring:
     default-schema: luna_core
   ai:
     model:
-      chat:
+      # The chat models are built per life area from app.ai (see AiConfig), not by Spring AI's auto-configuration.
+      chat: none
       decision: none
       embedding: none
       image: none
@@ -71,6 +72,12 @@ server:
   forward-headers-strategy: framework
 
 app:
+  ai:
+    # AI providers by name, each with type (ollama, anthropic or openai), base-url (optional), model and api-key (not
+    # for ollama); set by the profile.
+    providers:
+    # The provider of each life area (PERSONAL, WORK): every input is analyzed by the provider of its area only.
+    areas:
   cors:
     allowed-origins:
   websocket:

@@ -5,11 +5,13 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
 import de.kirchrath.luna.appointment.data.entity.Appointment;
-import de.kirchrath.luna.appointment.dto.AuditDto;
+import de.kirchrath.luna.appointment.data.entity.LifeArea;
 import de.kirchrath.luna.appointment.dto.AppointmentDataDto;
 import de.kirchrath.luna.appointment.dto.AppointmentDto;
 import de.kirchrath.luna.appointment.dto.AppointmentEventDto;
 import de.kirchrath.luna.appointment.dto.AppointmentListItemDto;
+import de.kirchrath.luna.appointment.dto.AuditDto;
+import de.kirchrath.luna.appointment.dto.LifeAreaDto;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface AppointmentMapper {
@@ -27,4 +29,8 @@ public interface AppointmentMapper {
     AppointmentEventDto toEventDto(Appointment appointment);
 
     AppointmentListItemDto toListItemDto(Appointment appointment);
+
+    LifeArea toEntity(LifeAreaDto area);
+
+    LifeArea toEntity(de.kirchrath.luna.appointment.dto.core.AppointmentEventDto.AreaEnum area);
 }

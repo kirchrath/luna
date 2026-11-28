@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
 import type { InboundEventListDto } from '../api';
+import { STORAGE_KEYS, writePreference } from '../services';
 import { fakeRootStore, renderApp } from '../test';
 
 const LIST: InboundEventListDto = {
@@ -10,6 +11,7 @@ const LIST: InboundEventListDto = {
   totalCount: 12,
   items: [
     {
+      area: 'PERSONAL',
       id: 'appointment',
       source: 'MANUAL',
       text: 'Dentist on 1 December at 10, then get the bonus booklet stamped',
@@ -21,6 +23,7 @@ const LIST: InboundEventListDto = {
       ],
     },
     {
+      area: 'PERSONAL',
       id: 'pending',
       source: 'MANUAL',
       text: 'Milk is empty',
@@ -29,6 +32,7 @@ const LIST: InboundEventListDto = {
       elements: [],
     },
     {
+      area: 'PERSONAL',
       id: 'failed',
       source: 'MANUAL',
       text: 'Plant the balcony',
@@ -37,6 +41,7 @@ const LIST: InboundEventListDto = {
       elements: [],
     },
     {
+      area: 'PERSONAL',
       id: 'mail',
       source: 'MAIL',
       subject: 'Invoice 4711',
@@ -46,6 +51,7 @@ const LIST: InboundEventListDto = {
       elements: [{ id: 'e3', type: 'TASK' }],
     },
     {
+      area: 'PERSONAL',
       id: 'mail-without-subject',
       source: 'MAIL',
       status: 'RECEIVED',
@@ -94,6 +100,7 @@ describe('QuickInputPage', () => {
     expect(within(entry(entries, 3)).getByText('Invoice 4711')).toHaveClass('has-text-weight-semibold');
     expect(within(entry(entries, 3)).getByText('Power company <billing@power.test>')).toBeInTheDocument();
     expect(within(entry(entries, 4)).getByText('(ohne Betreff)')).toBeInTheDocument();
+    expect(within(entry(entries, 0)).getByRole('img', { name: 'Privat' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Mehr laden' })).toBeInTheDocument();
     expect(push.connect).toHaveBeenCalledTimes(1);
   });
@@ -121,7 +128,7 @@ describe('QuickInputPage', () => {
 
     // then
     expect(lunaCore.POST).toHaveBeenCalledWith('/inbound-events/manual', {
-      body: { text: 'Pay the invoice', typeHint: 'INVOICE' },
+      body: { text: 'Pay the invoice', area: 'PERSONAL', typeHint: 'INVOICE' },
     });
     await waitFor(() => {
       expect(textField()).toHaveValue('');
@@ -139,7 +146,9 @@ describe('QuickInputPage', () => {
 
     // then
     await waitFor(() => {
-      expect(lunaCore.POST).toHaveBeenCalledWith('/inbound-events/manual', { body: { text: 'Milk is empty' } });
+      expect(lunaCore.POST).toHaveBeenCalledWith('/inbound-events/manual', {
+        body: { text: 'Milk is empty', area: 'PERSONAL' },
+      });
     });
   });
 
@@ -266,5 +275,44 @@ describe('QuickInputPage', () => {
 
     // then
     expect(push.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('that choosing a life area while all areas are shown should result into an input of this area', async () => {
+    // given
+    const { lunaCore } = await renderPage();
+    await userEvent.type(textField(), 'Prepare the review');
+    const areas = screen.getByRole('group', { name: 'Lebensbereich' });
+
+    // when
+    await userEvent.click(within(areas).getByRole('button', { name: 'Beruflich' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Absenden' }));
+
+    // then
+    expect(lunaCore.POST).toHaveBeenCalledWith('/inbound-events/manual', {
+      body: { text: 'Prepare the review', area: 'WORK' },
+    });
+    expect(within(areas).getByRole('button', { name: 'Beruflich' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('that a shown life area should result into inputs of this area without a choice', async () => {
+    // given
+    writePreference(STORAGE_KEYS.lifeAreaFilter, 'WORK');
+    const { lunaCore } = await renderPage();
+    await userEvent.type(textField(), 'Prepare the review');
+
+    // when
+    await userEvent.click(screen.getByRole('button', { name: 'Absenden' }));
+
+    // then
+    expect(screen.queryByRole('group', { name: 'Lebensbereich' })).toBeNull();
+    expect(
+      screen.getByText('Wird unter „Beruflich“ gespeichert – umstellen über den Lebensbereich oben.'),
+    ).toBeInTheDocument();
+    expect(lunaCore.POST).toHaveBeenCalledWith('/inbound-events/manual', {
+      body: { text: 'Prepare the review', area: 'WORK' },
+    });
+    expect(lunaCore.GET).toHaveBeenCalledWith('/inbound-events', {
+      params: { query: { page: 0, size: 10, area: ['WORK'] } },
+    });
   });
 });

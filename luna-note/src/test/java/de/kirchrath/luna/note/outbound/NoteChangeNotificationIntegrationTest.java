@@ -34,6 +34,7 @@ import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import de.kirchrath.luna.note.config.TestcontainersConfig;
+import de.kirchrath.luna.note.data.entity.LifeArea;
 import de.kirchrath.luna.note.data.entity.Note;
 import de.kirchrath.luna.note.data.entity.NoteSource;
 import de.kirchrath.luna.note.data.entity.NoteStatus;
@@ -86,6 +87,7 @@ class NoteChangeNotificationIntegrationTest {
         var note = noteRepository.save(Note.builder()
                 .source(NoteSource.CORE)
                 .sourceId(UUID.randomUUID())
+                .area(LifeArea.PERSONAL)
                 .title("Owners meeting")
                 .summary("Roof will be renovated in May")
                 .status(NoteStatus.ACTIVE)

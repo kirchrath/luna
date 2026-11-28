@@ -12,14 +12,16 @@ import de.kirchrath.luna.core.data.entity.EventData;
 import de.kirchrath.luna.core.data.entity.EventSource;
 import de.kirchrath.luna.core.data.entity.InboundEvent;
 import de.kirchrath.luna.core.data.entity.InboundEventStatus;
+import de.kirchrath.luna.core.data.entity.LifeArea;
 import de.kirchrath.luna.core.data.entity.LunaElementType;
 import de.kirchrath.luna.core.data.entity.OutboundEvent;
 import de.kirchrath.luna.core.data.entity.OutboundEventStatus;
 import de.kirchrath.luna.core.dto.ElementReferenceDto;
-import de.kirchrath.luna.core.dto.InboundEventStatusDto;
-import de.kirchrath.luna.core.dto.LunaElementTypeDto;
 import de.kirchrath.luna.core.dto.InboundEventListItemDto;
 import de.kirchrath.luna.core.dto.InboundEventSourceDto;
+import de.kirchrath.luna.core.dto.InboundEventStatusDto;
+import de.kirchrath.luna.core.dto.LifeAreaDto;
+import de.kirchrath.luna.core.dto.LunaElementTypeDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.mail.EmailEventDataDto;
 
@@ -35,12 +37,12 @@ class InboundEventConverterTest {
     @Test
     void thatConvertingAnAnalyzedManualInboundEventShouldResultIntoAListItemWithItsElements() {
         // given
-        var inboundEvent = new InboundEvent(INBOUND_ID, EventSource.MANUAL, null, new EventData("{}"),
+        var inboundEvent = new InboundEvent(INBOUND_ID, EventSource.MANUAL, null, LifeArea.PERSONAL, new EventData("{}"),
                 InboundEventStatus.ANALYZED, 1, NOW, NOW, 1L);
-        var input = new ManualInputDataDto("Dentist on Tuesday, bring the bonus booklet", LunaElementTypeDto.APPOINTMENT);
+        var input = new ManualInputDataDto("Dentist on Tuesday, bring the bonus booklet", LifeAreaDto.PERSONAL, LunaElementTypeDto.APPOINTMENT);
         var outboundEvents = List.of(
-                new OutboundEvent(APPOINTMENT_ID, INBOUND_ID, LunaElementType.APPOINTMENT, OutboundEventStatus.PUBLISHED, NOW, NOW, 0L),
-                new OutboundEvent(TASK_ID, INBOUND_ID, LunaElementType.TASK, OutboundEventStatus.PUBLISHED, NOW, NOW, 0L));
+                new OutboundEvent(APPOINTMENT_ID, INBOUND_ID, LunaElementType.APPOINTMENT, LifeArea.PERSONAL, OutboundEventStatus.PUBLISHED, NOW, NOW, 0L),
+                new OutboundEvent(TASK_ID, INBOUND_ID, LunaElementType.TASK, LifeArea.PERSONAL, OutboundEventStatus.PUBLISHED, NOW, NOW, 0L));
 
         // when
         var item = inboundEventConverter.toListItemDto(inboundEvent, input, null, outboundEvents);
@@ -49,6 +51,7 @@ class InboundEventConverterTest {
         assertThat(item).isEqualTo(new InboundEventListItemDto(
                 INBOUND_ID,
                 InboundEventSourceDto.MANUAL,
+                LifeAreaDto.PERSONAL,
                 "Dentist on Tuesday, bring the bonus booklet",
                 LunaElementTypeDto.APPOINTMENT,
                 null,
@@ -62,9 +65,9 @@ class InboundEventConverterTest {
     @Test
     void thatConvertingAReceivedManualInboundEventShouldResultIntoAListItemWithoutElements() {
         // given
-        var inboundEvent = new InboundEvent(INBOUND_ID, EventSource.MANUAL, null, new EventData("{}"),
+        var inboundEvent = new InboundEvent(INBOUND_ID, EventSource.MANUAL, null, LifeArea.PERSONAL, new EventData("{}"),
                 InboundEventStatus.RECEIVED, 0, NOW, NOW, 0L);
-        var input = new ManualInputDataDto("Milk is empty", null);
+        var input = new ManualInputDataDto("Milk is empty", LifeAreaDto.PERSONAL, null);
 
         // when
         var item = inboundEventConverter.toListItemDto(inboundEvent, input, null, List.of());
@@ -78,7 +81,7 @@ class InboundEventConverterTest {
     @Test
     void thatConvertingAMailInboundEventShouldResultIntoAListItemWithSubjectAndSender() {
         // given
-        var inboundEvent = new InboundEvent(INBOUND_ID, EventSource.MAIL, UUID.randomUUID(), new EventData("{}"),
+        var inboundEvent = new InboundEvent(INBOUND_ID, EventSource.MAIL, UUID.randomUUID(), LifeArea.PERSONAL, new EventData("{}"),
                 InboundEventStatus.RECEIVED, 0, NOW, NOW, 0L);
         var email = new EmailEventDataDto().subject("Invoice 4711").from("Power company <billing@power.test>");
 

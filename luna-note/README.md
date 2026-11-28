@@ -32,6 +32,7 @@ nicht lesbare Events direkt im DLT. Die Core-DTOs werden aus `src/main/resources
 | `status` | `ACTIVE`, `ARCHIVED` | neu immer `ACTIVE` |
 | `archivedDate` | Zeitpunkt | beim Archivieren |
 | `source`, `sourceId` | `CORE` + ID der Core-Notiz | Core-Event |
+| `area` | `PERSONAL`, `WORK` (Lebensbereich) | Core-Event, danach **unveränderlich** (kein Update-Endpunkt ändert ihn, neuere Core-Versionen auch nicht) |
 | `edited` | ja/nein | `true` nach jeder Änderung durch den Benutzer |
 
 ## REST-API
@@ -40,7 +41,7 @@ Spezifikation: [openapi.yaml](openapi.yaml). Veröffentlichte Events: [kafka-api
 
 | Methode und Pfad | Zweck |
 |---|---|
-| `GET /notes?status=&page=&size=` | Liste, optional nach Status gefiltert; neueste zuerst |
+| `GET /notes?status=&area=&page=&size=` | Liste, optional nach Status und Lebensbereich gefiltert; neueste zuerst |
 | `GET /notes/{id}` | Details (`404`, wenn unbekannt) |
 | `PUT /notes/{id}` | Titel und Zusammenfassung ändern; mit `version` (`409` bei Konflikt) |
 | `POST /notes/{id}/archive` | Archivieren (bereits archiviert: unverändert) |

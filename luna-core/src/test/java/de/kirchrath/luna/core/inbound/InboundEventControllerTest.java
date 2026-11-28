@@ -38,11 +38,13 @@ import de.kirchrath.luna.core.data.entity.EventData;
 import de.kirchrath.luna.core.data.entity.EventSource;
 import de.kirchrath.luna.core.data.entity.InboundEvent;
 import de.kirchrath.luna.core.data.entity.InboundEventStatus;
+import de.kirchrath.luna.core.data.entity.LifeArea;
 import de.kirchrath.luna.core.data.entity.LunaElementType;
 import de.kirchrath.luna.core.data.entity.OutboundEvent;
 import de.kirchrath.luna.core.data.entity.OutboundEventStatus;
 import de.kirchrath.luna.core.data.repository.InboundEventRepository;
 import de.kirchrath.luna.core.data.repository.OutboundEventRepository;
+import de.kirchrath.luna.core.dto.LifeAreaDto;
 import de.kirchrath.luna.core.dto.LunaElementTypeDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.mail.EmailEventDataDto;
@@ -95,7 +97,8 @@ class InboundEventControllerTest {
     @Test
     void thatSubmittingAManualInputShouldResultIntoAnAcceptedAndPersistedInboundEvent() throws Exception {
         // given
-        var input = new ManualInputDataDto("Dentist appointment next Tuesday at 10", LunaElementTypeDto.APPOINTMENT);
+        var input = new ManualInputDataDto(
+                "Dentist appointment next Tuesday at 10", LifeAreaDto.WORK, LunaElementTypeDto.APPOINTMENT);
 
         // when
         var result = mockMvc.perform(post("/inbound-events/manual")
@@ -107,6 +110,7 @@ class InboundEventControllerTest {
         result.andExpect(status().isAccepted()).andExpect(jsonPath("$.id").value(ID.toString()));
         var stored = inboundEventRepository.findById(ID).orElseThrow();
         assertThat(stored.source()).isEqualTo(EventSource.MANUAL);
+        assertThat(stored.area()).isEqualTo(LifeArea.WORK);
         assertThat(stored.status()).isEqualTo(InboundEventStatus.RECEIVED);
         assertThat(stored.attempts()).isZero();
         assertThat(jsonMapper.readValue(stored.data().json(), ManualInputDataDto.class)).isEqualTo(input);
@@ -118,7 +122,7 @@ class InboundEventControllerTest {
     @Test
     void thatSubmittingAManualInputWithoutTypeHintShouldResultIntoAnAcceptedInboundEvent() throws Exception {
         // given
-        var content = "{\"text\": \"Milk is empty\"}";
+        var content = "{\"text\": \"Milk is empty\", \"area\": \"PERSONAL\"}";
 
         // when
         var result = mockMvc.perform(post("/inbound-events/manual")
@@ -130,13 +134,13 @@ class InboundEventControllerTest {
         result.andExpect(status().isAccepted());
         var stored = inboundEventRepository.findById(ID).orElseThrow();
         assertThat(jsonMapper.readValue(stored.data().json(), ManualInputDataDto.class))
-                .isEqualTo(new ManualInputDataDto("Milk is empty", null));
+                .isEqualTo(new ManualInputDataDto("Milk is empty", LifeAreaDto.PERSONAL, null));
     }
 
     @Test
     void thatSubmittingABlankTextShouldResultIntoBadRequest() throws Exception {
         // given
-        var content = "{\"text\": \"   \"}";
+        var content = "{\"text\": \"   \", \"area\": \"PERSONAL\"}";
 
         // when
         var result = mockMvc.perform(post("/inbound-events/manual")
@@ -152,7 +156,7 @@ class InboundEventControllerTest {
     @Test
     void thatSubmittingATextLongerThanTenThousandCharactersShouldResultIntoBadRequest() throws Exception {
         // given
-        var input = new ManualInputDataDto("x".repeat(10_001), null);
+        var input = new ManualInputDataDto("x".repeat(10_001), LifeAreaDto.PERSONAL, null);
 
         // when
         var result = mockMvc.perform(post("/inbound-events/manual")
@@ -168,7 +172,39 @@ class InboundEventControllerTest {
     @Test
     void thatSubmittingAnUnknownTypeHintShouldResultIntoBadRequest() throws Exception {
         // given
-        var content = "{\"text\": \"Something\", \"typeHint\": \"UNKNOWN\"}";
+        var content = "{\"text\": \"Something\", \"area\": \"PERSONAL\", \"typeHint\": \"UNKNOWN\"}";
+
+        // when
+        var result = mockMvc.perform(post("/inbound-events/manual")
+                .with(jwt())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(content));
+
+        // then
+        result.andExpect(status().isBadRequest());
+        assertThat(inboundEventRepository.count()).isZero();
+    }
+
+    @Test
+    void thatSubmittingAManualInputWithoutAreaShouldResultIntoBadRequest() throws Exception {
+        // given
+        var content = "{\"text\": \"Something\"}";
+
+        // when
+        var result = mockMvc.perform(post("/inbound-events/manual")
+                .with(jwt())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(content));
+
+        // then
+        result.andExpect(status().isBadRequest());
+        assertThat(inboundEventRepository.count()).isZero();
+    }
+
+    @Test
+    void thatSubmittingAnUnknownAreaShouldResultIntoBadRequest() throws Exception {
+        // given
+        var content = "{\"text\": \"Something\", \"area\": \"UNKNOWN\"}";
 
         // when
         var result = mockMvc.perform(post("/inbound-events/manual")
@@ -184,7 +220,7 @@ class InboundEventControllerTest {
     @Test
     void thatSubmittingAManualInputWithoutTokenShouldResultIntoUnauthorized() throws Exception {
         // given
-        var input = new ManualInputDataDto("Something", null);
+        var input = new ManualInputDataDto("Something", LifeAreaDto.PERSONAL, null);
 
         // when
         var result = mockMvc.perform(post("/inbound-events/manual")
@@ -207,11 +243,11 @@ class InboundEventControllerTest {
         when(timeProvider.now()).thenReturn(NOW, NOW.plusMinutes(1), NOW.plusMinutes(2), NOW.plusMinutes(3));
         when(timeProvider.atServerOffset(any(Instant.class)))
                 .thenAnswer(invocation -> invocation.<Instant>getArgument(0).atOffset(ZoneOffset.ofHours(1)));
-        saveManualInput("Pay the electricity bill", LunaElementTypeDto.TASK, InboundEventStatus.ANALYZED);
-        saveManualInput("Idea: plant the balcony", null, InboundEventStatus.FAILED);
-        saveManualInput("Milk is empty", null, InboundEventStatus.RECEIVED);
+        saveManualInput("Pay the electricity bill", LifeAreaDto.PERSONAL, LunaElementTypeDto.TASK, InboundEventStatus.ANALYZED);
+        saveManualInput("Idea: plant the balcony", LifeAreaDto.PERSONAL, null, InboundEventStatus.FAILED);
+        saveManualInput("Milk is empty", LifeAreaDto.PERSONAL, null, InboundEventStatus.RECEIVED);
         outboundEventRepository.save(new OutboundEvent(
-                null, oldestId, LunaElementType.TASK, OutboundEventStatus.PUBLISHED, null, null, null));
+                null, oldestId, LunaElementType.TASK, LifeArea.PERSONAL, OutboundEventStatus.PUBLISHED, null, null, null));
 
         // when
         var firstPage = mockMvc.perform(get("/inbound-events").param("page", "0").param("size", "2").with(jwt()));
@@ -224,6 +260,7 @@ class InboundEventControllerTest {
                 .andExpect(jsonPath("$.items.length()").value(2))
                 .andExpect(jsonPath("$.items[0].id").value(newestId.toString()))
                 .andExpect(jsonPath("$.items[0].source").value("MANUAL"))
+                .andExpect(jsonPath("$.items[0].area").value("PERSONAL"))
                 .andExpect(jsonPath("$.items[0].text").value("Milk is empty"))
                 .andExpect(jsonPath("$.items[0].typeHint").doesNotExist())
                 .andExpect(content().string(not(containsString(":null"))))
@@ -253,7 +290,7 @@ class InboundEventControllerTest {
         result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isEmpty())
                 .andExpect(jsonPath("$.totalCount").value(0));
-        verify(inboundEventApplicationService).listInboundEvents(PageRequest.of(0, 20));
+        verify(inboundEventApplicationService).listInboundEvents(List.of(), PageRequest.of(0, 20));
     }
 
     @Test
@@ -266,7 +303,50 @@ class InboundEventControllerTest {
 
         // then
         result.andExpect(status().isOk());
-        verify(inboundEventApplicationService).listInboundEvents(PageRequest.of(0, 100));
+        verify(inboundEventApplicationService).listInboundEvents(List.of(), PageRequest.of(0, 100));
+    }
+
+    @Test
+    void thatListingInputsOfAnAreaShouldResultIntoOnlyTheInputsOfThisArea() throws Exception {
+        // given
+        when(uuidProvider.randomUuid()).thenReturn(UUID.randomUUID(), ID);
+        saveManualInput("Buy flowers for mum", LifeAreaDto.PERSONAL, null, InboundEventStatus.RECEIVED);
+        saveManualInput("Book the team event", LifeAreaDto.WORK, null, InboundEventStatus.RECEIVED);
+
+        // when
+        var result = mockMvc.perform(get("/inbound-events").param("area", "WORK").with(jwt()));
+
+        // then
+        result.andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(ID.toString()))
+                .andExpect(jsonPath("$.items[0].area").value("WORK"));
+    }
+
+    @Test
+    void thatListingInputsOfSeveralAreasShouldResultIntoTheInputsOfTheseAreas() throws Exception {
+        // given
+        when(uuidProvider.randomUuid()).thenReturn(UUID.randomUUID(), UUID.randomUUID());
+        saveManualInput("Buy flowers for mum", LifeAreaDto.PERSONAL, null, InboundEventStatus.RECEIVED);
+        saveManualInput("Book the team event", LifeAreaDto.WORK, null, InboundEventStatus.RECEIVED);
+
+        // when
+        var result = mockMvc.perform(get("/inbound-events").param("area", "PERSONAL", "WORK").with(jwt()));
+
+        // then
+        result.andExpect(status().isOk()).andExpect(jsonPath("$.totalCount").value(2));
+    }
+
+    @Test
+    void thatListingInputsOfAnUnknownAreaShouldResultIntoBadRequest() throws Exception {
+        // given
+        var request = get("/inbound-events").param("area", "UNKNOWN").with(jwt());
+
+        // when
+        var result = mockMvc.perform(request);
+
+        // then
+        result.andExpect(status().isBadRequest());
     }
 
     @Test
@@ -298,7 +378,7 @@ class InboundEventControllerTest {
                 .text("Please pay")
                 .textTruncated(false)
                 .attachments(List.of());
-        inboundEventRepository.save(new InboundEvent(null, EventSource.MAIL, UUID.randomUUID(),
+        inboundEventRepository.save(new InboundEvent(null, EventSource.MAIL, UUID.randomUUID(), LifeArea.PERSONAL,
                 new EventData(jsonMapper.writeValueAsString(email)), InboundEventStatus.RECEIVED, 0, null, null, null));
 
         // when
@@ -313,12 +393,14 @@ class InboundEventControllerTest {
                 .andExpect(content().string(not(containsString(":null"))));
     }
 
-    private void saveManualInput(String text, LunaElementTypeDto typeHint, InboundEventStatus status) {
+    private void saveManualInput(
+            String text, LifeAreaDto area, LunaElementTypeDto typeHint, InboundEventStatus status) {
         inboundEventRepository.save(new InboundEvent(
                 null,
                 EventSource.MANUAL,
                 null,
-                new EventData(jsonMapper.writeValueAsString(new ManualInputDataDto(text, typeHint))),
+                LifeArea.valueOf(area.name()),
+                new EventData(jsonMapper.writeValueAsString(new ManualInputDataDto(text, area, typeHint))),
                 status,
                 0,
                 null,
@@ -342,7 +424,9 @@ class InboundEventControllerTest {
     void thatARequestForwardedByTraefikFromTheOwnHttpsOriginShouldResultIntoNoCorsRejection() throws Exception {
         // given
         // Behind Traefik the service is called via http, while the browser sends its https origin.
-        var request = post("/inbound-events/manual").contentType(MediaType.APPLICATION_JSON).content("{\"text\": \"Milk is empty\"}")
+        var request = post("/inbound-events/manual")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"text\": \"Milk is empty\", \"area\": \"PERSONAL\"}")
                 .with(jwt())
                 .header(HttpHeaders.ORIGIN, "https://luna.internal")
                 .header("X-Forwarded-Proto", "https")

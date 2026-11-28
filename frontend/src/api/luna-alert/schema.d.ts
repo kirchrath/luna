@@ -104,6 +104,8 @@ export interface components {
             source: "CORE";
             /** Format: uuid */
             sourceId?: string;
+            /** @enum {string} */
+            area: "PERSONAL" | "WORK";
         };
         AlertDto: {
             data: components["schemas"]["AlertDataDto"];
@@ -127,6 +129,8 @@ export interface components {
         AlertListItemDto: {
             /** Format: uuid */
             id: string;
+            /** @enum {string} */
+            area: "PERSONAL" | "WORK";
             title: string;
             /** @enum {string} */
             severity: "INFO" | "WARNING" | "CRITICAL";
@@ -270,6 +274,7 @@ export interface operations {
                 page?: number;
                 size?: number;
                 status?: ("OPEN" | "ACKNOWLEDGED" | "RESOLVED")[];
+                area?: ("PERSONAL" | "WORK")[];
             };
             header?: never;
             path?: never;

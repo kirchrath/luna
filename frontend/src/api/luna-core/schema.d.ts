@@ -43,6 +43,8 @@ export interface components {
         ManualInputDataDto: {
             text: string;
             /** @enum {string} */
+            area: "PERSONAL" | "WORK";
+            /** @enum {string} */
             typeHint?: "TASK" | "ALERT" | "APPOINTMENT" | "INVOICE" | "CONTRACT" | "NOTE";
         };
         ResourceReferenceDto: {
@@ -67,6 +69,8 @@ export interface components {
             id: string;
             /** @enum {string} */
             source: "MANUAL" | "MAIL";
+            /** @enum {string} */
+            area: "PERSONAL" | "WORK";
             text?: string;
             /** @enum {string} */
             typeHint?: "TASK" | "ALERT" | "APPOINTMENT" | "INVOICE" | "CONTRACT" | "NOTE";
@@ -134,6 +138,7 @@ export interface operations {
             query?: {
                 page?: number;
                 size?: number;
+                area?: ("PERSONAL" | "WORK")[];
             };
             header?: never;
             path?: never;

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import de.kirchrath.luna.mail.data.entity.Email;
 import de.kirchrath.luna.mail.data.entity.EmailAttachment;
+import de.kirchrath.luna.mail.data.entity.LifeArea;
 import de.kirchrath.luna.mail.data.entity.Mailbox;
 import de.kirchrath.luna.mail.dto.EmailEventDto;
 import de.kirchrath.luna.mail.outbound.FetchedEmail;
@@ -19,9 +20,10 @@ public class EmailConverter {
         this.emailMapper = emailMapper;
     }
 
-    public Email toEmail(UUID mailboxId, long uidValidity, FetchedEmail fetched) {
+    public Email toEmail(UUID mailboxId, LifeArea area, long uidValidity, FetchedEmail fetched) {
         return Email.builder()
                 .mailboxId(mailboxId)
+                .area(area)
                 .uidValidity(uidValidity)
                 .uid(fetched.uid())
                 .messageId(fetched.messageId())

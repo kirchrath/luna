@@ -1,5 +1,6 @@
 package de.kirchrath.luna.appointment.services;
 
+import java.util.List;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -10,6 +11,7 @@ import de.kirchrath.luna.appointment.dto.AppointmentDto;
 import de.kirchrath.luna.appointment.dto.AppointmentListDto;
 import de.kirchrath.luna.appointment.dto.AppointmentPeriodDto;
 import de.kirchrath.luna.appointment.dto.AppointmentUpdateDto;
+import de.kirchrath.luna.appointment.dto.LifeAreaDto;
 
 @Service
 public class AppointmentApplicationService {
@@ -20,12 +22,12 @@ public class AppointmentApplicationService {
         this.appointmentDomainService = appointmentDomainService;
     }
 
-    public AppointmentListDto listAppointments(AppointmentPeriodDto period, Pageable pageable) {
-        return appointmentDomainService.listAppointments(period, pageable);
+    public AppointmentListDto listAppointments(AppointmentPeriodDto period, List<LifeAreaDto> areas, Pageable pageable) {
+        return appointmentDomainService.listAppointments(period, areas, pageable);
     }
 
-    public AppointmentListDto listAppointmentsInRange(OffsetDateTime from, OffsetDateTime to) {
-        return appointmentDomainService.listAppointmentsInRange(from, to);
+    public AppointmentListDto listAppointmentsInRange(OffsetDateTime from, OffsetDateTime to, List<LifeAreaDto> areas) {
+        return appointmentDomainService.listAppointmentsInRange(from, to, areas);
     }
 
     public AppointmentDto getAppointment(UUID id) {

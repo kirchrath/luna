@@ -44,9 +44,15 @@ components:
         sourceId:
           type: string
           format: uuid
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         edited:
           type: boolean
       required:
+      - area
       - edited
       - source
       - status

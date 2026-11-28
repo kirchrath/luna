@@ -1,10 +1,12 @@
 package de.kirchrath.luna.note.services;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import de.kirchrath.luna.note.dto.LifeAreaDto;
 import de.kirchrath.luna.note.dto.NoteDto;
 import de.kirchrath.luna.note.dto.NoteListDto;
 import de.kirchrath.luna.note.dto.NoteStatusDto;
@@ -19,8 +21,8 @@ public class NoteApplicationService {
         this.noteDomainService = noteDomainService;
     }
 
-    public NoteListDto listNotes(NoteStatusDto status, Pageable pageable) {
-        return noteDomainService.listNotes(status, pageable);
+    public NoteListDto listNotes(NoteStatusDto status, List<LifeAreaDto> areas, Pageable pageable) {
+        return noteDomainService.listNotes(status, areas, pageable);
     }
 
     public NoteDto getNote(UUID id) {

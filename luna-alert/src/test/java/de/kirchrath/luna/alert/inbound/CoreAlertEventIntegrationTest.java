@@ -31,6 +31,7 @@ import de.kirchrath.luna.alert.config.TestcontainersConfig;
 import de.kirchrath.luna.alert.data.entity.AlertSeverity;
 import de.kirchrath.luna.alert.data.entity.AlertSource;
 import de.kirchrath.luna.alert.data.entity.AlertStatus;
+import de.kirchrath.luna.alert.data.entity.LifeArea;
 import de.kirchrath.luna.alert.data.repository.CoreAlertProjectionRepository;
 import de.kirchrath.luna.alert.data.repository.AlertRepository;
 import tools.jackson.databind.JsonNode;
@@ -101,12 +102,14 @@ class CoreAlertEventIntegrationTest {
         assertThat(alert.severity()).isEqualTo(AlertSeverity.CRITICAL);
         assertThat(alert.severityRank()).isZero();
         assertThat(alert.status()).isEqualTo(AlertStatus.OPEN);
+        assertThat(alert.area()).isEqualTo(LifeArea.WORK);
         assertThat(projectionRepository.findByCoreAlertId(coreAlertId).orElseThrow().version()).isZero();
         assertThat(event.get("id").asString()).isEqualTo(alert.id().toString());
         assertThat(event.has("type")).isFalse();
         assertThat(event.get("data").get("title").asString()).isEqualTo("NAS disk almost full");
         assertThat(event.get("data").get("source").asString()).isEqualTo("CORE");
         assertThat(event.get("data").get("sourceId").asString()).isEqualTo(coreAlertId.toString());
+        assertThat(event.get("data").get("area").asString()).isEqualTo("WORK");
         assertThat(event.get("audit").get("version").asLong()).isZero();
     }
 
@@ -209,6 +212,7 @@ class CoreAlertEventIntegrationTest {
         var event = Map.of(
                 "type", "ALERT",
                 "id", coreAlertId,
+                "area", "WORK",
                 "audit", Map.of(
                         "createdDate", "2026-11-26T10:00:00+01:00",
                         "lastModifiedDate", "2026-11-26T10:00:00+01:00",

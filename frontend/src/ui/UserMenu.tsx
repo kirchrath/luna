@@ -9,9 +9,11 @@ interface UserMenuProps {
   logoutLabel: string;
   logoutIcon: ReactNode;
   onLogout: () => void;
+  /** Further content above the sign out entry, e.g. settings of this device. */
+  children?: ReactNode;
 }
 
-export function UserMenu({ label, name, icon, logoutLabel, logoutIcon, onLogout }: UserMenuProps) {
+export function UserMenu({ label, name, icon, logoutLabel, logoutIcon, onLogout, children }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -57,6 +59,12 @@ export function UserMenu({ label, name, icon, logoutLabel, logoutIcon, onLogout 
       {open && (
         <div className="dropdown-menu" role="menu">
           <div className="dropdown-content">
+            {children !== undefined && (
+              <>
+                {children}
+                <hr className="dropdown-divider" />
+              </>
+            )}
             <button type="button" role="menuitem" className="dropdown-item user-menu-item" onClick={onLogout}>
               {logoutIcon}
               <span>{logoutLabel}</span>

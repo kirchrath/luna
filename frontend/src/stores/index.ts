@@ -5,6 +5,7 @@ export * from './AppointmentMonthStore';
 export * from './AppointmentStore';
 export * from './createRootStore';
 export * from './InboundEventStore';
+export * from './LifeAreaStore';
 export * from './NoteListStore';
 export * from './NoteStore';
 export * from './RootStore';

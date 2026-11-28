@@ -38,6 +38,7 @@ import de.kirchrath.luna.alert.data.entity.Alert;
 import de.kirchrath.luna.alert.data.entity.AlertSeverity;
 import de.kirchrath.luna.alert.data.entity.AlertSource;
 import de.kirchrath.luna.alert.data.entity.AlertStatus;
+import de.kirchrath.luna.alert.data.entity.LifeArea;
 import de.kirchrath.luna.alert.data.repository.AlertRepository;
 import de.kirchrath.luna.alert.dto.AlertChangedDto;
 import de.kirchrath.luna.alert.services.AlertApplicationService;
@@ -87,6 +88,7 @@ class AlertChangeNotificationIntegrationTest {
         var alert = alertRepository.save(Alert.builder()
                 .source(AlertSource.CORE)
                 .sourceId(UUID.randomUUID())
+                .area(LifeArea.PERSONAL)
                 .title("NAS disk almost full")
                 .message("Volume 1 is 94 % full")
                 .severity(AlertSeverity.CRITICAL)

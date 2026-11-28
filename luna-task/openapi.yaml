@@ -131,6 +131,17 @@ paths:
           enum:
           - OPEN
           - DONE
+      - name: area
+        in: query
+        required: false
+        schema:
+          type: array
+          default: []
+          items:
+            type: string
+            enum:
+            - PERSONAL
+            - WORK
       responses:
         "200":
           description: OK
@@ -218,9 +229,15 @@ components:
         sourceId:
           type: string
           format: uuid
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         edited:
           type: boolean
       required:
+      - area
       - edited
       - priority
       - source
@@ -259,6 +276,11 @@ components:
         id:
           type: string
           format: uuid
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         title:
           type: string
         dueDate:
@@ -278,6 +300,7 @@ components:
         edited:
           type: boolean
       required:
+      - area
       - edited
       - id
       - priority

@@ -1,10 +1,16 @@
 package de.kirchrath.luna.task.converter;
 
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Component;
 
+import de.kirchrath.luna.task.data.entity.LifeArea;
 import de.kirchrath.luna.task.data.entity.Task;
 import de.kirchrath.luna.task.data.entity.TaskSource;
 import de.kirchrath.luna.task.data.entity.TaskStatus;
+import de.kirchrath.luna.task.dto.LifeAreaDto;
 import de.kirchrath.luna.task.dto.TaskDto;
 import de.kirchrath.luna.task.dto.TaskEventDto;
 import de.kirchrath.luna.task.dto.TaskListItemDto;
@@ -26,6 +32,7 @@ public class TaskConverter {
         return applyCore(Task.builder()
                 .source(TaskSource.CORE)
                 .sourceId(event.getId())
+                .area(taskMapper.toEntity(event.getArea()))
                 .status(TaskStatus.OPEN)
                 .edited(false)
                 .build(), event);
@@ -67,5 +74,12 @@ public class TaskConverter {
 
     public TaskStatus toEntity(TaskStatusDto status) {
         return taskMapper.toEntity(status);
+    }
+
+    /** The given areas, or all areas without any. */
+    public Set<LifeArea> toAreas(List<LifeAreaDto> areas) {
+        return areas.isEmpty()
+                ? Set.of(LifeArea.values())
+                : areas.stream().map(taskMapper::toEntity).collect(Collectors.toUnmodifiableSet());
     }
 }

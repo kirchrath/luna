@@ -40,7 +40,13 @@ components:
         sourceId:
           type: string
           format: uuid
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
       required:
+      - area
       - message
       - severity
       - source

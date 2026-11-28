@@ -20,6 +20,7 @@ public record Appointment(
         @With @Id UUID id,
         AppointmentSource source,
         UUID sourceId,
+        LifeArea area,
         String title,
         OffsetDateTime start,
         OffsetDateTime end,

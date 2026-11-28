@@ -33,6 +33,7 @@ nicht lesbare Events direkt im DLT. Die Core-DTOs werden aus `src/main/resources
 | `status` | `OPEN`, `ACKNOWLEDGED`, `RESOLVED` | neu immer `OPEN` |
 | `acknowledgedDate`, `resolvedDate` | Zeitpunkt | beim Bestätigen bzw. Beheben |
 | `source`, `sourceId` | `CORE` + ID des Core-Alerts | Core-Event |
+| `area` | `PERSONAL`, `WORK` (Lebensbereich) | Core-Event, danach **unveränderlich** (kein Update-Endpunkt ändert ihn, neuere Core-Versionen auch nicht) |
 
 Für die Sortierung nach Schwere speichert der Service zusätzlich `severity_rank` (`CRITICAL` 0, `WARNING` 1,
 `INFO` 2), weil die Schwere selbst als Text gespeichert ist.
@@ -43,7 +44,7 @@ Spezifikation: [openapi.yaml](openapi.yaml). Veröffentlichte Events: [kafka-api
 
 | Methode und Pfad | Zweck |
 |---|---|
-| `GET /alerts?status=&status=&page=&size=` | Liste, optional nach einem oder mehreren Status gefiltert; schwerste zuerst, dann neueste |
+| `GET /alerts?status=&status=&area=&page=&size=` | Liste, optional nach einem oder mehreren Status und nach Lebensbereich gefiltert; schwerste zuerst, dann neueste |
 | `GET /alerts/{id}` | Details (`404`, wenn unbekannt) |
 | `POST /alerts/{id}/acknowledge` | Bestätigen (`OPEN` → `ACKNOWLEDGED`; bereits bestätigt: unverändert; behoben: `409`) |
 | `POST /alerts/{id}/resolve` | Beheben (aus `OPEN` oder `ACKNOWLEDGED`; bereits behoben: unverändert) |

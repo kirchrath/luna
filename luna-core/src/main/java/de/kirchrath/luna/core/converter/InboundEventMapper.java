@@ -18,6 +18,7 @@ public interface InboundEventMapper {
 
     @Mapping(target = "id", source = "inboundEvent.id")
     @Mapping(target = "source", source = "inboundEvent.source")
+    @Mapping(target = "area", source = "inboundEvent.area")
     @Mapping(target = "text", source = "manualInput.text")
     @Mapping(target = "typeHint", source = "manualInput.typeHint")
     @Mapping(target = "subject", source = "email.subject")

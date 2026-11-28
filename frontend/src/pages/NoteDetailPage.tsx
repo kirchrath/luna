@@ -9,6 +9,7 @@ import { ID_PARAMETER, PATHS } from '../navigation';
 import { useStores } from '../stores';
 import { RelativeTime } from '../ui';
 import { formatDateTime } from './taskDates';
+import { LifeAreaDetail } from './LifeArea';
 
 export const MAX_NOTE_TITLE_LENGTH = 500;
 export const MAX_SUMMARY_LENGTH = 10_000;
@@ -127,6 +128,7 @@ const NoteDetail = observer(function NoteDetail({ note }: { note: NoteDto }) {
           <Sparkles size={ICON_SIZE} aria-hidden="true" />
           <span>{t(`noteDetail.source.${data.source}`)}</span>
         </p>
+        <LifeAreaDetail area={data.area} />
         <p className="is-size-7 has-text-grey">
           {t(data.edited ? 'noteDetail.editedHint' : 'noteDetail.uneditedHint')}
         </p>

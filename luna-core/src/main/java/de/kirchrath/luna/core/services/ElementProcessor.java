@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import de.kirchrath.luna.core.data.entity.EntityWithId;
+import de.kirchrath.luna.core.data.entity.LifeArea;
 import de.kirchrath.luna.core.data.entity.LunaElementType;
 import de.kirchrath.luna.core.data.entity.OutboundEvent;
 import de.kirchrath.luna.core.dto.ElementEventDto;
@@ -52,8 +53,8 @@ public abstract class ElementProcessor<D, E extends EntityWithId<E>, V extends E
         return type;
     }
 
-    public List<D> qualify(String text, OffsetDateTime referenceTime) {
-        var result = elementQualificationClient.qualify(prompt, text, referenceTime, resultType);
+    public List<D> qualify(LifeArea area, String text, OffsetDateTime referenceTime) {
+        var result = elementQualificationClient.qualify(area, prompt, text, referenceTime, resultType);
         if (result == null || result.items() == null || result.items().isEmpty()) {
             throw new IllegalStateException("No " + type + " data could be extracted");
         }

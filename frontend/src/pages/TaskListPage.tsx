@@ -9,6 +9,7 @@ import { taskPath } from '../navigation';
 import { ALL_TASKS, useStores, type TaskFilter } from '../stores';
 import { SegmentedControl } from '../ui';
 import { formatDueDate, isOverdue } from './taskDates';
+import { LifeAreaIcon } from './LifeArea';
 
 const ICON_SIZE = 14;
 const CHEVRON_SIZE = 18;
@@ -108,6 +109,7 @@ const TaskListEntry = observer(function TaskListEntry({ item }: { item: TaskList
         <span className="task-body">
           <span className="task-title">{item.title}</span>
           <span className={overdue ? 'task-due is-overdue' : 'task-due has-text-grey'}>
+            <LifeAreaIcon area={item.area} />
             <Clock size={ICON_SIZE} aria-hidden="true" />
             <span>{due}</span>
             {item.edited && <span className="has-text-grey has-text-weight-normal">· {t('tasks.edited')}</span>}

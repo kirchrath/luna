@@ -1,5 +1,7 @@
 package de.kirchrath.luna.core.inbound;
 
+import java.util.List;
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -7,10 +9,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import de.kirchrath.luna.core.dto.InboundEventListDto;
+import de.kirchrath.luna.core.dto.LifeAreaDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.ResourceReferenceDto;
 import de.kirchrath.luna.core.services.InboundEventApplicationService;
@@ -29,6 +33,7 @@ import jakarta.validation.Valid;
 public class InboundEventController {
 
     private static final String MANUAL = "/manual";
+    private static final String AREA = "area";
 
     private final InboundEventApplicationService inboundEventApplicationService;
 
@@ -48,8 +53,10 @@ public class InboundEventController {
                 @ApiResponse(responseCode = "200"),
                 @ApiResponse(responseCode = "401", content = @Content)
             })
-    public InboundEventListDto listInboundEvents(@Parameter(hidden = true) Pageable pageable) {
-        return inboundEventApplicationService.listInboundEvents(pageable);
+    public InboundEventListDto listInboundEvents(
+            @RequestParam(name = AREA, required = false, defaultValue = "") List<LifeAreaDto> areas,
+            @Parameter(hidden = true) Pageable pageable) {
+        return inboundEventApplicationService.listInboundEvents(areas, pageable);
     }
 
     @PostMapping(

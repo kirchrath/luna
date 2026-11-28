@@ -53,9 +53,9 @@ Konventionen, Tech-Stack und Betrieb stehen in [AGENTS.md](../AGENTS.md).
   - `audit` ist exakt das **`AuditDto`** (`createdDate`, `lastModifiedDate`, `version`).
   - **Typ und Quelle** stehen nicht im Event, sondern ergeben sich aus dem **Topic**.
   - Die **Verknüpfung** zum auslösenden Event wird nur in der Datenbank von `luna-core` gespeichert.
-- **Spring AI:** Modell bzw. Anbieter ist **konfigurierbar** (per Property/Profil umschaltbar).
-  Zunächst unterstützt: **Ollama** (lokal), **Anthropic Claude** und **OpenAI-kompatible** Endpunkte.
-- **Spring-AI-Standard:** **kein** voreingestellter Anbieter; in `application.yml` leer, je Umgebung explizit setzen.
+- **Spring AI:** Anbieter **je Lebensbereich** konfigurierbar; unterstützt: **Ollama** (lokal), **Anthropic Claude**
+  und **OpenAI-kompatible** Endpunkte.
+- **Kein Standard:** ohne Anbieter für jeden Bereich startet `luna-core` nicht.
 - **Kafka-Betrieb:** Image **`apache/kafka:4.4.0`** in `swarm/kafka.yml`, Port **7094**, TLS und SASL/SCRAM
   (siehe [AGENTS.md](../AGENTS.md#betrieb)). `luna-core` meldet sich als Benutzer `luna-core` an, darf auf
   `luna_core_*` schreiben und liest nur ausdrücklich freigegebene Topics.
@@ -97,8 +97,8 @@ Ausdrücklich **nicht** Teil von `luna-core`:
 ### Manuelle Eingabe (Schritt 2)
 
 - **Endpunkt:** `POST /inbound-events/manual` (OperationId `createManualInboundEvent`), nur mit JWT.
-- **Request:** `ManualInputDataDto` mit `text` (Pflicht, nicht leer, max. 10.000 Zeichen) und optionalem
-  `typeHint` (`LunaElementTypeDto`: `TASK`, `ALERT`, `APPOINTMENT`, `INVOICE`, `CONTRACT`, `NOTE`).
+- **Request:** `ManualInputDataDto` mit `text` (Pflicht, nicht leer, max. 10.000 Zeichen), `area` (Pflicht,
+  Lebensbereich `PERSONAL` oder `WORK`) und optionalem `typeHint` (`LunaElementTypeDto`: `TASK`, `ALERT`, `APPOINTMENT`, `INVOICE`, `CONTRACT`, `NOTE`).
 - **Antwort:** `202 Accepted` mit `ResourceReferenceDto` (`{"id": "…"}`); `400` bei ungültiger Eingabe,
   `401` ohne gültiges Token.
 - **Speicherung:** Tabelle `inbound_event` mit `id`, `source` (`EventSource`, z. B. `MANUAL`), `data` (JSONB,
@@ -131,18 +131,30 @@ Ausdrücklich **nicht** Teil von `luna-core`:
 
 ### KI-Anbieter konfigurieren
 
-Spring AI **2.1.0** mit den Startern für Ollama, Anthropic und OpenAI. Der Anbieter wird über
-`spring.ai.model.chat` gewählt; der Wert ist in `application.yml` bewusst leer und muss je Umgebung gesetzt
-werden – **ohne Anbieter startet `luna-core` nicht**. Alle übrigen Modellarten (Embedding, Bild, Audio,
-Moderation, Decision) sind mit `none` abgeschaltet.
+Spring AI **2.1.0** mit Ollama, Anthropic und OpenAI. Jede Eingabe wird **nur vom Anbieter ihres Lebensbereichs**
+analysiert (Klassifizieren und Qualifizieren), z. B. beruflich nur ein lokales Modell. Die Modelle baut `luna-core`
+selbst (`config/AiConfig`, `ChatModelFactory`, je Bereich ein `ChatClient` in `AreaChatClients`); die
+Auto-Konfiguration von Spring AI ist für alle Modellarten mit `none` abgeschaltet.
 
-| Anbieter | `SPRING_AI_MODEL_CHAT` | Weitere Umgebungsvariablen (Beispiele) |
-|---|---|---|
-| Ollama | `ollama` | `SPRING_AI_OLLAMA_BASE_URL`, `SPRING_AI_OLLAMA_CHAT_MODEL` |
-| Anthropic Claude | `anthropic` | `SPRING_AI_ANTHROPIC_API_KEY`, `SPRING_AI_ANTHROPIC_CHAT_MODEL` |
-| OpenAI-kompatibel | `openai` | `SPRING_AI_OPENAI_API_KEY`, `SPRING_AI_OPENAI_BASE_URL`, `SPRING_AI_OPENAI_CHAT_MODEL` |
+```yaml
+app:
+  ai:
+    providers:              # Anbieter nach Namen
+      local:
+        type: ollama        # ollama, anthropic oder openai
+        base-url: http://ollama:11434   # optional, sonst Standard-Adresse des Typs
+        model: llama3.1
+      cloud:
+        type: anthropic
+        model: claude-sonnet-4-5
+        api-key: …          # nicht bei Ollama; nie ins Repo
+    areas:                  # Anbieter je Lebensbereich, Pflicht für jeden Bereich
+      PERSONAL: cloud
+      WORK: local
+```
 
-API-Keys nie ins Repo; im Stack als Docker Secret `luna_core_ai_api_key` bereitstellen (siehe unten).
+Fehlt für einen Bereich der Anbieter, ist er unbekannt oder ohne Typ/Modell, **startet `luna-core` nicht**.
+Im Stack heißen die Anbieter fest `personal` und `work` (Profil `prod`, siehe unten).
 
 ### Qualifizieren und Veröffentlichen (Schritt 4)
 
@@ -203,10 +215,10 @@ Schreiben; ACL für `luna-core` auf `luna_core_*` besteht bereits).
 - **Keycloak:** Schlüssel intern per HTTP (`jwk-set-uri` =
   `http://keycloak:8080/auth/realms/luna/protocol/openid-connect/certs`), `issuer-uri` bleibt
   `https://luna.internal/auth/realms/luna` und wird im Token geprüft.
-- **KI-Anbieter:** Spring-Namen direkt beim Deploy (`SPRING_AI_MODEL_CHAT`, `SPRING_AI_<ANBIETER>_…`), von der
-  Stack-Datei durchgereicht; nicht gesetzte Variablen werden nicht übergeben. Der API-Key kommt aus dem Secret
-  `luna_core_ai_api_key`, eingebunden unter dem Property-Namen aus `LUNA_AI_API_KEY_PROPERTY`
-  (z. B. `spring.ai.anthropic.api-key`; bei Ollama ein Platzhalter).
+- **KI-Anbieter:** je Lebensbereich ein Anbieter `personal` bzw. `work`: `LUNA_AI_<BEREICH>_TYPE` und `_MODEL`
+  (Pflicht), `_BASE_URL` (optional), von der Stack-Datei als `APP_AI_PROVIDERS_<BEREICH>_…` durchgereicht. Die
+  API-Keys kommen aus den Secrets `luna_core_ai_personal_api_key` und `luna_core_ai_work_api_key`
+  (→ `app.ai.providers.<bereich>.api-key`; bei Ollama ein Platzhalter).
 - **Secrets per configtree:** `spring.config.import=optional:configtree:/run/secrets/` (Profil `prod`); Secrets
   werden mit dem Property-Namen als Ziel eingebunden: `luna_db_password` → `spring.datasource.password`,
   `kafka_luna_core_password` → `app.kafka.password`.
@@ -219,16 +231,26 @@ mit PostgreSQL und Kafka per Testcontainers (ohne TLS/SASL), gemocktes `ChatMode
 
 - **Endpunkt:** `GET /inbound-events` (OperationId `listInboundEvents`), nur mit JWT. Ersetzt seit Schritt 8
   `GET /inbound-events/manual`.
-- **Parameter:** `page` (ab 0) und `size`; Standard und Obergrenze per `spring.data.web.pageable.default-page-size`
+- **Parameter:** optional `area` (nur Eingaben dieses Lebensbereichs), `page` (ab 0) und `size`; Standard und Obergrenze per `spring.data.web.pageable.default-page-size`
   (`20`) und `max-page-size` (`100`). Größere Werte werden gekappt. Sortiert nach Eingangszeit, neueste zuerst.
 - **Antwort:** `200` mit `InboundEventListDto` (`items`, `totalPages`, `totalCount`); `401` ohne Token.
-  Ein `InboundEventListItemDto` enthält `id`, `source` (`MANUAL`, `MAIL`), bei manuellen Eingaben `text` und
+  Ein `InboundEventListItemDto` enthält `id`, `source` (`MANUAL`, `MAIL`), `area`, bei manuellen Eingaben `text` und
   `typeHint`, bei E-Mails `subject` und `from`, außerdem `status` (`InboundEventStatusDto`: `RECEIVED`, `ANALYZED`,
   `FAILED`), `createdDate` und `elements` (`ElementReferenceDto` mit `id` und `type`; `id` ist die ID des auf Kafka
   veröffentlichten Events). Leere optionale Felder fehlen.
 - **Abfrage:** Eine Seite `inbound_event` (`findAll` mit `Pageable`) plus deren `outbound_event` in einer Abfrage
   (`findByInboundEventIdIn`). Das `Pageable` wird bis zum DomainService durchgereicht, der die Sortierung
   festlegt; eine übergebene Sortierung wird ignoriert.
+
+### Lebensbereiche
+
+- Jede Eingabe gehört zu genau einem **Lebensbereich** (`LifeArea`: `PERSONAL`, `WORK`; fester Enum in allen
+  Services, weitere Werte nur per Code-Änderung in allen Services). Manuelle Eingaben bringen ihn im Request mit,
+  E-Mails übernehmen den Bereich ihres Kontos aus `luna-mail`.
+- `inbound_event.area` speichert ihn; jedes daraus entstandene Element übernimmt ihn (`outbound_event.area`) und
+  veröffentlicht ihn als `area` im Element-Event (`ElementEventDto`, neben `id`, `audit` und `data`). Der Bereich
+  steht bewusst nicht in den `…EventDataDto`, da diese auch das Antwortschema der KI sind.
+- Der Bereich ist danach **unveränderlich**. Bestand vor Einführung der Bereiche gehört zu `WORK` (Migration `V5`).
 
 ### E-Mails als Quelle (Schritt 8)
 
@@ -280,7 +302,7 @@ Der Kafka-Benutzer ist `${spring.application.name}`.
 | `SPRING_DATASOURCE_PASSWORD` | Passwort des DB-Benutzers `luna` |
 | `APP_KAFKA_PASSWORD` | Kafka-Passwort von `luna-core` (Secret `kafka_luna_core_password`) |
 | `SPRING_KAFKA_SSL_TRUST_STORE_LOCATION` | `file:<pfad>/luna-root-ca.crt` (Root-Zertifikat von step-ca, siehe README) |
-| `SPRING_AI_MODEL_CHAT` + Anbieter-Variablen | siehe [KI-Anbieter konfigurieren](#ki-anbieter-konfigurieren) |
+| `APP_AI_PROVIDERS_<NAME>_TYPE`, `_MODEL`, `_BASE_URL`, `_API_KEY` und `APP_AI_AREAS_PERSONAL`/`_WORK` | siehe [KI-Anbieter konfigurieren](#ki-anbieter-konfigurieren) |
 
 ## Offene Punkte
 

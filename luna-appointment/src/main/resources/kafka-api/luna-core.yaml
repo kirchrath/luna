@@ -37,9 +37,15 @@ components:
           format: uuid
         audit:
           $ref: "#/components/schemas/AuditDto"
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         data:
           $ref: "#/components/schemas/AlertEventDataDto"
       required:
+      - area
       - audit
       - data
       - id
@@ -75,9 +81,15 @@ components:
           format: uuid
         audit:
           $ref: "#/components/schemas/AuditDto"
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         data:
           $ref: "#/components/schemas/AppointmentEventDataDto"
       required:
+      - area
       - audit
       - data
       - id
@@ -130,9 +142,15 @@ components:
           format: uuid
         audit:
           $ref: "#/components/schemas/AuditDto"
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         data:
           $ref: "#/components/schemas/ContractEventDataDto"
       required:
+      - area
       - audit
       - data
       - id
@@ -190,9 +208,15 @@ components:
           format: uuid
         audit:
           $ref: "#/components/schemas/AuditDto"
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         data:
           $ref: "#/components/schemas/InvoiceEventDataDto"
       required:
+      - area
       - audit
       - data
       - id
@@ -218,9 +242,15 @@ components:
           format: uuid
         audit:
           $ref: "#/components/schemas/AuditDto"
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         data:
           $ref: "#/components/schemas/NoteEventDataDto"
       required:
+      - area
       - audit
       - data
       - id
@@ -254,9 +284,15 @@ components:
           format: uuid
         audit:
           $ref: "#/components/schemas/AuditDto"
+        area:
+          type: string
+          enum:
+          - PERSONAL
+          - WORK
         data:
           $ref: "#/components/schemas/TaskEventDataDto"
       required:
+      - area
       - audit
       - data
       - id

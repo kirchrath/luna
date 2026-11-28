@@ -30,6 +30,7 @@ import org.springframework.kafka.test.utils.KafkaTestUtils;
 
 import de.kirchrath.luna.task.config.TestcontainersConfig;
 import de.kirchrath.luna.task.data.entity.Task;
+import de.kirchrath.luna.task.data.entity.LifeArea;
 import de.kirchrath.luna.task.data.entity.TaskPriority;
 import de.kirchrath.luna.task.data.entity.TaskSource;
 import de.kirchrath.luna.task.data.entity.TaskStatus;
@@ -103,12 +104,14 @@ class CoreTaskEventIntegrationTest {
         assertThat(task.priority()).isEqualTo(TaskPriority.HIGH);
         assertThat(task.status()).isEqualTo(TaskStatus.OPEN);
         assertThat(task.edited()).isFalse();
+        assertThat(task.area()).isEqualTo(LifeArea.WORK);
         assertThat(projectionRepository.findByCoreTaskId(coreTaskId).orElseThrow().version()).isZero();
         assertThat(event.get("id").asString()).isEqualTo(task.id().toString());
         assertThat(event.has("type")).isFalse();
         assertThat(event.get("data").get("title").asString()).isEqualTo("Pay the electricity bill");
         assertThat(event.get("data").get("source").asString()).isEqualTo("CORE");
         assertThat(event.get("data").get("sourceId").asString()).isEqualTo(coreTaskId.toString());
+        assertThat(event.get("data").get("area").asString()).isEqualTo("WORK");
         assertThat(event.get("audit").get("version").asLong()).isZero();
     }
 
@@ -209,6 +212,7 @@ class CoreTaskEventIntegrationTest {
         var event = Map.of(
                 "type", "TASK",
                 "id", coreTaskId,
+                "area", "WORK",
                 "audit", Map.of(
                         "createdDate", "2026-11-26T10:00:00+01:00",
                         "lastModifiedDate", "2026-11-26T10:00:00+01:00",

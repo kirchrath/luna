@@ -1,9 +1,12 @@
 package de.kirchrath.luna.core.services;
 
+import java.util.List;
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import de.kirchrath.luna.core.dto.InboundEventListDto;
+import de.kirchrath.luna.core.dto.LifeAreaDto;
 import de.kirchrath.luna.core.dto.ManualInputDataDto;
 import de.kirchrath.luna.core.dto.ResourceReferenceDto;
 import de.kirchrath.luna.core.dto.mail.EmailEventDto;
@@ -25,7 +28,7 @@ public class InboundEventApplicationService {
         inboundEventDomainService.createMailInboundEvent(email);
     }
 
-    public InboundEventListDto listInboundEvents(Pageable pageable) {
-        return inboundEventDomainService.listInboundEvents(pageable);
+    public InboundEventListDto listInboundEvents(List<LifeAreaDto> areas, Pageable pageable) {
+        return inboundEventDomainService.listInboundEvents(areas, pageable);
     }
 }

@@ -5,7 +5,7 @@ import { BASE_URL, CLIENT_ID, REALM } from '../environment/settings.ts';
 const OIDC_USER_KEY = `oidc.user:${BASE_URL}/auth/realms/${REALM}:${CLIENT_ID}`;
 
 /** Submits a manual input to luna-core with the token of the signed in user, without leaving the page. */
-export async function submitInput(page: Page, text: string): Promise<void> {
+export async function submitInput(page: Page, text: string, area: 'PERSONAL' | 'WORK' = 'PERSONAL'): Promise<void> {
   const status = await page.evaluate(
     async ({ key, body }) => {
       const user = JSON.parse(sessionStorage.getItem(key) ?? '{}') as { access_token?: string };
@@ -16,7 +16,7 @@ export async function submitInput(page: Page, text: string): Promise<void> {
       });
       return response.status;
     },
-    { key: OIDC_USER_KEY, body: { text } },
+    { key: OIDC_USER_KEY, body: { text, area } },
   );
   expect(status).toBe(202);
 }

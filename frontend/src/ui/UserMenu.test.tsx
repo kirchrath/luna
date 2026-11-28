@@ -84,4 +84,27 @@ describe('UserMenu', () => {
     // then
     expect(screen.queryByRole('menuitem')).not.toBeInTheDocument();
   });
+
+  it('that further content should result into this content above the sign out entry', async () => {
+    // given
+    render(
+      <UserMenu
+        label="User menu"
+        name="Chandra"
+        icon={<span />}
+        logoutLabel="Sign out"
+        logoutIcon={<span />}
+        onLogout={vi.fn()}
+      >
+        <p>Device settings</p>
+      </UserMenu>,
+    );
+
+    // when
+    await userEvent.click(screen.getByRole('button', { name: 'User menu' }));
+
+    // then
+    expect(screen.getByText('Device settings')).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeInTheDocument();
+  });
 });

@@ -22,6 +22,7 @@ import {
   weekdayNames,
   type AppointmentDay,
 } from './appointmentDates';
+import { LifeAreaIcon } from './LifeArea';
 
 type View = 'list' | 'month';
 const MONTH: View = 'month';
@@ -114,6 +115,7 @@ function AppointmentEntry({ entry }: { entry: AppointmentDay<AppointmentListItem
         <span className="element-body">
           <span className="appointment-title-line">
             <span className="element-title">{appointment.title}</span>
+            <LifeAreaIcon area={appointment.area} />
             {cancelled && <span className="tag is-rounded">{t('appointments.cancelled')}</span>}
           </span>
           {(appointment.location !== undefined || dayCount > 1) && (

@@ -59,10 +59,10 @@ public class InboundEventReader {
             var email = email(inboundEvent);
             // Stored dates are in UTC; relative dates such as "tomorrow" refer to the day at the server.
             var received = timeProvider.atServerOffset(email.getReceivedDate().toInstant());
-            return new AnalysisInput(text(email, received), null, received);
+            return new AnalysisInput(inboundEvent.area(), text(email, received), null, received);
         }
         var input = manualInput(inboundEvent);
-        return new AnalysisInput(input.text(), input.typeHint(), inboundEvent.createdDate());
+        return new AnalysisInput(inboundEvent.area(), input.text(), input.typeHint(), inboundEvent.createdDate());
     }
 
     private String text(EmailEventDataDto email, OffsetDateTime received) {

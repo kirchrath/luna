@@ -9,6 +9,7 @@ import { alertPath } from '../navigation';
 import { useStores, type AlertFilter } from '../stores';
 import { RelativeTime, SegmentedControl } from '../ui';
 import { SeverityTag } from './SeverityTag';
+import { LifeAreaIcon } from './LifeArea';
 
 const ICON_SIZE = 14;
 const CHEVRON_SIZE = 18;
@@ -93,6 +94,7 @@ const AlertListEntry = observer(function AlertListEntry({ item }: { item: AlertL
         <span className="element-body">
           <span className="element-title">{item.title}</span>
           <span className="element-meta has-text-grey">
+            <LifeAreaIcon area={item.area} />
             <Server size={ICON_SIZE} aria-hidden="true" />
             {item.affectedSystem !== undefined && <span>{item.affectedSystem} ·</span>}
             <RelativeTime dateTime={item.createdDate} locale={i18n.language} />

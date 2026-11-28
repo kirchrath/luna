@@ -3,7 +3,8 @@ import { observer } from 'mobx-react-lite';
 import { useEffect, useRef, useState, type KeyboardEvent, type SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useStores } from '../stores';
+import { LIFE_AREA_ICONS } from '../lifeAreas';
+import { ALL_LIFE_AREAS, useStores } from '../stores';
 import { ChipGroup } from '../ui';
 import { AUTOMATIC, AUTOMATIC_ICON, ELEMENT_TYPE_ICONS, ELEMENT_TYPE_ORDER, type TypeChoice } from './elementTypes';
 import { InboundEventList } from './InboundEventList';
@@ -16,7 +17,7 @@ const TEXT_HELP_ID = 'quick-input-text-help';
 
 export const QuickInputPage = observer(function QuickInputPage() {
   const { t, i18n } = useTranslation();
-  const { inboundEventStore: store } = useStores();
+  const { inboundEventStore: store, lifeAreaStore } = useStores();
   const [text, setText] = useState('');
   const [typeChoice, setTypeChoice] = useState<TypeChoice>(AUTOMATIC);
   const [textMissing, setTextMissing] = useState(false);
@@ -63,6 +64,11 @@ export const QuickInputPage = observer(function QuickInputPage() {
     }),
   ] as const;
 
+  const areaOptions = lifeAreaStore.visibleAreas.map((area) => {
+    const Icon = LIFE_AREA_ICONS[area];
+    return { value: area, label: t(`lifeArea.${area}`), icon: <Icon size={CHIP_ICON_SIZE} aria-hidden="true" /> };
+  });
+
   const numberFormat = new Intl.NumberFormat(i18n.language);
   const textError = textMissing
     ? t('quickInput.textMissing')
@@ -103,6 +109,23 @@ export const QuickInputPage = observer(function QuickInputPage() {
               {numberFormat.format(text.length)} / {numberFormat.format(MAX_TEXT_LENGTH)}
             </span>
           </p>
+        </div>
+        <div className="field">
+          <span className="label">{t('lifeArea.label')}</span>
+          {lifeAreaStore.filter === ALL_LIFE_AREAS ? (
+            <ChipGroup
+              label={t('lifeArea.label')}
+              options={areaOptions}
+              value={lifeAreaStore.inputArea}
+              onChange={(area) => {
+                lifeAreaStore.changeInputArea(area);
+              }}
+            />
+          ) : (
+            <p className="help quick-input-area">
+              {t('quickInput.areaFromFilter', { area: t(`lifeArea.${lifeAreaStore.inputArea}`) })}
+            </p>
+          )}
         </div>
         <div className="field">
           <span className="label">{t('quickInput.typeLabel')}</span>

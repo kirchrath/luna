@@ -1,5 +1,6 @@
 package de.kirchrath.luna.task.services;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -13,6 +14,7 @@ import de.kirchrath.luna.task.converter.TaskConverter;
 import de.kirchrath.luna.task.data.entity.Task;
 import de.kirchrath.luna.task.data.entity.TaskStatus;
 import de.kirchrath.luna.task.data.repository.TaskRepository;
+import de.kirchrath.luna.task.dto.LifeAreaDto;
 import de.kirchrath.luna.task.dto.TaskDto;
 import de.kirchrath.luna.task.dto.TaskListDto;
 import de.kirchrath.luna.task.dto.TaskStatusDto;
@@ -45,11 +47,12 @@ public class TaskDomainService {
     }
 
     @Transactional(readOnly = true)
-    public TaskListDto listTasks(TaskStatusDto status, Pageable pageable) {
+    public TaskListDto listTasks(TaskStatusDto status, List<LifeAreaDto> areas, Pageable pageable) {
         var pageRequest = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), LIST_ORDER);
+        var lifeAreas = taskConverter.toAreas(areas);
         var tasks = status == null
-                ? taskRepository.findAll(pageRequest)
-                : taskRepository.findByStatus(taskConverter.toEntity(status), pageRequest);
+                ? taskRepository.findByAreaIn(lifeAreas, pageRequest)
+                : taskRepository.findByStatusAndAreaIn(taskConverter.toEntity(status), lifeAreas, pageRequest);
         return new TaskListDto(
                 tasks.map(taskConverter::toListItemDto).getContent(), tasks.getTotalPages(), tasks.getTotalElements());
     }

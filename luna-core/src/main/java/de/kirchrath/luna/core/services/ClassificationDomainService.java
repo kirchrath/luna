@@ -1,6 +1,5 @@
 package de.kirchrath.luna.core.services;
 
-import java.time.OffsetDateTime;
 import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -73,21 +72,28 @@ public class ClassificationDomainService {
         try {
             var input = inboundEventReader.analysisInput(inboundEvent);
             elements = determineTypes(input).stream()
-                    .flatMap(type -> qualify(elementProcessors.get(type), input.text(), input.referenceTime()).stream())
+                    .flatMap(type -> qualify(elementProcessors.get(type), input).stream())
                     .toList();
         } catch (RuntimeException e) {
             recordFailedAttempt(inboundEvent, e);
             return;
         }
         elements.forEach(element -> element.storeAndPublish(outboundEventRepository.save(new OutboundEvent(
-                null, inboundEvent.id(), element.type(), OutboundEventStatus.PUBLISHED, null, null, null))));
+                null,
+                inboundEvent.id(),
+                element.type(),
+                inboundEvent.area(),
+                OutboundEventStatus.PUBLISHED,
+                null,
+                null,
+                null))));
         inboundEventRepository.save(inboundEvent.withStatus(InboundEventStatus.ANALYZED));
         eventPublisher.publishEvent(new InboundEventStatusChangedEvent(inboundEvent.id()));
         log.debug("Published {} element(s) for inbound event {}", elements.size(), inboundEvent.id());
     }
 
     private Set<LunaElementType> determineTypes(AnalysisInput input) {
-        var result = elementClassificationClient.classify(input.text(), input.typeHint());
+        var result = elementClassificationClient.classify(input.area(), input.text(), input.typeHint());
         var types = new LinkedHashSet<LunaElementType>();
         if (input.typeHint() != null) {
             types.add(lunaElementTypeConverter.toEntity(input.typeHint()));
@@ -98,9 +104,8 @@ public class ClassificationDomainService {
         return types;
     }
 
-    private <D> List<QualifiedElement<?>> qualify(
-            ElementProcessor<D, ?, ?> processor, String text, OffsetDateTime referenceTime) {
-        return processor.qualify(text, referenceTime).stream()
+    private <D> List<QualifiedElement<?>> qualify(ElementProcessor<D, ?, ?> processor, AnalysisInput input) {
+        return processor.qualify(input.area(), input.text(), input.referenceTime()).stream()
                 .<QualifiedElement<?>>map(data -> new QualifiedElement<>(processor, data))
                 .toList();
     }

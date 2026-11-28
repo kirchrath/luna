@@ -1,7 +1,8 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, reaction } from 'mobx';
 
 import type { LunaTaskClient, LunaTaskPushConnector, PushConnection, TaskListItemDto, TaskStatusDto } from '../api';
 import type { ConnectionState } from './InboundEventStore';
+import type { LifeAreaStore } from './LifeAreaStore';
 
 export const TASK_PAGE_SIZE = 20;
 /** Largest page luna-task returns; a refresh of more visible entries is limited to it. */
@@ -29,17 +30,35 @@ export class TaskListStore {
 
   private readonly client: LunaTaskClient;
   private readonly connectPush: LunaTaskPushConnector;
+  private readonly lifeAreaStore: LifeAreaStore;
   private pushConnection: PushConnection | null = null;
   private wasConnected = false;
   /** Only the response of the latest request is shown, e.g. after switching the filter quickly. */
   private latestRequest = 0;
 
-  constructor(client: LunaTaskClient, connectPush: LunaTaskPushConnector) {
+  constructor(client: LunaTaskClient, connectPush: LunaTaskPushConnector, lifeAreaStore: LifeAreaStore) {
     this.client = client;
     this.connectPush = connectPush;
-    makeAutoObservable<TaskListStore, 'client' | 'connectPush' | 'pushConnection' | 'wasConnected' | 'latestRequest'>(
-      this,
-      { client: false, connectPush: false, pushConnection: false, wasConnected: false, latestRequest: false },
+    this.lifeAreaStore = lifeAreaStore;
+    makeAutoObservable<
+      TaskListStore,
+      'client' | 'connectPush' | 'lifeAreaStore' | 'pushConnection' | 'wasConnected' | 'latestRequest'
+    >(this, {
+      client: false,
+      connectPush: false,
+      lifeAreaStore: false,
+      pushConnection: false,
+      wasConnected: false,
+      latestRequest: false,
+    });
+    // A list that is shown (connected) follows the shown areas at once; others load them when they are shown next.
+    reaction(
+      () => this.lifeAreaStore.query.area?.join(),
+      () => {
+        if (this.pushConnection !== null) {
+          void this.reload();
+        }
+      },
     );
   }
 
@@ -133,6 +152,11 @@ export class TaskListStore {
       return;
     }
     this.filter = filter;
+    await this.reload();
+  }
+
+  /** Starts again with the first page, e.g. for another filter or life area. */
+  private async reload(): Promise<void> {
     this.items = [];
     this.totalCount = 0;
     await this.loadInitial();
@@ -186,7 +210,8 @@ export class TaskListStore {
 
   private async load(page: number, size: number, mode: 'replace' | 'append'): Promise<void> {
     const request = ++this.latestRequest;
-    const query = this.filter === ALL_TASKS ? { page, size } : { page, size, status: this.filter };
+    const area = this.lifeAreaStore.query;
+    const query = this.filter === ALL_TASKS ? { page, size, ...area } : { page, size, status: this.filter, ...area };
     this.loading = true;
     try {
       const { data } = await this.client.GET(LIST_PATH, { params: { query } });
